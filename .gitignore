@@ -1,0 +1,15 @@
+#ignore build artifacts
+build/
+dist/
+
+#ignore node modules
+node_modules/
+
+#environment variables
+.env
+
+#db 
+demo_sqlite.db
+
+#logs
+logs/
