@@ -43,7 +43,7 @@ CREATE TABLE `professors` (
 	`id` integer PRIMARY KEY NOT NULL,
 	`college_id` integer NOT NULL,
 	`faculty_rank` text NOT NULL,
-	FOREIGN KEY (`id`) REFERENCES `students`(`id`) ON UPDATE cascade ON DELETE restrict,
+	FOREIGN KEY (`id`) REFERENCES `users`(`id`) ON UPDATE cascade ON DELETE restrict,
 	FOREIGN KEY (`college_id`) REFERENCES `colleges`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
@@ -66,20 +66,16 @@ CREATE TABLE `session_tokens` (
 CREATE UNIQUE INDEX `session_tokens_token_hash_unique` ON `session_tokens` (`token_hash`);--> statement-breakpoint
 CREATE UNIQUE INDEX `session_tokens_token_hash_uidx` ON `session_tokens` (`token_hash`);--> statement-breakpoint
 CREATE TABLE `students` (
-	`id` integer NOT NULL,
-	`email` text NOT NULL,
-	`username` text NOT NULL,
-	`password_hash` text NOT NULL,
-	`surname` text NOT NULL,
-	`first_name` text NOT NULL,
-	`middle_name` text,
-	`contact_number` text,
-	FOREIGN KEY (`id`) REFERENCES `roles`(`id`) ON UPDATE no action ON DELETE restrict
+	`id` integer PRIMARY KEY NOT NULL,
+	`department_id` integer NOT NULL,
+	`student_number` text NOT NULL,
+	`year_level` integer NOT NULL,
+	`block` text NOT NULL,
+	FOREIGN KEY (`id`) REFERENCES `users`(`id`) ON UPDATE cascade ON DELETE restrict,
+	FOREIGN KEY (`department_id`) REFERENCES `departments`(`id`) ON UPDATE cascade ON DELETE restrict
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `students_email_unique` ON `students` (`email`);--> statement-breakpoint
-CREATE UNIQUE INDEX `students_username_unique` ON `students` (`username`);--> statement-breakpoint
-CREATE UNIQUE INDEX `students_password_hash_unique` ON `students` (`password_hash`);--> statement-breakpoint
+CREATE UNIQUE INDEX `students_student_number_unique` ON `students` (`student_number`);--> statement-breakpoint
 CREATE TABLE `uniform_types` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`department_id` integer,
@@ -94,7 +90,7 @@ CREATE TABLE `user_sessions` (
 	`created_at` text NOT NULL,
 	`expires_at` text,
 	`last_used_at` text NOT NULL,
-	FOREIGN KEY (`user_id`) REFERENCES `students`(`id`) ON UPDATE cascade ON DELETE cascade
+	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE cascade ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `user_sessions_session_hash_unique` ON `user_sessions` (`session_hash`);--> statement-breakpoint
@@ -102,6 +98,21 @@ CREATE UNIQUE INDEX `user_sessions_session_hash_uidx` ON `user_sessions` (`sessi
 CREATE INDEX `user_sessions_user_id_idx` ON `user_sessions` (`user_id`);--> statement-breakpoint
 CREATE INDEX `user_sessions_persistent_clean_up_idx` ON `user_sessions` (`expires_at`);--> statement-breakpoint
 CREATE INDEX `user_sessions_session_clean_up_idx` ON `user_sessions` (`expires_at`,`last_used_at`) WHERE "user_sessions"."expires_at" is null;--> statement-breakpoint
+CREATE TABLE `users` (
+	`id` integer NOT NULL,
+	`email` text NOT NULL,
+	`username` text NOT NULL,
+	`password_hash` text NOT NULL,
+	`surname` text NOT NULL,
+	`first_name` text NOT NULL,
+	`middle_name` text,
+	`contact_number` text,
+	FOREIGN KEY (`id`) REFERENCES `roles`(`id`) ON UPDATE no action ON DELETE restrict
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);--> statement-breakpoint
+CREATE UNIQUE INDEX `users_username_unique` ON `users` (`username`);--> statement-breakpoint
+CREATE UNIQUE INDEX `users_password_hash_unique` ON `users` (`password_hash`);--> statement-breakpoint
 CREATE TABLE `violation_records` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`student_id` integer NOT NULL,

@@ -1,7 +1,7 @@
 import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
 import { Role } from "./role";
 
-export const User = sqliteTable("students", {
+export const User = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   roleId: integer("id")
     .notNull()

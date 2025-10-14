@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "ef23cac9-dd58-469e-90fc-a0c8b6f53bf7",
+  "id": "8eca0489-779f-425a-96c0-49fd5746817b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "attendance_records": {
@@ -299,10 +299,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "professors_id_students_id_fk": {
-          "name": "professors_id_students_id_fk",
+        "professors_id_users_id_fk": {
+          "name": "professors_id_users_id_fk",
           "tableFrom": "professors",
-          "tableTo": "students",
+          "tableTo": "users",
           "columnsFrom": [
             "id"
           ],
@@ -450,88 +450,53 @@
         "id": {
           "name": "id",
           "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "department_id": {
+          "name": "department_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "email": {
-          "name": "email",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "username": {
-          "name": "username",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "password_hash": {
-          "name": "password_hash",
+        "student_number": {
+          "name": "student_number",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "surname": {
-          "name": "surname",
-          "type": "text",
+        "year_level": {
+          "name": "year_level",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "first_name": {
-          "name": "first_name",
+        "block": {
+          "name": "block",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "autoincrement": false
-        },
-        "middle_name": {
-          "name": "middle_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "contact_number": {
-          "name": "contact_number",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         }
       },
       "indexes": {
-        "students_email_unique": {
-          "name": "students_email_unique",
+        "students_student_number_unique": {
+          "name": "students_student_number_unique",
           "columns": [
-            "email"
-          ],
-          "isUnique": true
-        },
-        "students_username_unique": {
-          "name": "students_username_unique",
-          "columns": [
-            "username"
-          ],
-          "isUnique": true
-        },
-        "students_password_hash_unique": {
-          "name": "students_password_hash_unique",
-          "columns": [
-            "password_hash"
+            "student_number"
           ],
           "isUnique": true
         }
       },
       "foreignKeys": {
-        "students_id_roles_id_fk": {
-          "name": "students_id_roles_id_fk",
+        "students_id_users_id_fk": {
+          "name": "students_id_users_id_fk",
           "tableFrom": "students",
-          "tableTo": "roles",
+          "tableTo": "users",
           "columnsFrom": [
             "id"
           ],
@@ -539,7 +504,20 @@
             "id"
           ],
           "onDelete": "restrict",
-          "onUpdate": "no action"
+          "onUpdate": "cascade"
+        },
+        "students_department_id_departments_id_fk": {
+          "name": "students_department_id_departments_id_fk",
+          "tableFrom": "students",
+          "tableTo": "departments",
+          "columnsFrom": [
+            "department_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "cascade"
         }
       },
       "compositePrimaryKeys": {},
@@ -677,10 +655,10 @@
         }
       },
       "foreignKeys": {
-        "user_sessions_user_id_students_id_fk": {
-          "name": "user_sessions_user_id_students_id_fk",
+        "user_sessions_user_id_users_id_fk": {
+          "name": "user_sessions_user_id_users_id_fk",
           "tableFrom": "user_sessions",
-          "tableTo": "students",
+          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
@@ -689,6 +667,108 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "surname": {
+          "name": "surname",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "middle_name": {
+          "name": "middle_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "contact_number": {
+          "name": "contact_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "columns": [
+            "email"
+          ],
+          "isUnique": true
+        },
+        "users_username_unique": {
+          "name": "users_username_unique",
+          "columns": [
+            "username"
+          ],
+          "isUnique": true
+        },
+        "users_password_hash_unique": {
+          "name": "users_password_hash_unique",
+          "columns": [
+            "password_hash"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "users_id_roles_id_fk": {
+          "name": "users_id_roles_id_fk",
+          "tableFrom": "users",
+          "tableTo": "roles",
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
