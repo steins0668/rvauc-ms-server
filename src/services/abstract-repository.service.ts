@@ -2,7 +2,7 @@ import { asc, desc, SQL } from "drizzle-orm";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { SQLiteTable } from "drizzle-orm/sqlite-core";
 import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
-import type { DbContext, TxContext } from "../db/createContext";
+import type { DbContext, TxContext } from "../db/create-context";
 
 export abstract class Repository<
   TTable extends SQLiteTable,
