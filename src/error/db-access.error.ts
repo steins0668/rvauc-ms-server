@@ -1,3 +1,4 @@
+import { isError } from "../utils";
 import { BaseError } from "./base.error";
 
 export namespace DbAccess {
@@ -9,4 +10,29 @@ export namespace DbAccess {
     | "DB_ACCESS_UPDATE_ERROR"
     | "DB_ACCESS_DELETE_ERROR";
   export class ErrorClass extends BaseError<ErrorName> {}
+
+  export function normalizeError<E extends ErrorName>({
+    name,
+    message,
+    err,
+  }: {
+    name: E;
+    message: string;
+    err: unknown;
+  }) {
+    if (isError(ErrorClass, err)) return err;
+
+    return new ErrorClass({
+      name,
+      message,
+      cause:
+        err instanceof Error
+          ? {
+              name: err.name,
+              message: err.message,
+              stack: err.stack,
+            }
+          : err,
+    });
+  }
 }
