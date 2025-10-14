@@ -3,6 +3,11 @@ import cors, { type CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { AuthRoutes } from "./features/auth";
+import {
+  attachRequestLogger,
+  requestProfiler,
+  setHeaderCredentials,
+} from "./middlewares";
 
 dotenv.config();
 
@@ -17,11 +22,15 @@ const corsOptions: CorsOptions = {
   },
 };
 
+app.use(setHeaderCredentials); //  * for cors
 app.use(cors(corsOptions));
 
 app.use(express.json()); // json parsing
 
 app.use(cookieParser());
+
+app.use(attachRequestLogger); //  * request logging
+app.use(requestProfiler); //  * request profiling
 
 app.use("/auth", AuthRoutes);
 
