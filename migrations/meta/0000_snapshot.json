@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "8eca0489-779f-425a-96c0-49fd5746817b",
+  "id": "2c1a1834-1a7f-4c9c-96ba-edc1ae95fe0d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "attendance_records": {
@@ -679,6 +679,13 @@
         "id": {
           "name": "id",
           "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "role_id": {
+          "name": "role_id",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -757,12 +764,12 @@
         }
       },
       "foreignKeys": {
-        "users_id_roles_id_fk": {
-          "name": "users_id_roles_id_fk",
+        "users_role_id_roles_id_fk": {
+          "name": "users_role_id_roles_id_fk",
           "tableFrom": "users",
           "tableTo": "roles",
           "columnsFrom": [
-            "id"
+            "role_id"
           ],
           "columnsTo": [
             "id"

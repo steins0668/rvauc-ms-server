@@ -69,7 +69,8 @@ export class UserDataService {
 
       return ResultBuilder.success(insertedId, "DB_INSERT");
     } catch (err) {
-      const error = err instanceof DbAccess.ErrorClass ? err : getInsertErr();
+      const error =
+        err instanceof DbAccess.ErrorClass ? err : getInsertErr(err);
       return ResultBuilder.fail(error);
     }
   }

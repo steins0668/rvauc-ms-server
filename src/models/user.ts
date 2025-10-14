@@ -3,7 +3,7 @@ import { Role } from "./role";
 
 export const User = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  roleId: integer("id")
+  roleId: integer("role_id")
     .notNull()
     .references(() => Role.id, { onDelete: "restrict" }),
   email: text("email").unique().notNull(),

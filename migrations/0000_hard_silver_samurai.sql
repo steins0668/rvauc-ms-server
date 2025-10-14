@@ -99,7 +99,8 @@ CREATE INDEX `user_sessions_user_id_idx` ON `user_sessions` (`user_id`);--> stat
 CREATE INDEX `user_sessions_persistent_clean_up_idx` ON `user_sessions` (`expires_at`);--> statement-breakpoint
 CREATE INDEX `user_sessions_session_clean_up_idx` ON `user_sessions` (`expires_at`,`last_used_at`) WHERE "user_sessions"."expires_at" is null;--> statement-breakpoint
 CREATE TABLE `users` (
-	`id` integer NOT NULL,
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`role_id` integer NOT NULL,
 	`email` text NOT NULL,
 	`username` text NOT NULL,
 	`password_hash` text NOT NULL,
@@ -107,7 +108,7 @@ CREATE TABLE `users` (
 	`first_name` text NOT NULL,
 	`middle_name` text,
 	`contact_number` text,
-	FOREIGN KEY (`id`) REFERENCES `roles`(`id`) ON UPDATE no action ON DELETE restrict
+	FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON UPDATE no action ON DELETE restrict
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);--> statement-breakpoint

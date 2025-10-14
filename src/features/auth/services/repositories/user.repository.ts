@@ -16,8 +16,7 @@ export class UserRepository extends Repository<Tables.Users> {
    * @public
    * @async
    * @function insertUser
-   * @description Asynchronously inserts a {@link InsertModels.User} object into the
-   * {@link Tables.Users}.
+   * @description Asynchronously inserts a row into the `users` table.
    *
    * @param user - The {@link NewUser} object to be inserted.
    * @returns - The {@link User.id} if the insert operation is successful, `undefined` otherwise.
