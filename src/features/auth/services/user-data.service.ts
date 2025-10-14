@@ -52,11 +52,11 @@ export class UserDataService {
     | BaseResult.Fail<DbAccess.ErrorClass>
   > {
     const getInsertErr = (err?: unknown) => {
-      return new DbAccess.ErrorClass({
+      return DbAccess.normalizeError({
         name: "DB_ACCESS_INSERT_ERROR",
         message:
           "An error occured during database insertion on the `users` table. Please try again later.",
-        cause: err,
+        err,
       });
     };
 
