@@ -2,6 +2,7 @@ import express from "express";
 import cors, { type CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import { AuthRoutes } from "./features/auth";
 
 dotenv.config();
 
@@ -22,7 +23,7 @@ app.use(express.json()); // json parsing
 
 app.use(cookieParser());
 
-app.use("/auth");
+app.use("/auth", AuthRoutes);
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {
