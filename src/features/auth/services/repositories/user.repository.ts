@@ -1,5 +1,5 @@
 import { and, eq, or, SQL } from "drizzle-orm";
-import type { DbContext } from "../../../../db/create-context";
+import type { DbContext, TxContext } from "../../../../db/create-context";
 import { User } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, Tables, ViewModels } from "../../types";
@@ -21,8 +21,14 @@ export class UserRepository extends Repository<Tables.Users> {
    * @param user - The {@link NewUser} object to be inserted.
    * @returns - The {@link User.id} if the insert operation is successful, `undefined` otherwise.
    */
-  public async insertUser(user: NewUser): Promise<number | undefined> {
-    const inserted = await this.insertRow({ value: user });
+  public async insertUser({
+    dbOrTx,
+    user,
+  }: {
+    dbOrTx?: DbContext | TxContext | undefined;
+    user: InsertModels.User;
+  }): Promise<number | undefined> {
+    const inserted = await this.insertRow({ dbOrTx, value: user });
     return inserted?.id;
   }
   /**

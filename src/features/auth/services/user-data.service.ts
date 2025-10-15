@@ -82,7 +82,7 @@ export class UserDataService {
     user.passwordHash = await bcrypt.hash(user.passwordHash, 10);
 
     try {
-      const insertedId = await this._userRepository.insertUser(user);
+      const insertedId = await this._userRepository.insertUser({ user });
 
       if (insertedId === undefined) throw getInsertErr();
 
