@@ -34,4 +34,13 @@ export const AUTH = {
    * - Total length must be between 8 and 24 characters.
    */
   PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%]).{8,24}$/,
+
+  /**
+   * @constant STUDENT_NUMBER
+   * @description
+   * isValidShortNumber("123-4567"); // true
+   * isValidShortNumber("12-3456");  // false
+   *
+   */
+  STUDENT_NUMBER: /^\d{3}-\d{4}$/,
 } as const;
