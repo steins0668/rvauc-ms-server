@@ -35,4 +35,11 @@ export const registerSchema = z.object({
       iss.input === undefined ? "First name is required." : "Invalid input.",
   }),
   middleName: z.string().optional(),
+  //  todo: update register flow to include contact number and automatically insert new students/professors to their respective tables.
+  contactNumber: z.string({
+    error: (iss) =>
+      iss.input === undefined
+        ? "Contact number is required."
+        : "Invalid input.",
+  }),
 });
