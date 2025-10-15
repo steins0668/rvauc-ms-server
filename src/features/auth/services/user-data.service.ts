@@ -7,6 +7,8 @@ import { SignInSchema } from "../schemas";
 import type { InsertModels, ViewModels } from "../types";
 import {
   RoleRepository,
+  StudentFilter,
+  StudentRepository,
   UserRepository,
   type IUserFilter,
 } from "./repositories";
@@ -16,20 +18,37 @@ type NewUser = InsertModels.User;
 export async function createUserDataService() {
   const dbContext = await createContext();
   const roleRepoInstance = new RoleRepository(dbContext);
+  const studentRepoInstance = new StudentRepository(dbContext);
   const userRepoInstance = new UserRepository(dbContext);
-  return new UserDataService(roleRepoInstance, userRepoInstance);
+  return new UserDataService(
+    roleRepoInstance,
+    studentRepoInstance,
+    userRepoInstance
+  );
 }
 
 export class UserDataService {
   private readonly _roleRepository: RoleRepository;
+  private readonly _studentRepository: StudentRepository;
   private readonly _userRepository: UserRepository;
 
   public constructor(
     roleRepository: RoleRepository,
+    studentRepository: StudentRepository,
     userRepository: UserRepository
   ) {
     this._roleRepository = roleRepository;
+    this._studentRepository = studentRepository;
     this._userRepository = userRepository;
+  }
+
+  public async getUserRole(id: number): Promise<string | undefined> {
+    const role = await this._roleRepository.getRole({
+      searchBy: "id",
+      id,
+    });
+
+    return role?.name;
   }
 
   /**
@@ -136,13 +155,93 @@ export class UserDataService {
     }
   }
 
-  public async getUserRole(id: number): Promise<string | undefined> {
-    const role = await this._roleRepository.getRole({
-      searchBy: "id",
-      id,
-    });
+  // public async ensureNoDuplicates(
+  //   args: Students
+  // ): Promise<
+  //   | BaseResult.Success<ViewModels.Student | undefined>
+  //   | BaseResult.Fail<DbAccess.ErrorClass>
+  // >;
+  // public async ensureNoDuplicates(
+  //   args: Users
+  // ): Promise<
+  //   | BaseResult.Success<ViewModels.User | undefined>
+  //   | BaseResult.Fail<DbAccess.ErrorClass>
+  // >;
+  /**
+   * Returns true if there are no duplicates and false otherwise.
+   * @param args
+   * @returns
+   */
+  public async ensureNoDuplicates(args: StudentArgs | UserArgs): Promise<
+    | BaseResult.Success<{
+        hasDuplicate: boolean;
+        from?: "students" | "users" | undefined;
+      }>
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
+    const getResult = (hasDuplicate: boolean, from?: "students" | "users") =>
+      ResultBuilder.success({ hasDuplicate, from });
 
-    return role?.name;
+    try {
+      switch (args.type) {
+        case "student": {
+          const user = await this.__getUser(args.user);
+          if (user) return getResult(true, "users"); //  ! duplicate in users table
+          const student = await this.__getStudent(args.student);
+          if (student) return getResult(true, "students"); //  ! duplicate in students table
+        }
+        case "user": {
+          const user = await this.__getUser(args.user);
+          if (user) return getResult(true, "users");
+        }
+      }
+      return getResult(false); //  * no duplicates
+    } catch (err) {
+      return ResultBuilder.fail(
+        DbAccess.normalizeError({
+          name: "DB_ACCESS_QUERY_ERROR",
+          message: "Error querying the database. Please try again later.",
+          err,
+        })
+      );
+    }
+  }
+
+  /**
+   * @description Helper function for checking for existence in
+   * `users` table
+   * @param newUser
+   * @returns
+   */
+  private async __getUser(
+    newUser: InsertModels.User
+  ): Promise<ViewModels.User | undefined> {
+    const { email, username } = newUser;
+    const filter: IUserFilter = {
+      filterType: "or",
+      email,
+      username,
+    };
+
+    return await this._userRepository.getUser(filter);
+  }
+
+  /**
+   * @description Helper function for checking for existence in
+   * `students` table.
+   * @param newStudent
+   * @returns
+   */
+  private async __getStudent(
+    newStudent: InsertModels.Student
+  ): Promise<ViewModels.Student | undefined> {
+    const { studentNumber } = newStudent;
+    const filter: StudentFilter = {
+      filterType: "or",
+      studentNumber,
+    };
+
+    return await this._studentRepository.getStudent(filter);
   }
 }
 type TryGetUserOptions = WithUser | WithLogin | WithId;
@@ -161,4 +260,15 @@ type WithLogin = {
 type WithId = {
   type: "userId";
   userId: number;
+};
+
+type StudentArgs = {
+  type: "student";
+  user: InsertModels.User;
+  student: InsertModels.Student;
+};
+
+type UserArgs = {
+  type: "user";
+  user: InsertModels.User;
 };
