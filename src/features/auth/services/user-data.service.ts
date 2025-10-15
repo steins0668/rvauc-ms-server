@@ -94,6 +94,53 @@ export class UserDataService {
     }
   }
 
+  public async addUser(
+    addArgs: StudentArgs | UserArgs
+  ): Promise<
+    | BaseResult.Success<number | undefined, "STUDENTS" | "USERS">
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
+    const insertResult = (
+      table: "STUDENTS" | "USERS",
+      insertedId: number | undefined
+    ) => {
+      return insertedId !== undefined
+        ? ResultBuilder.success(insertedId, table)
+        : ResultBuilder.fail<DbAccess.ErrorClass>({
+            name: "DB_ACCESS_INSERT_ERROR",
+            message: `Failed inserting into '${table.toLowerCase()}' table.`,
+          });
+    };
+    let insertedId: number | undefined = undefined;
+
+    try {
+      switch (addArgs.type) {
+        case "student": {
+          insertedId = await this.__addStudent(addArgs.user, addArgs.student);
+          return insertResult("STUDENTS", insertedId);
+        }
+        case "user": {
+          const { user } = addArgs;
+          insertedId = await this._userRepository.insertUser({ user });
+          return insertResult("USERS", insertedId);
+        }
+        default: {
+          throw new TypeError(
+            "Invalid type. Field `type` only accepts values `student` or `user`."
+          );
+        }
+      }
+    } catch (err) {
+      return ResultBuilder.fail(
+        DbAccess.normalizeError({
+          name: "DB_ACCESS_INSERT_ERROR",
+          message: "Error inserting entity to table.",
+          err,
+        })
+      );
+    }
+  }
+
   /**
    * @public
    * @async
@@ -242,6 +289,25 @@ export class UserDataService {
     };
 
     return await this._studentRepository.getStudent(filter);
+  }
+
+  private async __addStudent(
+    newUser: InsertModels.User,
+    newStudent: InsertModels.Student
+  ): Promise<number | undefined> {
+    return await this._userRepository.execTransaction(async (tx) => {
+      const userId = await this._userRepository.insertUser({
+        dbOrTx: tx,
+        user: newUser,
+      });
+
+      const studentId = await this._studentRepository.insertStudent({
+        dbOrTx: tx,
+        student: { id: userId, ...newStudent },
+      });
+
+      return studentId;
+    });
   }
 }
 type TryGetUserOptions = WithUser | WithLogin | WithId;
