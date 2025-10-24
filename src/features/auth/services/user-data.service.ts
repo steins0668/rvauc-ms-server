@@ -6,6 +6,7 @@ import { ResultBuilder } from "../../../utils";
 import { RegisterSchemas, SignInSchema } from "../schemas";
 import type { InsertModels, ViewModels } from "../types";
 import {
+  ProfessorRepository,
   RoleRepository,
   StudentRepository,
   UserRepository,
@@ -14,10 +15,12 @@ import {
 
 export async function createUserDataService() {
   const dbContext = await createContext();
+  const professorRepoInstance = new ProfessorRepository(dbContext);
   const roleRepoInstance = new RoleRepository(dbContext);
   const studentRepoInstance = new StudentRepository(dbContext);
   const userRepoInstance = new UserRepository(dbContext);
   return new UserDataService(
+    professorRepoInstance,
     roleRepoInstance,
     studentRepoInstance,
     userRepoInstance
@@ -25,15 +28,18 @@ export async function createUserDataService() {
 }
 
 export class UserDataService {
+  private readonly _professorRepository: ProfessorRepository;
   private readonly _roleRepository: RoleRepository;
   private readonly _studentRepository: StudentRepository;
   private readonly _userRepository: UserRepository;
 
   public constructor(
+    professorRepository: ProfessorRepository,
     roleRepository: RoleRepository,
     studentRepository: StudentRepository,
     userRepository: UserRepository
   ) {
+    this._professorRepository = professorRepository;
     this._roleRepository = roleRepository;
     this._studentRepository = studentRepository;
     this._userRepository = userRepository;
@@ -69,11 +75,14 @@ export class UserDataService {
   public async insertUser(
     insertArgs: InsertArgs
   ): Promise<
-    | BaseResult.Success<number | undefined, "STUDENTS" | "USERS">
+    | BaseResult.Success<
+        number | undefined,
+        "PROFESSORS" | "STUDENTS" | "USERS"
+      >
     | BaseResult.Fail<DbAccess.ErrorClass>
   > {
     const getInsertResult = (
-      table: "STUDENTS" | "USERS",
+      table: "PROFESSORS" | "STUDENTS" | "USERS",
       insertedId: number | undefined
     ) => {
       return insertedId !== undefined
@@ -98,6 +107,12 @@ export class UserDataService {
 
           //  * additionally insert into other tables as needed.
           switch (type) {
+            case "professor":
+              await this._professorRepository.insertProfessor({
+                dbOrTx: tx,
+                professor: { ...insertArgs.professor, id: userId },
+              });
+              return getInsertResult("PROFESSORS", userId);
             case "student":
               await this._studentRepository.insertStudent({
                 dbOrTx: tx,
