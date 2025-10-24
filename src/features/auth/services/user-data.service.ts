@@ -222,7 +222,7 @@ export class UserDataService {
    * @param args
    * @returns
    */
-  public async ensureNoDuplicates(args: InsertArgs): Promise<
+  public async ensureNoDuplicates(args: CheckDuplicateArgs): Promise<
     | BaseResult.Success<{
         hasDuplicate: boolean;
         from?: "students" | "users" | undefined;
@@ -233,18 +233,26 @@ export class UserDataService {
       ResultBuilder.success({ hasDuplicate, from });
 
     try {
+      //  * check in users table
+      const user = await this._userRepository.getUser({
+        filterType: "or",
+        email: args.schema.email,
+        username: args.schema.username,
+      });
+
+      if (user) return getResult(true, "users"); //  ! duplicate in users table.
+
+      //  * additional checks in extended tables as needed.
       switch (args.type) {
         case "student": {
-          const user = await this.__getUser(args.user);
-          if (user) return getResult(true, "users"); //  ! duplicate in users table
-          const student = await this.__getStudent(args.student);
+          const student = await this._studentRepository.getStudent({
+            filterType: "or",
+            studentNumber: args.schema.studentNumber,
+          });
           if (student) return getResult(true, "students"); //  ! duplicate in students table
         }
-        case "user": {
-          const user = await this.__getUser(args.user);
-          if (user) return getResult(true, "users");
-        }
       }
+
       return getResult(false); //  * no duplicates
     } catch (err) {
       return ResultBuilder.fail(
@@ -255,43 +263,6 @@ export class UserDataService {
         })
       );
     }
-  }
-
-  /**
-   * @description Helper function for checking for existence in
-   * `users` table
-   * @param newUser
-   * @returns
-   */
-  private async __getUser(
-    newUser: InsertModels.User
-  ): Promise<ViewModels.User | undefined> {
-    const { email, username } = newUser;
-    const filter: IUserFilter = {
-      filterType: "or",
-      email,
-      username,
-    };
-
-    return await this._userRepository.getUser(filter);
-  }
-
-  /**
-   * @description Helper function for checking for existence in
-   * `students` table.
-   * @param newStudent
-   * @returns
-   */
-  private async __getStudent(
-    newStudent: InsertModels.Student
-  ): Promise<ViewModels.Student | undefined> {
-    const { studentNumber } = newStudent;
-    const filter: StudentFilter = {
-      filterType: "or",
-      studentNumber,
-    };
-
-    return await this._studentRepository.getStudent(filter);
   }
 
   private async __insertStudent(
