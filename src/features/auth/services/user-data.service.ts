@@ -7,7 +7,7 @@ import { SignInSchema } from "../schemas";
 import type { InsertModels, ViewModels } from "../types";
 import {
   RoleRepository,
-  StudentFilter,
+  type StudentFilter,
   StudentRepository,
   UserRepository,
   type IUserFilter,
@@ -342,4 +342,15 @@ type InsertStudentArgs = {
 type InsertUserArgs = {
   type: "user";
   user: InsertModels.User;
+};
+
+type QueryStudentArgs = {
+  type: "student";
+  userFilter: IUserFilter;
+  studentFilter: StudentFilter;
+};
+
+type QueryUserArgs = {
+  type: "user";
+  userFilter: IUserFilter;
 };
