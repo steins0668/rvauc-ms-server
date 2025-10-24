@@ -44,7 +44,7 @@ export async function handleRegister<TBody extends RegisterSchemas.User>(
     requestLogger.log("error", logMsg, userInsert.error);
 
     const resMsg = "Database error. Please try again later.";
-    res.status(500).json({ success: true, message: resMsg });
+    res.status(500).json({ success: false, message: resMsg });
   }
 
   return;
