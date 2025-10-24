@@ -1,3 +1,4 @@
+export * from "./professor.repository";
 export * from "./role.repository";
 export * from "./session-token.repository";
 export * from "./student.repository";
