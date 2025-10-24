@@ -3,7 +3,7 @@ import { createContext } from "../../../db/create-context";
 import { DbAccess } from "../../../error";
 import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
-import { SignInSchema } from "../schemas";
+import { RegisterSchemas, SignInSchema } from "../schemas";
 import type { InsertModels, ViewModels } from "../types";
 import {
   RoleRepository,
@@ -354,3 +354,7 @@ type QueryUserArgs = {
   type: "user";
   userFilter: IUserFilter;
 };
+
+type CheckDuplicateArgs =
+  | { type: "student"; schema: RegisterSchemas.Student }
+  | { type: "user"; schema: RegisterSchemas.Base };
