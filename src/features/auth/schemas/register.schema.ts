@@ -45,11 +45,11 @@ export const registerSchema = z.object({
 });
 
 export namespace RegisterSchemas {
-  export type Base = z.infer<typeof base>;
+  export type User = z.infer<typeof user>;
   export type Student = z.infer<typeof student>;
   export type Professor = z.infer<typeof professor>;
 
-  export const base = z.object({
+  export const user = z.object({
     roleId: z.number(),
     email: z.email({
       error: (iss) =>
@@ -93,7 +93,7 @@ export namespace RegisterSchemas {
   });
 
   export const student = z.object({
-    ...base.shape,
+    ...user.shape,
     //  todo: handle constraints for current valid ids
     departmentId: z.number({
       error: (iss) =>
@@ -124,7 +124,7 @@ export namespace RegisterSchemas {
   });
 
   export const professor = z.object({
-    ...base.shape,
+    ...user.shape,
     collegeId: z.number({
       error: (iss) =>
         iss.input === undefined

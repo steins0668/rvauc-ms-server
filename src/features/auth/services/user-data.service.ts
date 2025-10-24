@@ -320,4 +320,4 @@ type QueryArgs =
 
 type CheckDuplicateArgs =
   | { type: "student"; schema: RegisterSchemas.Student }
-  | { type: "user"; schema: RegisterSchemas.Base };
+  | { type: "user"; schema: RegisterSchemas.User };
