@@ -140,4 +140,9 @@ export namespace RegisterSchemas {
   });
 
   export const dictionary = { user, professor, student } as const;
+
+  export type Types =
+    | { type: "student"; schema: RegisterSchemas.Student }
+    | { type: "user"; schema: RegisterSchemas.User }
+    | { type: "professor"; schema: RegisterSchemas.Student };
 }
