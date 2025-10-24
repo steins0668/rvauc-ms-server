@@ -93,7 +93,24 @@ export class UserDataService {
       return ResultBuilder.fail(error);
     }
   }
-
+  /**
+   * Inserts a user into the database and, depending on the type, also into
+   * related tables (e.g. `students`).
+   *
+   * @param {InsertArgs} insertArgs - Contains the entity type and data models to insert.
+   * @returns {Promise<
+   *   | BaseResult.Success<number | undefined, "STUDENTS" | "USERS">
+   *   | BaseResult.Fail<DbAccess.ErrorClass>
+   * >}
+   * Resolves with the inserted user ID and table name on success, or a database
+   * error on failure.
+   *
+   * @description
+   * The method runs within a transaction:
+   * 1. Inserts into the `users` table.
+   * 2. If type is `"student"`, also inserts into the `students` table.
+   * 3. Returns a success or failure result depending on the outcome.
+   */
   public async insertUser(
     insertArgs: InsertArgs
   ): Promise<
