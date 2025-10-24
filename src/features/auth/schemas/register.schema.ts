@@ -139,5 +139,5 @@ export namespace RegisterSchemas {
     }),
   });
 
-  export const dictionary = { user, professor, student };
+  export const dictionary = { user, professor, student } as const;
 }
