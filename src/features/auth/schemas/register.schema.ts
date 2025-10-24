@@ -138,4 +138,6 @@ export namespace RegisterSchemas {
           : "Invalid faculty rank.",
     }),
   });
+
+  export const dictionary = { user, professor, student };
 }
