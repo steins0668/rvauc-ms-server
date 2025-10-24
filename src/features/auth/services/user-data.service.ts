@@ -253,4 +253,8 @@ type TryGetUserArgs =
 type InsertArgs =
   | { type: "student"; user: InsertModels.User; student: InsertModels.Student }
   | { type: "user"; user: InsertModels.User }
-  | { type: "professor"; user: InsertModels.User };
+  | {
+      type: "professor";
+      user: InsertModels.User;
+      professor: InsertModels.Professor;
+    };

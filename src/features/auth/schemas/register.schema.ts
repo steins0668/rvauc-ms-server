@@ -152,5 +152,5 @@ export namespace RegisterSchemas {
   export type Types =
     | { type: "student"; schema: RegisterSchemas.Student }
     | { type: "user"; schema: RegisterSchemas.User }
-    | { type: "professor"; schema: RegisterSchemas.Student };
+    | { type: "professor"; schema: RegisterSchemas.Professor };
 }

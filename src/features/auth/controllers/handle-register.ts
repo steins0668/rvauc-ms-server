@@ -61,7 +61,11 @@ async function insertUser<TBody extends RegisterSchemas.User>(
   //  * the professor and student schema extends the user schema
   switch (type) {
     case "professor":
-      return await userDataService.insertUser({ type, user: schema });
+      return await userDataService.insertUser({
+        type,
+        user: schema,
+        professor: schema,
+      });
     case "student":
       return await userDataService.insertUser({
         type,
