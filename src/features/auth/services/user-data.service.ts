@@ -91,13 +91,16 @@ export class UserDataService {
       //  * initiate insertion
       const insertResult = await this._userRepository.execTransaction(
         async (tx) => {
+          const { type, user } = insertArgs;
+
+          user.passwordHash = await bcrypt.hash(user.passwordHash, 10);
           const userId = await this._userRepository.insertUser({
             dbOrTx: tx,
-            user: insertArgs.user,
+            user,
           }); //  * insert into users table.
 
           //  * additionally insert into other tables as needed.
-          switch (insertArgs.type) {
+          switch (type) {
             case "student":
               await this._studentRepository.insertStudent({
                 dbOrTx: tx,
