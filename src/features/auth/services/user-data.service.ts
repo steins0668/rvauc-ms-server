@@ -7,13 +7,10 @@ import { RegisterSchemas, SignInSchema } from "../schemas";
 import type { InsertModels, ViewModels } from "../types";
 import {
   RoleRepository,
-  type StudentFilter,
   StudentRepository,
   UserRepository,
   type IUserFilter,
 } from "./repositories";
-
-type NewUser = InsertModels.User;
 
 export async function createUserDataService() {
   const dbContext = await createContext();
@@ -135,9 +132,8 @@ export class UserDataService {
    * @async
    * @function tryGetUser
    * @description Asynchronously attempts to retrieve a `User` from the database filtered using fields
-   * provided by either a {@link NewUser}, a {@link LoginOptions} object.
-   * @param args.user A {@link NewUser} object used for filtering the database query
-   * during register operations.
+   * provided by either an insert model of the `users` table, or a {@link LoginOptions} object.
+   * @param args.user An object used for filtering the database query during register operations.
    * @param args.signInMethod A `string` specifying whether the user is logging in through email or
    * username. Matches the `keys` of the {@link IUserFilter} type.
    * @param args.authDetails A {@link SignInSchema} object used for filtering the database query
@@ -242,7 +238,7 @@ export class UserDataService {
 type TryGetUserArgs =
   | {
       type: "user";
-      user: NewUser;
+      user: InsertModels.User;
     }
   | {
       type: "login";
