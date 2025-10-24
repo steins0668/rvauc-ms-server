@@ -188,18 +188,6 @@ export class UserDataService {
     }
   }
 
-  // public async ensureNoDuplicates(
-  //   args: Students
-  // ): Promise<
-  //   | BaseResult.Success<ViewModels.Student | undefined>
-  //   | BaseResult.Fail<DbAccess.ErrorClass>
-  // >;
-  // public async ensureNoDuplicates(
-  //   args: Users
-  // ): Promise<
-  //   | BaseResult.Success<ViewModels.User | undefined>
-  //   | BaseResult.Fail<DbAccess.ErrorClass>
-  // >;
   /**
    * Returns true if there are no duplicates and false otherwise.
    * @param args
