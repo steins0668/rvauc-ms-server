@@ -272,43 +272,21 @@ export class UserDataService {
       );
     }
   }
-
-  private async __insertStudent(
-    newUser: InsertModels.User,
-    newStudent: InsertModels.Student
-  ): Promise<number | undefined> {
-    return await this._userRepository.execTransaction(async (tx) => {
-      const userId = await this._userRepository.insertUser({
-        dbOrTx: tx,
-        user: newUser,
-      });
-
-      const studentId = await this._studentRepository.insertStudent({
-        dbOrTx: tx,
-        student: { id: userId, ...newStudent },
-      });
-
-      return studentId;
-    });
-  }
 }
-type TryGetUserOptions = WithUser | WithLogin | WithId;
-
-type WithUser = {
-  type: "user";
-  user: NewUser;
-};
-
-type WithLogin = {
-  type: "login";
-  signInMethod: "email" | "username";
-  authDetails: SignInSchema;
-};
-
-type WithId = {
-  type: "userId";
-  userId: number;
-};
+type TryGetUserOptions =
+  | {
+      type: "user";
+      user: NewUser;
+    }
+  | {
+      type: "login";
+      signInMethod: "email" | "username";
+      authDetails: SignInSchema;
+    }
+  | {
+      type: "userId";
+      userId: number;
+    };
 
 type InsertArgs =
   | { type: "student"; user: InsertModels.User; student: InsertModels.Student }
