@@ -1,5 +1,6 @@
 import * as schema from "../../../models";
 
+export type Professor = typeof schema.Professor;
 export type Roles = typeof schema.Role;
 export type SessionTokens = typeof schema.SessionToken;
 export type Student = typeof schema.Student;

@@ -1,5 +1,6 @@
 import * as schema from "../../../models";
 
+export type Professor = typeof schema.Professor.$inferSelect;
 export type Role = typeof schema.Role.$inferSelect;
 export type SessionToken = typeof schema.SessionToken.$inferSelect;
 export type Student = typeof schema.Student.$inferSelect;
