@@ -52,48 +52,6 @@ export class UserDataService {
   }
 
   /**
-   * @public
-   * @async
-   * @function tryAddUser
-   * @description Asynchronously inserts a new user into the database through the
-   * `UserRepository` with the `insertUser` method.
-   * Hashes the `password` field first with `bcrypt` before inserting.
-   * @param user - The `NewUser` entry to be inserted.
-   * @returns A success object containing the `id` of the `NewUser` inserted, or a `fail` object
-   * containing the error class if the insertion failed.
-   *
-   * !note that the password is not hashed yet when the `NewUser` object is being passed to this method.
-   */
-  public async tryAddUser(
-    user: NewUser
-  ): Promise<
-    | BaseResult.Success<number, "DB_INSERT">
-    | BaseResult.Fail<DbAccess.ErrorClass>
-  > {
-    const getInsertErr = (err?: unknown) => {
-      return DbAccess.normalizeError({
-        name: "DB_ACCESS_INSERT_ERROR",
-        message:
-          "An error occured during database insertion on the `users` table. Please try again later.",
-        err,
-      });
-    };
-
-    user.passwordHash = await bcrypt.hash(user.passwordHash, 10);
-
-    try {
-      const insertedId = await this._userRepository.insertUser({ user });
-
-      if (insertedId === undefined) throw getInsertErr();
-
-      return ResultBuilder.success(insertedId, "DB_INSERT");
-    } catch (err) {
-      const error =
-        err instanceof DbAccess.ErrorClass ? err : getInsertErr(err);
-      return ResultBuilder.fail(error);
-    }
-  }
-  /**
    * Inserts a user into the database and, depending on the type, also into
    * related tables (e.g. `students`).
    *
