@@ -312,12 +312,15 @@ type WithId = {
 
 type InsertArgs =
   | { type: "student"; user: InsertModels.User; student: InsertModels.Student }
-  | { type: "user"; user: InsertModels.User };
+  | { type: "user"; user: InsertModels.User }
+  | { type: "professor"; user: InsertModels.User };
 
 type QueryArgs =
   | { type: "student"; userFilter: IUserFilter; studentFilter: StudentFilter }
-  | { type: "user"; userFilter: IUserFilter };
+  | { type: "user"; userFilter: IUserFilter }
+  | { type: "professor"; userFilter: IUserFilter };
 
 type CheckDuplicateArgs =
   | { type: "student"; schema: RegisterSchemas.Student }
-  | { type: "user"; schema: RegisterSchemas.User };
+  | { type: "user"; schema: RegisterSchemas.User }
+  | { type: "professor"; schema: RegisterSchemas.Student };
