@@ -94,8 +94,8 @@ export class UserDataService {
     }
   }
 
-  public async addUser(
-    addArgs: StudentArgs | UserArgs
+  public async insertUser(
+    insertArgs: InsertStudentArgs | InsertUserArgs
   ): Promise<
     | BaseResult.Success<number | undefined, "STUDENTS" | "USERS">
     | BaseResult.Fail<DbAccess.ErrorClass>
@@ -114,13 +114,16 @@ export class UserDataService {
     let insertedId: number | undefined = undefined;
 
     try {
-      switch (addArgs.type) {
+      switch (insertArgs.type) {
         case "student": {
-          insertedId = await this.__addStudent(addArgs.user, addArgs.student);
+          insertedId = await this.__insertStudent(
+            insertArgs.user,
+            insertArgs.student
+          );
           return insertResult("STUDENTS", insertedId);
         }
         case "user": {
-          const { user } = addArgs;
+          const { user } = insertArgs;
           insertedId = await this._userRepository.insertUser({ user });
           return insertResult("USERS", insertedId);
         }
@@ -219,7 +222,9 @@ export class UserDataService {
    * @param args
    * @returns
    */
-  public async ensureNoDuplicates(args: StudentArgs | UserArgs): Promise<
+  public async ensureNoDuplicates(
+    args: InsertStudentArgs | InsertUserArgs
+  ): Promise<
     | BaseResult.Success<{
         hasDuplicate: boolean;
         from?: "students" | "users" | undefined;
@@ -291,7 +296,7 @@ export class UserDataService {
     return await this._studentRepository.getStudent(filter);
   }
 
-  private async __addStudent(
+  private async __insertStudent(
     newUser: InsertModels.User,
     newStudent: InsertModels.Student
   ): Promise<number | undefined> {
@@ -328,13 +333,13 @@ type WithId = {
   userId: number;
 };
 
-type StudentArgs = {
+type InsertStudentArgs = {
   type: "student";
   user: InsertModels.User;
   student: InsertModels.Student;
 };
 
-type UserArgs = {
+type InsertUserArgs = {
   type: "user";
   user: InsertModels.User;
 };
