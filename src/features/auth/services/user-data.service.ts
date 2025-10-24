@@ -133,18 +133,18 @@ export class UserDataService {
    * @function tryGetUser
    * @description Asynchronously attempts to retrieve a `User` from the database filtered using fields
    * provided by either a {@link NewUser}, a {@link LoginOptions} object.
-   * @param options.user A {@link NewUser} object used for filtering the database query
+   * @param args.user A {@link NewUser} object used for filtering the database query
    * during register operations.
-   * @param options.signInMethod A `string` specifying whether the user is logging in through email or
+   * @param args.signInMethod A `string` specifying whether the user is logging in through email or
    * username. Matches the `keys` of the {@link IUserFilter} type.
-   * @param options.authDetails A {@link SignInSchema} object used for filtering the database query
+   * @param args.authDetails A {@link SignInSchema} object used for filtering the database query
    * during login operations.
    * @returns A `promise` resolving to a success result object containing {@link UserViewModel} if a `User`
    * is found, or `undefined` if no `User` is found. If the query operation fails, returns a fail result
    * object containing a message as well as the stack trace.
    */
   public async tryGetUser(
-    options: TryGetUserOptions
+    args: TryGetUserArgs
   ): Promise<
     | BaseResult.Success<ViewModels.User | undefined>
     | BaseResult.Fail<DbAccess.ErrorClass>
@@ -152,9 +152,9 @@ export class UserDataService {
     let userFilter: IUserFilter = {};
 
     try {
-      switch (options.type) {
+      switch (args.type) {
         case "user": {
-          const { email, username } = options.user;
+          const { email, username } = args.user;
 
           userFilter = {
             filterType: "or",
@@ -164,12 +164,12 @@ export class UserDataService {
           break;
         }
         case "login": {
-          const { signInMethod, authDetails } = options;
+          const { signInMethod, authDetails } = args;
           userFilter[signInMethod] = authDetails.identifier;
           break;
         }
         case "userId": {
-          userFilter.userId = options.userId;
+          userFilter.userId = args.userId;
           break;
         }
       }
@@ -248,7 +248,7 @@ export class UserDataService {
     }
   }
 }
-type TryGetUserOptions =
+type TryGetUserArgs =
   | {
       type: "user";
       user: NewUser;
