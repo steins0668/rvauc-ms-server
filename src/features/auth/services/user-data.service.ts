@@ -100,7 +100,7 @@ export class UserDataService {
     | BaseResult.Success<number | undefined, "STUDENTS" | "USERS">
     | BaseResult.Fail<DbAccess.ErrorClass>
   > {
-    const insertResult = (
+    const getInsertResult = (
       table: "STUDENTS" | "USERS",
       insertedId: number | undefined
     ) => {
@@ -111,28 +111,36 @@ export class UserDataService {
             message: `Failed inserting into '${table.toLowerCase()}' table.`,
           });
     };
-    let insertedId: number | undefined = undefined;
 
     try {
-      switch (insertArgs.type) {
-        case "student": {
-          insertedId = await this.__insertStudent(
-            insertArgs.user,
-            insertArgs.student
-          );
-          return insertResult("STUDENTS", insertedId);
+      //  * initiate insertion
+      const insertResult = await this._userRepository.execTransaction(
+        async (tx) => {
+          const userId = await this._userRepository.insertUser({
+            dbOrTx: tx,
+            user: insertArgs.user,
+          }); //  * insert into users table.
+
+          //  * additionally insert into other tables as needed.
+          switch (insertArgs.type) {
+            case "student":
+              await this._studentRepository.insertStudent({
+                dbOrTx: tx,
+                student: { ...insertArgs.student, id: userId },
+              });
+              return getInsertResult("STUDENTS", userId);
+            case "user":
+              return getInsertResult("USERS", userId);
+            default: {
+              throw new TypeError(
+                "Invalid type. Field `type` only accepts values `student` or `user`."
+              );
+            }
+          }
         }
-        case "user": {
-          const { user } = insertArgs;
-          insertedId = await this._userRepository.insertUser({ user });
-          return insertResult("USERS", insertedId);
-        }
-        default: {
-          throw new TypeError(
-            "Invalid type. Field `type` only accepts values `student` or `user`."
-          );
-        }
-      }
+      );
+
+      return insertResult;
     } catch (err) {
       return ResultBuilder.fail(
         DbAccess.normalizeError({
