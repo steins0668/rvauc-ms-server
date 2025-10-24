@@ -3,75 +3,142 @@ import { createContext } from "../../../db/create-context";
 import { DbAccess } from "../../../error";
 import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
-import { SignInSchema } from "../schemas";
+import { RegisterSchemas, SignInSchema } from "../schemas";
 import type { InsertModels, ViewModels } from "../types";
 import {
+  ProfessorRepository,
   RoleRepository,
+  StudentRepository,
   UserRepository,
   type IUserFilter,
 } from "./repositories";
 
-type NewUser = InsertModels.User;
-
 export async function createUserDataService() {
   const dbContext = await createContext();
+  const professorRepoInstance = new ProfessorRepository(dbContext);
   const roleRepoInstance = new RoleRepository(dbContext);
+  const studentRepoInstance = new StudentRepository(dbContext);
   const userRepoInstance = new UserRepository(dbContext);
-  return new UserDataService(roleRepoInstance, userRepoInstance);
+  return new UserDataService(
+    professorRepoInstance,
+    roleRepoInstance,
+    studentRepoInstance,
+    userRepoInstance
+  );
 }
 
 export class UserDataService {
+  private readonly _professorRepository: ProfessorRepository;
   private readonly _roleRepository: RoleRepository;
+  private readonly _studentRepository: StudentRepository;
   private readonly _userRepository: UserRepository;
 
   public constructor(
+    professorRepository: ProfessorRepository,
     roleRepository: RoleRepository,
+    studentRepository: StudentRepository,
     userRepository: UserRepository
   ) {
+    this._professorRepository = professorRepository;
     this._roleRepository = roleRepository;
+    this._studentRepository = studentRepository;
     this._userRepository = userRepository;
   }
 
+  public async getUserRole(id: number): Promise<string | undefined> {
+    const role = await this._roleRepository.getRole({
+      searchBy: "id",
+      id,
+    });
+
+    return role?.name;
+  }
+
   /**
-   * @public
-   * @async
-   * @function tryAddUser
-   * @description Asynchronously inserts a new user into the database through the
-   * `UserRepository` with the `insertUser` method.
-   * Hashes the `password` field first with `bcrypt` before inserting.
-   * @param user - The `NewUser` entry to be inserted.
-   * @returns A success object containing the `id` of the `NewUser` inserted, or a `fail` object
-   * containing the error class if the insertion failed.
+   * Inserts a user into the database and, depending on the type, also into
+   * related tables (e.g. `students`).
    *
-   * !note that the password is not hashed yet when the `NewUser` object is being passed to this method.
+   * @param {InsertArgs} insertArgs - Contains the entity type and data models to insert.
+   * @returns {Promise<
+   *   | BaseResult.Success<number | undefined, "STUDENTS" | "USERS">
+   *   | BaseResult.Fail<DbAccess.ErrorClass>
+   * >}
+   * Resolves with the inserted user ID and table name on success, or a database
+   * error on failure.
+   *
+   * @description
+   * The method runs within a transaction:
+   * 1. Inserts into the `users` table.
+   * 2. If type is `"student"`, also inserts into the `students` table.
+   * 3. Returns a success or failure result depending on the outcome.
    */
-  public async tryAddUser(
-    user: NewUser
+  public async insertUser(
+    insertArgs: InsertArgs
   ): Promise<
-    | BaseResult.Success<number, "DB_INSERT">
+    | BaseResult.Success<
+        number | undefined,
+        "PROFESSORS" | "STUDENTS" | "USERS"
+      >
     | BaseResult.Fail<DbAccess.ErrorClass>
   > {
-    const getInsertErr = (err?: unknown) => {
-      return DbAccess.normalizeError({
-        name: "DB_ACCESS_INSERT_ERROR",
-        message:
-          "An error occured during database insertion on the `users` table. Please try again later.",
-        err,
-      });
+    const getInsertResult = (
+      table: "PROFESSORS" | "STUDENTS" | "USERS",
+      insertedId: number | undefined
+    ) => {
+      return insertedId !== undefined
+        ? ResultBuilder.success(insertedId, table)
+        : ResultBuilder.fail<DbAccess.ErrorClass>({
+            name: "DB_ACCESS_INSERT_ERROR",
+            message: `Failed inserting into '${table.toLowerCase()}' table.`,
+          });
     };
 
-    user.passwordHash = await bcrypt.hash(user.passwordHash, 10);
-
     try {
-      const insertedId = await this._userRepository.insertUser(user);
+      //  * initiate insertion
+      const insertResult = await this._userRepository.execTransaction(
+        async (tx) => {
+          const { type, user } = insertArgs;
 
-      if (insertedId === undefined) throw getInsertErr();
+          user.passwordHash = await bcrypt.hash(user.passwordHash, 10);
+          const userId = await this._userRepository.insertUser({
+            dbOrTx: tx,
+            user,
+          }); //  * insert into users table.
 
-      return ResultBuilder.success(insertedId, "DB_INSERT");
+          //  * additionally insert into other tables as needed.
+          switch (type) {
+            case "professor":
+              await this._professorRepository.insertProfessor({
+                dbOrTx: tx,
+                professor: { ...insertArgs.professor, id: userId },
+              });
+              return getInsertResult("PROFESSORS", userId);
+            case "student":
+              await this._studentRepository.insertStudent({
+                dbOrTx: tx,
+                student: { ...insertArgs.student, id: userId },
+              });
+              return getInsertResult("STUDENTS", userId);
+            case "user":
+              return getInsertResult("USERS", userId);
+            default: {
+              throw new TypeError(
+                "Invalid type. Field `type` only accepts values `student` or `user`."
+              );
+            }
+          }
+        }
+      );
+
+      return insertResult;
     } catch (err) {
-      const error =
-        err instanceof DbAccess.ErrorClass ? err : getInsertErr(err);
-      return ResultBuilder.fail(error);
+      return ResultBuilder.fail(
+        DbAccess.normalizeError({
+          name: "DB_ACCESS_INSERT_ERROR",
+          message: "Error inserting entity to table.",
+          err,
+        })
+      );
     }
   }
 
@@ -80,19 +147,18 @@ export class UserDataService {
    * @async
    * @function tryGetUser
    * @description Asynchronously attempts to retrieve a `User` from the database filtered using fields
-   * provided by either a {@link NewUser}, a {@link LoginOptions} object.
-   * @param options.user A {@link NewUser} object used for filtering the database query
-   * during register operations.
-   * @param options.signInMethod A `string` specifying whether the user is logging in through email or
+   * provided by either an insert model of the `users` table, or a {@link LoginOptions} object.
+   * @param args.user An object used for filtering the database query during register operations.
+   * @param args.signInMethod A `string` specifying whether the user is logging in through email or
    * username. Matches the `keys` of the {@link IUserFilter} type.
-   * @param options.authDetails A {@link SignInSchema} object used for filtering the database query
+   * @param args.authDetails A {@link SignInSchema} object used for filtering the database query
    * during login operations.
    * @returns A `promise` resolving to a success result object containing {@link UserViewModel} if a `User`
    * is found, or `undefined` if no `User` is found. If the query operation fails, returns a fail result
    * object containing a message as well as the stack trace.
    */
   public async tryGetUser(
-    options: TryGetUserOptions
+    args: TryGetUserArgs
   ): Promise<
     | BaseResult.Success<ViewModels.User | undefined>
     | BaseResult.Fail<DbAccess.ErrorClass>
@@ -100,9 +166,9 @@ export class UserDataService {
     let userFilter: IUserFilter = {};
 
     try {
-      switch (options.type) {
+      switch (args.type) {
         case "user": {
-          const { email, username } = options.user;
+          const { email, username } = args.user;
 
           userFilter = {
             filterType: "or",
@@ -112,12 +178,12 @@ export class UserDataService {
           break;
         }
         case "login": {
-          const { signInMethod, authDetails } = options;
+          const { signInMethod, authDetails } = args;
           userFilter[signInMethod] = authDetails.identifier;
           break;
         }
         case "userId": {
-          userFilter.userId = options.userId;
+          userFilter.userId = args.userId;
           break;
         }
       }
@@ -136,29 +202,74 @@ export class UserDataService {
     }
   }
 
-  public async getUserRole(id: number): Promise<string | undefined> {
-    const role = await this._roleRepository.getRole({
-      searchBy: "id",
-      id,
-    });
+  /**
+   * Returns true if there are no duplicates and false otherwise.
+   * @param args
+   * @returns
+   */
+  public async ensureNoDuplicates(args: RegisterSchemas.Types): Promise<
+    | BaseResult.Success<{
+        hasDuplicate: boolean;
+        from?: "students" | "users" | undefined;
+      }>
+    | BaseResult.Fail<DbAccess.ErrorClass>
+  > {
+    const getResult = (hasDuplicate: boolean, from?: "students" | "users") =>
+      ResultBuilder.success({ hasDuplicate, from });
 
-    return role?.name;
+    try {
+      //  * check in users table
+      const user = await this._userRepository.getUser({
+        filterType: "or",
+        email: args.schema.email,
+        username: args.schema.username,
+      });
+
+      if (user) return getResult(true, "users"); //  ! duplicate in users table.
+
+      //  * additional checks in extended tables as needed.
+      switch (args.type) {
+        case "student": {
+          const student = await this._studentRepository.getStudent({
+            filterType: "or",
+            studentNumber: args.schema.studentNumber,
+          });
+          if (student) return getResult(true, "students"); //  ! duplicate in students table
+        }
+      }
+
+      return getResult(false); //  * no duplicates
+    } catch (err) {
+      return ResultBuilder.fail(
+        DbAccess.normalizeError({
+          name: "DB_ACCESS_QUERY_ERROR",
+          message: "Error querying the database. Please try again later.",
+          err,
+        })
+      );
+    }
   }
 }
-type TryGetUserOptions = WithUser | WithLogin | WithId;
+type TryGetUserArgs =
+  | {
+      type: "user";
+      user: InsertModels.User;
+    }
+  | {
+      type: "login";
+      signInMethod: "email" | "username";
+      authDetails: SignInSchema;
+    }
+  | {
+      type: "userId";
+      userId: number;
+    };
 
-type WithUser = {
-  type: "user";
-  user: NewUser;
-};
-
-type WithLogin = {
-  type: "login";
-  signInMethod: "email" | "username";
-  authDetails: SignInSchema;
-};
-
-type WithId = {
-  type: "userId";
-  userId: number;
-};
+type InsertArgs =
+  | { type: "student"; user: InsertModels.User; student: InsertModels.Student }
+  | { type: "user"; user: InsertModels.User }
+  | {
+      type: "professor";
+      user: InsertModels.User;
+      professor: InsertModels.Professor;
+    };

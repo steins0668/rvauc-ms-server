@@ -2,16 +2,22 @@ import { Router } from "express";
 import { validateRequest } from "../../middlewares";
 import * as controllers from "./controllers";
 import { attachSessionManager, attachUserDataService } from "./middlewares";
-import { registerSchema } from "./schemas/register.schema";
+import { RegisterSchemas } from "./schemas";
 
 export const AuthRoutes = Router();
 
 AuthRoutes.use(attachUserDataService);
 
 AuthRoutes.post(
-  "/register",
-  validateRequest(registerSchema),
-  controllers.handleRegister
+  "/register/professor",
+  validateRequest(RegisterSchemas.professor),
+  controllers.handleRegister<RegisterSchemas.Professor>
+);
+
+AuthRoutes.post(
+  "/register/student",
+  validateRequest(RegisterSchemas.student),
+  controllers.handleRegister<RegisterSchemas.Student>
 );
 
 AuthRoutes.use(attachSessionManager);
