@@ -95,7 +95,7 @@ export class UserDataService {
   }
 
   public async insertUser(
-    insertArgs: InsertStudentArgs | InsertUserArgs
+    insertArgs: InsertArgs
   ): Promise<
     | BaseResult.Success<number | undefined, "STUDENTS" | "USERS">
     | BaseResult.Fail<DbAccess.ErrorClass>
@@ -222,9 +222,7 @@ export class UserDataService {
    * @param args
    * @returns
    */
-  public async ensureNoDuplicates(
-    args: InsertStudentArgs | InsertUserArgs
-  ): Promise<
+  public async ensureNoDuplicates(args: InsertArgs): Promise<
     | BaseResult.Success<{
         hasDuplicate: boolean;
         from?: "students" | "users" | undefined;
@@ -333,16 +331,9 @@ type WithId = {
   userId: number;
 };
 
-type InsertStudentArgs = {
-  type: "student";
-  user: InsertModels.User;
-  student: InsertModels.Student;
-};
-
-type InsertUserArgs = {
-  type: "user";
-  user: InsertModels.User;
-};
+type InsertArgs =
+  | { type: "student"; user: InsertModels.User; student: InsertModels.Student }
+  | { type: "user"; user: InsertModels.User };
 
 type QueryArgs =
   | { type: "student"; userFilter: IUserFilter; studentFilter: StudentFilter }
