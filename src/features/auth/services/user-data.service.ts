@@ -344,16 +344,9 @@ type InsertUserArgs = {
   user: InsertModels.User;
 };
 
-type QueryStudentArgs = {
-  type: "student";
-  userFilter: IUserFilter;
-  studentFilter: StudentFilter;
-};
-
-type QueryUserArgs = {
-  type: "user";
-  userFilter: IUserFilter;
-};
+type QueryArgs =
+  | { type: "student"; userFilter: IUserFilter; studentFilter: StudentFilter }
+  | { type: "user"; userFilter: IUserFilter };
 
 type CheckDuplicateArgs =
   | { type: "student"; schema: RegisterSchemas.Student }
