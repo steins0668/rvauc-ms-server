@@ -15,7 +15,7 @@ export namespace Payloads {
     });
 
     export const student = z.strictObject({
-      ...user,
+      ...user.shape,
       studentInfo: z.object({
         department: z.string(),
         studentNumber: z.string(),
@@ -25,7 +25,7 @@ export namespace Payloads {
     });
 
     export const professor = z.strictObject({
-      ...user,
+      ...user.shape,
       professorInfo: z.object({
         college: z.string(),
         facultyRank: z.string(),
