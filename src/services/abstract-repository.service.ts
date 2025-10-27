@@ -32,7 +32,7 @@ export abstract class Repository<
    * @param newRow - The new row to be inserted.
    * @returns The inserted object if successful or `undefined` if the insert operation fails.
    */
-  protected async insertRow(options: {
+  protected async _insertOne(options: {
     dbOrTx?: DbContext | TxContext | undefined;
     value: TInsertModel;
   }): Promise<TSelectResult | undefined> {
@@ -57,7 +57,7 @@ export abstract class Repository<
    * @returns A promise that resolves to a typed row (`TResult`) or null if no row is found
    * or an error results while querying the database.
    */
-  protected async GetFirst(options: {
+  protected async _getOne(options: {
     dbOrTx?: DbContext | TxContext;
     whereClause?: SQL | undefined;
   }): Promise<TSelectResult | undefined> {
@@ -97,7 +97,7 @@ export abstract class Repository<
    * });
    * // Retrieves items 11–20 of projects where LanguageId = 1, ordered by ProjectId ascending.
    */
-  protected async GetRows(options: {
+  protected async _getMany(options: {
     dbOrTx?: DbContext | TxContext | undefined;
     column: AnySQLiteColumn;
     isAscending?: boolean | undefined;
@@ -142,7 +142,7 @@ export abstract class Repository<
    * const total = await GetCount(eq(Projects.DevTypeId, 2));
    * // Returns the number of projects with DevTypeId = 2
    */
-  protected async GetCount(whereClause?: SQL | undefined): Promise<number> {
+  protected async getCount(whereClause?: SQL | undefined): Promise<number> {
     return await this._dbContext.$count(this._table, whereClause);
   }
 }

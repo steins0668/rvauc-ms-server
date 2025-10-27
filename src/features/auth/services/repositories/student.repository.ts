@@ -25,7 +25,7 @@ export class StudentRepository extends Repository<Tables.Student> {
     dbOrTx?: DbContext | TxContext | undefined;
     student: InsertModels.Student;
   }): Promise<number | undefined> {
-    const inserted = await this.insertRow({ dbOrTx, value: student });
+    const inserted = await this._insertOne({ dbOrTx, value: student });
     return inserted?.id;
   }
   /**
@@ -44,7 +44,7 @@ export class StudentRepository extends Repository<Tables.Student> {
   ): Promise<ViewModels.Student | undefined> {
     const whereClause = this.buildWhereClause(filter);
 
-    return await this.GetFirst({ whereClause });
+    return await this._getOne({ whereClause });
   }
 
   /**
