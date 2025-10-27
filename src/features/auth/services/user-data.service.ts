@@ -143,6 +143,7 @@ export class UserDataService {
   }
 
   /**
+   * @deprecated
    * @public
    * @async
    * @function tryGetUser
