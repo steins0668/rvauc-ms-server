@@ -28,7 +28,7 @@ export class UserRepository extends Repository<Tables.Users> {
     dbOrTx?: DbContext | TxContext | undefined;
     user: InsertModels.User;
   }): Promise<number | undefined> {
-    const inserted = await this.insertRow({ dbOrTx, value: user });
+    const inserted = await this.insertOne({ dbOrTx, value: user });
     return inserted?.id;
   }
   /**
@@ -46,7 +46,7 @@ export class UserRepository extends Repository<Tables.Users> {
   ): Promise<UserViewModel | undefined> {
     const whereClause = this.buildWhereClause(filter);
 
-    return await this.GetFirst({ whereClause });
+    return await this.getOne({ whereClause });
   }
 
   /**

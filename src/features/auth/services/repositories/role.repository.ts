@@ -32,7 +32,7 @@ export class RoleRepository extends Repository<Tables.Roles> {
    * @returns - The {@link roles.id} if the insert operation is successful, `undefined` otherwise.
    */
   public async insertRole(role: NewRole): Promise<number | undefined> {
-    const inserted = await this.insertRow({ value: role });
+    const inserted = await this.insertOne({ value: role });
     return inserted?.id;
   }
   /**
@@ -49,6 +49,6 @@ export class RoleRepository extends Repository<Tables.Roles> {
         ? eq(roles.id, filter.id)
         : eq(roles.name, filter.name);
 
-    return await this.GetFirst({ whereClause });
+    return await this.getOne({ whereClause });
   }
 }

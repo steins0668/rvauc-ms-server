@@ -35,7 +35,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     dbOrTx: DbContext | TxContext | undefined;
     sessionToken: InsertModels.SessionToken;
   }): Promise<number | undefined> {
-    const inserted = await this.insertRow({ dbOrTx, value: sessionToken });
+    const inserted = await this.insertOne({ dbOrTx, value: sessionToken });
     return inserted?.id;
   }
 
@@ -48,7 +48,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
   ): Promise<ViewModels.SessionToken[]> {
     const whereClause = this.getWhereClause(queryOptions);
 
-    const tokens = await this.GetRows({
+    const tokens = await this.getMany({
       column: sessionTokens.sessionId,
       whereClause,
       ...queryOptions,

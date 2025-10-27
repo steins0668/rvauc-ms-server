@@ -63,7 +63,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
         ? eq(userSessions.sessionHash, queryOptions.sessionHash)
         : eq(userSessions.id, queryOptions.id);
 
-    const sessions = await this.GetRows({
+    const sessions = await this.getMany({
       column: userSessions.userId,
       whereClause,
       ...queryOptions,
@@ -90,7 +90,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
     dbOrTx?: DbContext | TxContext | undefined;
     userSession: InsertModels.UserSession;
   }): Promise<number | undefined> {
-    const inserted = await this.insertRow({ dbOrTx, value: userSession });
+    const inserted = await this.insertOne({ dbOrTx, value: userSession });
     return inserted?.id;
   }
 
