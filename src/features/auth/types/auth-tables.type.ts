@@ -1,8 +1,8 @@
-import * as schema from "../../../models";
+import { Schema } from "../../../models";
 
-export type Professors = typeof schema.professors;
-export type Roles = typeof schema.roles;
-export type SessionTokens = typeof schema.sessionTokens;
-export type Student = typeof schema.students;
-export type UserSessions = typeof schema.userSessions;
-export type Users = typeof schema.users;
+export type Professors = typeof Schema.professors;
+export type Roles = typeof Schema.roles;
+export type SessionTokens = typeof Schema.sessionTokens;
+export type Student = typeof Schema.students;
+export type UserSessions = typeof Schema.userSessions;
+export type Users = typeof Schema.users;

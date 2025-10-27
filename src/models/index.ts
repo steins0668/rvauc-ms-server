@@ -1,14 +1,2 @@
-export * from "./attendance-records";
-export * from "./attendance-statuses";
-export * from "./colleges";
-export * from "./compliance-records";
-export * from "./departments";
-export * from "./professors";
-export * from "./roles";
-export * from "./session-tokens";
-export * from "./students";
-export * from "./uniform-types";
-export * from "./user-sessions";
-export * from "./users";
-export * from "./violation-records";
-export * from "./violation-statuses";
+export * from "./schema";
+export * as Schema from "./schema";
