@@ -1,9 +1,9 @@
 import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
-import { Department } from "./department";
+import { departments } from "./departments";
 
-export const UniformType = sqliteTable("uniform_types", {
+export const uniformTypes = sqliteTable("uniform_types", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  departmentId: integer("department_id").references(() => Department.id, {
+  departmentId: integer("department_id").references(() => departments.id, {
     onUpdate: "cascade",
     onDelete: "restrict",
   }),

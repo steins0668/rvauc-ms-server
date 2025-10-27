@@ -1,12 +1,12 @@
 import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../../db/create-context";
-import { Professor } from "../../../../models";
+import { professors } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, Tables, ViewModels } from "../../types";
 
-export class ProfessorRepository extends Repository<Tables.Professor> {
+export class ProfessorRepository extends Repository<Tables.Professors> {
   public constructor(context: DbContext) {
-    super(context, Professor);
+    super(context, professors);
   }
 
   /**
@@ -68,13 +68,13 @@ export class ProfessorRepository extends Repository<Tables.Professor> {
 
     if (filter) {
       const { filterType, id, collegeId, facultyRank } = filter;
-      if (id !== undefined) conditions.push(eq(Professor.id, id));
+      if (id !== undefined) conditions.push(eq(professors.id, id));
 
       if (collegeId !== undefined)
-        conditions.push(eq(Professor.collegeId, collegeId));
+        conditions.push(eq(professors.collegeId, collegeId));
 
       if (facultyRank && facultyRank.trim())
-        conditions.push(eq(Professor.facultyRank, facultyRank));
+        conditions.push(eq(professors.facultyRank, facultyRank));
 
       if (conditions.length > 0) {
         const whereClause =

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { DbContext, TxContext } from "../../../../db/create-context";
-import { SessionToken } from "../../../../models";
+import { sessionTokens } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, ViewModels, Tables } from "../../types";
 
@@ -25,7 +25,7 @@ type QueryOptions = {
 
 export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
   public constructor(context: DbContext) {
-    super(context, SessionToken);
+    super(context, sessionTokens);
   }
 
   public async insertToken({
@@ -49,7 +49,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     const whereClause = this.getWhereClause(queryOptions);
 
     const tokens = await this.GetRows({
-      column: SessionToken.sessionId,
+      column: sessionTokens.sessionId,
       whereClause,
       ...queryOptions,
     });
@@ -64,7 +64,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     const { dbOrTx = this._dbContext } = queryOptions;
 
     const updatedTokens = await dbOrTx
-      .update(SessionToken)
+      .update(sessionTokens)
       .set({
         isUsed: true,
       })
@@ -77,11 +77,11 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
   private getWhereClause(queryOptions: QueryOptions) {
     switch (queryOptions.queryBy) {
       case "token_id":
-        return eq(SessionToken.id, queryOptions.id);
+        return eq(sessionTokens.id, queryOptions.id);
       case "session_id":
-        return eq(SessionToken.sessionId, queryOptions.sessionId);
+        return eq(sessionTokens.sessionId, queryOptions.sessionId);
       case "token_hash":
-        return eq(SessionToken.tokenHash, queryOptions.tokenHash);
+        return eq(sessionTokens.tokenHash, queryOptions.tokenHash);
       default:
         throw new Error("Invalid query method.");
     }
