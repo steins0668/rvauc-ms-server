@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import type { DbContext } from "../../../../db/create-context";
-import { Role } from "../../../../models";
+import { roles } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, Tables, ViewModels } from "../../types";
 
@@ -18,7 +18,7 @@ type RoleFilter =
 
 export class RoleRepository extends Repository<Tables.Roles> {
   public constructor(context: DbContext) {
-    super(context, Role);
+    super(context, roles);
   }
 
   /**
@@ -29,7 +29,7 @@ export class RoleRepository extends Repository<Tables.Roles> {
    * {@link Tables.Roles}.
    *
    * @param role - The {@link NewRole} object to be inserted.
-   * @returns - The {@link Role.id} if the insert operation is successful, `undefined` otherwise.
+   * @returns - The {@link roles.id} if the insert operation is successful, `undefined` otherwise.
    */
   public async insertRole(role: NewRole): Promise<number | undefined> {
     const inserted = await this.insertRow({ value: role });
@@ -46,8 +46,8 @@ export class RoleRepository extends Repository<Tables.Roles> {
   public async getRole(filter: RoleFilter): Promise<RoleViewModel | undefined> {
     const whereClause =
       filter.searchBy === "id"
-        ? eq(Role.id, filter.id)
-        : eq(Role.name, filter.name);
+        ? eq(roles.id, filter.id)
+        : eq(roles.name, filter.name);
 
     return await this.GetFirst({ whereClause });
   }

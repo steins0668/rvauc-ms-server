@@ -1,6 +1,6 @@
 import { and, eq, isNull, lte } from "drizzle-orm";
 import { DbContext, TxContext } from "../../../../db/create-context";
-import { UserSession } from "../../../../models";
+import { userSessions } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, ViewModels, Tables } from "../../types";
 
@@ -47,7 +47,7 @@ type DeleteTarget = {
 
 export class UserSessionRepository extends Repository<Tables.UserSessions> {
   public constructor(context: DbContext) {
-    super(context, UserSession);
+    super(context, userSessions);
   }
 
   public async getSession(
@@ -60,11 +60,11 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
     const { queryBy } = queryOptions;
     const whereClause =
       queryBy === "session_hash"
-        ? eq(UserSession.sessionHash, queryOptions.sessionHash)
-        : eq(UserSession.id, queryOptions.id);
+        ? eq(userSessions.sessionHash, queryOptions.sessionHash)
+        : eq(userSessions.id, queryOptions.id);
 
     const sessions = await this.GetRows({
-      column: UserSession.userId,
+      column: userSessions.userId,
       whereClause,
       ...queryOptions,
     });
@@ -103,12 +103,12 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
     const { queryBy, dbOrTx = this._dbContext } = queryOptions;
     const whereClause =
       queryBy === "session_hash"
-        ? eq(UserSession.sessionHash, queryOptions.sessionHash)
-        : eq(UserSession.id, queryOptions.id);
+        ? eq(userSessions.sessionHash, queryOptions.sessionHash)
+        : eq(userSessions.id, queryOptions.id);
 
     const now = new Date();
     const updatedSessionIds = await dbOrTx
-      .update(UserSession)
+      .update(userSessions)
       .set({ lastUsedAt: now.toISOString() })
       .where(whereClause)
       .returning()
@@ -152,7 +152,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
     const deleteCondition = this.getSessionDeleteCondition(deleteTarget);
 
     const deletedIds = await dbOrTx
-      .delete(UserSession)
+      .delete(userSessions)
       .where(deleteCondition)
       .returning()
       .then((result) => result.map((session) => session.id));
@@ -171,27 +171,27 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
   private getSessionDeleteCondition(deleteTarget: DeleteTarget) {
     switch (deleteTarget.scope) {
       case "all_sessions":
-        return eq(UserSession.userId, deleteTarget.userId);
+        return eq(userSessions.userId, deleteTarget.userId);
       case "user_session":
-        return eq(UserSession.sessionHash, deleteTarget.sessionNumberHash);
+        return eq(userSessions.sessionHash, deleteTarget.sessionNumberHash);
       case "expired_persistent": {
         //  for expiring tokens: past expiration
         const now = new Date();
         const nowISO = now.toISOString();
-        const expiredPersistentCondition = lte(UserSession.expiresAt, nowISO);
+        const expiredPersistentCondition = lte(userSessions.expiresAt, nowISO);
 
         return expiredPersistentCondition;
       }
       case "idle_session": {
         //  for non-expiring tokens: idle for more than 1 day
-        const isExpiresNull = isNull(UserSession.expiresAt);
+        const isExpiresNull = isNull(userSessions.expiresAt);
 
         const maxIdleDate = new Date();
         maxIdleDate.setDate(maxIdleDate.getDate() - 1);
 
         const idleSessionCondition = and(
           isExpiresNull,
-          lte(UserSession.lastUsedAt, maxIdleDate.toISOString())
+          lte(userSessions.lastUsedAt, maxIdleDate.toISOString())
         );
 
         return idleSessionCondition;

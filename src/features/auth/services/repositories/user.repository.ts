@@ -1,6 +1,6 @@
 import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../../db/create-context";
-import { User } from "../../../../models";
+import { users } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, Tables, ViewModels } from "../../types";
 
@@ -9,7 +9,7 @@ type UserViewModel = ViewModels.User;
 
 export class UserRepository extends Repository<Tables.Users> {
   public constructor(context: DbContext) {
-    super(context, User);
+    super(context, users);
   }
 
   /**
@@ -19,7 +19,7 @@ export class UserRepository extends Repository<Tables.Users> {
    * @description Asynchronously inserts a row into the `users` table.
    *
    * @param user - The {@link NewUser} object to be inserted.
-   * @returns - The {@link User.id} if the insert operation is successful, `undefined` otherwise.
+   * @returns - The {@link user.id} if the insert operation is successful, `undefined` otherwise.
    */
   public async insertUser({
     dbOrTx,
@@ -66,15 +66,15 @@ export class UserRepository extends Repository<Tables.Users> {
     if (filter) {
       const { filterType = "or", userId, email, username } = filter;
       if (userId !== undefined) {
-        conditions.push(eq(User.id, userId));
+        conditions.push(eq(users.id, userId));
       }
 
       if (email && email.trim()) {
-        conditions.push(eq(User.email, email));
+        conditions.push(eq(users.email, email));
       }
 
       if (username && username.trim()) {
-        conditions.push(eq(User.username, username));
+        conditions.push(eq(users.username, username));
       }
 
       if (conditions.length > 0) {
@@ -91,7 +91,7 @@ export class UserRepository extends Repository<Tables.Users> {
 
 /**
  * @interface IUserFilter
- * @description An interface for the filter used for Db queries on the {@link User} table.
+ * @description An interface for the filter used for Db queries on the {@link users} table.
  * Contains the following fields:
  * ### Filters:
  * - {@link filterType}: Option to decide whether the filter is an `or` or an `and`.

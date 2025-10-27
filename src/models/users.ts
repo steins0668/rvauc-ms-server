@@ -1,11 +1,11 @@
 import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
-import { Role } from "./role";
+import { roles } from "./roles";
 
-export const User = sqliteTable("users", {
+export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   roleId: integer("role_id")
     .notNull()
-    .references(() => Role.id, { onDelete: "restrict" }),
+    .references(() => roles.id, { onDelete: "restrict" }),
   email: text("email").unique().notNull(),
   username: text("username").unique().notNull(),
   passwordHash: text("password_hash").unique().notNull(),

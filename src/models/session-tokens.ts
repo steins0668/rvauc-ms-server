@@ -4,15 +4,15 @@ import {
   sqliteTable,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { UserSession } from "./user-session";
+import { userSessions } from "./user-sessions";
 
-export const SessionToken = sqliteTable(
+export const sessionTokens = sqliteTable(
   "session_tokens",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     sessionId: integer("session_id")
       .notNull()
-      .references(() => UserSession.id, { onDelete: "cascade" }),
+      .references(() => userSessions.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").unique().notNull(),
     createdAt: text("created_at").notNull(),
     expiresAt: text("expires_at"),

@@ -1,12 +1,12 @@
 import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../../db/create-context";
-import { Student } from "../../../../models";
+import { students } from "../../../../models";
 import { Repository } from "../../../../services";
 import { InsertModels, Tables, ViewModels } from "../../types";
 
 export class StudentRepository extends Repository<Tables.Student> {
   public constructor(context: DbContext) {
-    super(context, Student);
+    super(context, students);
   }
 
   /**
@@ -69,18 +69,18 @@ export class StudentRepository extends Repository<Tables.Student> {
     if (filter) {
       const { filterType, id, departmentId, studentNumber, yearLevel, block } =
         filter;
-      if (id !== undefined) conditions.push(eq(Student.id, id));
+      if (id !== undefined) conditions.push(eq(students.id, id));
 
       if (departmentId !== undefined)
-        conditions.push(eq(Student.departmentId, departmentId));
+        conditions.push(eq(students.departmentId, departmentId));
 
       if (studentNumber && studentNumber.trim())
-        conditions.push(eq(Student.studentNumber, studentNumber));
+        conditions.push(eq(students.studentNumber, studentNumber));
 
       if (yearLevel !== undefined)
-        conditions.push(eq(Student.yearLevel, yearLevel));
+        conditions.push(eq(students.yearLevel, yearLevel));
 
-      if (block && block.trim()) conditions.push(eq(Student.block, block));
+      if (block && block.trim()) conditions.push(eq(students.block, block));
 
       if (conditions.length > 0) {
         const whereClause =

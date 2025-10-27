@@ -1,11 +1,11 @@
 import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
-import { College } from "./college";
+import { colleges } from "./colleges";
 
-export const Department = sqliteTable("departments", {
+export const departments = sqliteTable("departments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   collegeId: integer("college_id")
     .notNull()
-    .references(() => College.id, {
+    .references(() => colleges.id, {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),

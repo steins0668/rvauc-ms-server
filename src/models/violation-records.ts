@@ -1,18 +1,18 @@
 import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
-import { Student } from "./student";
-import { ViolationStatus } from "./violation-status";
+import { students } from "./students";
+import { violationStatuses } from "./violation-statuses";
 
-export const ViolationRecord = sqliteTable("violation_records", {
+export const violationRecords = sqliteTable("violation_records", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   studentId: integer("student_id")
     .notNull()
-    .references(() => Student.id, {
+    .references(() => students.id, {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),
   statusId: integer("status_id")
     .notNull()
-    .references(() => ViolationStatus.id, {
+    .references(() => violationStatuses.id, {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),

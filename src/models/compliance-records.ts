@@ -1,19 +1,19 @@
 import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
-import { Student } from "./student";
-import { UniformType } from "./uniform-type";
+import { students } from "./students";
+import { uniformTypes } from "./uniform-types";
 import { int } from "zod";
 
-export const ComplianceRecord = sqliteTable("compliance_records", {
+export const complianceRecords = sqliteTable("compliance_records", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   studentId: integer("student_id")
     .notNull()
-    .references(() => Student.id, {
+    .references(() => students.id, {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),
   uniformTypeId: integer("uniform_type_id")
     .notNull()
-    .references(() => UniformType.id, {
+    .references(() => uniformTypes.id, {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),

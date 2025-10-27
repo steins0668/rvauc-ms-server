@@ -1,14 +1,14 @@
 import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
-import { Department } from "./department";
-import { User } from "./user";
+import { departments } from "./departments";
+import { users } from "./users";
 
-export const Student = sqliteTable("students", {
+export const students = sqliteTable("students", {
   id: integer("id")
     .primaryKey()
-    .references(() => User.id, { onDelete: "restrict", onUpdate: "cascade" }),
+    .references(() => users.id, { onDelete: "restrict", onUpdate: "cascade" }),
   departmentId: integer("department_id")
     .notNull()
-    .references(() => Department.id, {
+    .references(() => departments.id, {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),
