@@ -133,7 +133,7 @@ export class SessionTokenRotator {
   }): Promise<void> {
     let usedTokens: ViewModels.SessionToken[] = [];
     try {
-      usedTokens = await this._sessionTokenRepository.getTokens({
+      usedTokens = await this._sessionTokenRepository.getMany({
         dbOrTx: options.tx,
         queryBy: "token_hash",
         tokenHash: options.tknHash,
@@ -173,7 +173,7 @@ export class SessionTokenRotator {
     };
 
     try {
-      const newTknId = await this._sessionTokenRepository.insertToken({
+      const newTknId = await this._sessionTokenRepository.insertOne({
         dbOrTx: options.tx,
         sessionToken: {
           ...options,

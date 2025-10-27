@@ -15,13 +15,12 @@ export class UserRepository extends Repository<Tables.Users> {
   /**
    * @public
    * @async
-   * @function insertUser
    * @description Asynchronously inserts a row into the `users` table.
    *
    * @param user - The {@link NewUser} object to be inserted.
    * @returns - The {@link user.id} if the insert operation is successful, `undefined` otherwise.
    */
-  public async insertUser({
+  public async insertOne({
     dbOrTx,
     user,
   }: {
@@ -34,14 +33,13 @@ export class UserRepository extends Repository<Tables.Users> {
   /**
    * @public
    * @async
-   * @function getUser
    * @description Asynchronously retrieves a user from the Users table, optionally applying a filter
    * {@link IUserFilter}.
    *
    * @param filter - The filter to apply to the table.
    * @returns - A {@link Promise} resolving to the found {@link UserViewModel} or `undefined`.
    */
-  public async getUser(
+  public async getOne(
     filter?: IUserFilter
   ): Promise<UserViewModel | undefined> {
     const whereClause = this.buildWhereClause(filter);

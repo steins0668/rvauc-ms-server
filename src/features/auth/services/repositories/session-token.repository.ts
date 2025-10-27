@@ -28,7 +28,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     super(context, sessionTokens);
   }
 
-  public async insertToken({
+  public async insertOne({
     dbOrTx,
     sessionToken,
   }: {
@@ -39,7 +39,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     return inserted?.id;
   }
 
-  public async getTokens(
+  public async getMany(
     queryOptions: {
       isAscending?: boolean;
       pageSize?: number;

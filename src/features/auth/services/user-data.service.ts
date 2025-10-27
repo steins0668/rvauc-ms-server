@@ -46,7 +46,7 @@ export class UserDataService {
   }
 
   public async getUserRole(id: number): Promise<string | undefined> {
-    const role = await this._roleRepository.getRole({
+    const role = await this._roleRepository.getOne({
       searchBy: "id",
       id,
     });
@@ -100,7 +100,7 @@ export class UserDataService {
           const { type, user } = insertArgs;
 
           user.passwordHash = await bcrypt.hash(user.passwordHash, 10);
-          const userId = await this._userRepository.insertUser({
+          const userId = await this._userRepository.insertOne({
             dbOrTx: tx,
             user,
           }); //  * insert into users table.
@@ -108,13 +108,13 @@ export class UserDataService {
           //  * additionally insert into other tables as needed.
           switch (type) {
             case "professor":
-              await this._professorRepository.insertProfessor({
+              await this._professorRepository.insertOne({
                 dbOrTx: tx,
                 professor: { ...insertArgs.professor, id: userId },
               });
               return getInsertResult("PROFESSORS", userId);
             case "student":
-              await this._studentRepository.insertStudent({
+              await this._studentRepository.insertOne({
                 dbOrTx: tx,
                 student: { ...insertArgs.student, id: userId },
               });
@@ -188,7 +188,7 @@ export class UserDataService {
         }
       }
 
-      const user = await this._userRepository.getUser(userFilter);
+      const user = await this._userRepository.getOne(userFilter);
 
       return ResultBuilder.success(user);
     } catch (err) {
@@ -219,7 +219,7 @@ export class UserDataService {
 
     try {
       //  * check in users table
-      const user = await this._userRepository.getUser({
+      const user = await this._userRepository.getOne({
         filterType: "or",
         email: args.schema.email,
         username: args.schema.username,
@@ -230,7 +230,7 @@ export class UserDataService {
       //  * additional checks in extended tables as needed.
       switch (args.type) {
         case "student": {
-          const student = await this._studentRepository.getStudent({
+          const student = await this._studentRepository.getOne({
             filterType: "or",
             studentNumber: args.schema.studentNumber,
           });

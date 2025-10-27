@@ -12,13 +12,13 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
   /**
    * @public
    * @async
-   * @function insertProfessor
+   * @function insertOne
    * @description Asynchronously inserts a row into the `professors` table.
    *
    * @param professor - The new row to be inserted.
    * @returns - The id if the insert operation is successful, `undefined` otherwise.
    */
-  public async insertProfessor({
+  public async insertOne({
     dbOrTx,
     professor,
   }: {
@@ -31,7 +31,7 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
   /**
    * @public
    * @async
-   * @function getProfessor
+   * @function getOne
    * @description Asynchronously retrieves a row from the `professors` table, optionally
    * applying a filter of type `ProfessorFilter`.
    *
@@ -39,7 +39,7 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
    * @returns - A `Promise` resolving to a viewmodel of the found row or
    * `undefined`.
    */
-  public async getProfessor(
+  public async getOne(
     filter?: ProfessorFilter
   ): Promise<ViewModels.Professor | undefined> {
     const whereClause = this.buildWhereClause(filter);

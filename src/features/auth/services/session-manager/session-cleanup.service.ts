@@ -27,7 +27,7 @@ export class SessionCleanupService {
     | SessionResult.Fail
   > {
     try {
-      const deleteResult = await this._userSessionRepository.deleteSessions({
+      const deleteResult = await this._userSessionRepository.delete({
         scope: "user_session",
         sessionNumberHash: HashUtil.byCrypto(sessionNumber),
       });
@@ -57,10 +57,9 @@ export class SessionCleanupService {
     SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
   > {
     try {
-      const deletedSessionIds =
-        await this._userSessionRepository.deleteSessions({
-          scope: "idle_session",
-        });
+      const deletedSessionIds = await this._userSessionRepository.delete({
+        scope: "idle_session",
+      });
 
       return ResultBuilder.success(deletedSessionIds, "SESSION_END");
     } catch (err) {
@@ -86,10 +85,9 @@ export class SessionCleanupService {
     SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
   > {
     try {
-      const deletedSessionIds =
-        await this._userSessionRepository.deleteSessions({
-          scope: "expired_persistent",
-        });
+      const deletedSessionIds = await this._userSessionRepository.delete({
+        scope: "expired_persistent",
+      });
 
       return ResultBuilder.success(deletedSessionIds, "SESSION_END");
     } catch (err) {

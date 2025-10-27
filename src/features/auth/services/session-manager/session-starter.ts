@@ -87,7 +87,7 @@ export class SessionStarter {
     const now = new Date();
     const nowISO = now.toISOString();
     //  create session
-    const sessionId = await this._userSessionRepository.insertSession({
+    const sessionId = await this._userSessionRepository.insertOne({
       dbOrTx: tx,
       userSession: {
         userId,
@@ -133,7 +133,7 @@ export class SessionStarter {
   }): Promise<void> {
     const { tx, sessionId, refreshToken } = tknData;
 
-    const tknId = await this._sessionTokenRepository.insertToken({
+    const tknId = await this._sessionTokenRepository.insertOne({
       dbOrTx: tx,
       sessionToken: {
         sessionId,
