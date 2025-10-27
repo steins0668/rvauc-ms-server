@@ -1,8 +1,8 @@
 import * as schema from "../../../models";
 
-export type Professor = typeof schema.Professor;
-export type Roles = typeof schema.Role;
-export type SessionTokens = typeof schema.SessionToken;
-export type Student = typeof schema.Student;
-export type UserSessions = typeof schema.UserSession;
-export type Users = typeof schema.User;
+export type Professors = typeof schema.professors;
+export type Roles = typeof schema.roles;
+export type SessionTokens = typeof schema.sessionTokens;
+export type Student = typeof schema.students;
+export type UserSessions = typeof schema.userSessions;
+export type Users = typeof schema.users;

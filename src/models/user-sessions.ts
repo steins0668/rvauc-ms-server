@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   index,
   integer,
@@ -6,15 +7,16 @@ import {
   sqliteTable,
 } from "drizzle-orm/sqlite-core";
 import { isNull } from "drizzle-orm";
-import { User } from "./user";
+import { sessionTokens } from "./session-tokens";
+import { users } from "./users";
 
-export const UserSession = sqliteTable(
+export const userSessions = sqliteTable(
   "user_sessions",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     userId: integer("user_id")
       .notNull()
-      .references(() => User.id, {
+      .references(() => users.id, {
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
@@ -31,4 +33,15 @@ export const UserSession = sqliteTable(
       .on(table.expiresAt, table.lastUsedAt)
       .where(isNull(table.expiresAt)),
   ]
+);
+
+export const userSessionsRelations = relations(
+  userSessions,
+  ({ one, many }) => ({
+    user: one(users, {
+      fields: [userSessions.userId],
+      references: [users.id],
+    }),
+    tokens: many(sessionTokens),
+  })
 );
