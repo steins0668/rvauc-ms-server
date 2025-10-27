@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import {
   integer,
   text,
@@ -20,3 +21,10 @@ export const sessionTokens = sqliteTable(
   },
   (table) => [uniqueIndex("session_tokens_token_hash_uidx").on(table.tokenHash)]
 );
+
+export const sessionTokensRelations = relations(sessionTokens, ({ one }) => ({
+  session: one(userSessions, {
+    fields: [sessionTokens.sessionId],
+    references: [userSessions.id],
+  }),
+}));

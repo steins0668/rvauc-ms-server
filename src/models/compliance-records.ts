@@ -1,7 +1,7 @@
-import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
+import { relations } from "drizzle-orm";
+import { integer, sqliteTable } from "drizzle-orm/sqlite-core";
 import { students } from "./students";
 import { uniformTypes } from "./uniform-types";
-import { int } from "zod";
 
 export const complianceRecords = sqliteTable("compliance_records", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -22,3 +22,17 @@ export const complianceRecords = sqliteTable("compliance_records", {
   validUpperwear: integer("valid_upperwear", { mode: "boolean" }).notNull(),
   valid_bottoms: integer("valid_bottoms", { mode: "boolean" }).notNull(),
 });
+
+export const complianceRecordsRelations = relations(
+  complianceRecords,
+  ({ one }) => ({
+    student: one(students, {
+      fields: [complianceRecords.studentId],
+      references: [students.id],
+    }),
+    uniformType: one(uniformTypes, {
+      fields: [complianceRecords.uniformTypeId],
+      references: [uniformTypes.id],
+    }),
+  })
+);
