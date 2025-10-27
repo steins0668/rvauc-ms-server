@@ -50,7 +50,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
     super(context, userSessions);
   }
 
-  public async getSession(
+  public async getOne(
     queryOptions: {
       isAscending?: boolean;
       pageSize?: number;
@@ -63,7 +63,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
         ? eq(userSessions.sessionHash, queryOptions.sessionHash)
         : eq(userSessions.id, queryOptions.id);
 
-    const sessions = await this.GetRows({
+    const sessions = await this._getMany({
       column: userSessions.userId,
       whereClause,
       ...queryOptions,
@@ -75,7 +75,6 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
   /**
    * @public
    * @async
-   * @function tryInsertSession
    * @description Asynchronously attempts to insert a `UserSession`
    * object into `user_sessions` table.
    * @param dbOrTx - An optional field for transaction handling.
@@ -83,14 +82,14 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
    * @returns A `Promise` that resolves to the `sessionId` or `undefined` if the insert
    * operation fails.
    */
-  public async insertSession({
+  public async insertOne({
     dbOrTx,
     userSession,
   }: {
     dbOrTx?: DbContext | TxContext | undefined;
     userSession: InsertModels.UserSession;
   }): Promise<number | undefined> {
-    const inserted = await this.insertRow({ dbOrTx, value: userSession });
+    const inserted = await this._insertOne({ dbOrTx, value: userSession });
     return inserted?.id;
   }
 
@@ -138,7 +137,7 @@ export class UserSessionRepository extends Repository<Tables.UserSessions> {
    * @returns A `Promise` that resolves to an array of numbers if the delete operation
    * ran successfully or `null` if it failed.
    */
-  public async deleteSessions(deleteTarget: DeleteTarget): Promise<number[]> {
+  public async delete(deleteTarget: DeleteTarget): Promise<number[]> {
     const { scope, dbOrTx = this._dbContext } = deleteTarget;
     const operationScope =
       scope === "user_session"

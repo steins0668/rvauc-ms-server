@@ -12,26 +12,24 @@ export class StudentRepository extends Repository<Tables.Student> {
   /**
    * @public
    * @async
-   * @function insertStudent
    * @description Asynchronously inserts a row into the `students` table.
    *
    * @param student - The new row to be inserted.
    * @returns - The id if the insert operation is successful, `undefined` otherwise.
    */
-  public async insertStudent({
+  public async insertOne({
     dbOrTx,
     student,
   }: {
     dbOrTx?: DbContext | TxContext | undefined;
     student: InsertModels.Student;
   }): Promise<number | undefined> {
-    const inserted = await this.insertRow({ dbOrTx, value: student });
+    const inserted = await this._insertOne({ dbOrTx, value: student });
     return inserted?.id;
   }
   /**
    * @public
    * @async
-   * @function getStudent
    * @description Asynchronously retrieves a row from the `students` table, optionally
    * applying a filter of type `StudentFilter`.
    *
@@ -39,12 +37,12 @@ export class StudentRepository extends Repository<Tables.Student> {
    * @returns - A `Promise` resolving to a viewmodel of the found row or
    * `undefined`.
    */
-  public async getStudent(
+  public async getOne(
     filter?: StudentFilter
   ): Promise<ViewModels.Student | undefined> {
     const whereClause = this.buildWhereClause(filter);
 
-    return await this.GetFirst({ whereClause });
+    return await this._getOne({ whereClause });
   }
 
   /**
