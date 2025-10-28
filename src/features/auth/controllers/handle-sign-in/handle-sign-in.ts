@@ -8,7 +8,7 @@ import { ENUMS } from "../../data";
 
 type Roles = keyof typeof ENUMS.ROLES;
 
-export async function handleSignIn(role: Roles) {
+export function handleSignIn(role: Roles) {
   return async (req: Request<{}, {}, SignInSchema>, res: Response) => {
     const {
       body: authDetails,
