@@ -4,23 +4,15 @@ import { DbAccess } from "../../../error";
 import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { RegisterSchemas } from "../schemas";
-import type { InsertModels } from "../types";
-import {
-  StudentsQueryArgs,
-  ProfessorRepository,
-  RoleRepository,
-  StudentRepository,
-  UserRepository,
-  ProfessorsQueryArgs,
-  UsersQueryArgs,
-} from "./repositories";
+import type { InsertModels, QueryArgs } from "../types";
+import { Repositories } from "./repositories";
 
 export async function createUserDataService() {
   const dbContext = await createContext();
-  const professorRepoInstance = new ProfessorRepository(dbContext);
-  const roleRepoInstance = new RoleRepository(dbContext);
-  const studentRepoInstance = new StudentRepository(dbContext);
-  const userRepoInstance = new UserRepository(dbContext);
+  const professorRepoInstance = new Repositories.Professor(dbContext);
+  const roleRepoInstance = new Repositories.Role(dbContext);
+  const studentRepoInstance = new Repositories.Student(dbContext);
+  const userRepoInstance = new Repositories.User(dbContext);
   return new UserDataService(
     professorRepoInstance,
     roleRepoInstance,
@@ -30,16 +22,16 @@ export async function createUserDataService() {
 }
 
 export class UserDataService {
-  private readonly _professorRepository: ProfessorRepository;
-  private readonly _roleRepository: RoleRepository;
-  private readonly _studentRepository: StudentRepository;
-  private readonly _userRepository: UserRepository;
+  private readonly _professorRepository: Repositories.Professor;
+  private readonly _roleRepository: Repositories.Role;
+  private readonly _studentRepository: Repositories.Student;
+  private readonly _userRepository: Repositories.User;
 
   public constructor(
-    professorRepository: ProfessorRepository,
-    roleRepository: RoleRepository,
-    studentRepository: StudentRepository,
-    userRepository: UserRepository
+    professorRepository: Repositories.Professor,
+    roleRepository: Repositories.Role,
+    studentRepository: Repositories.Student,
+    userRepository: Repositories.User
   ) {
     this._professorRepository = professorRepository;
     this._roleRepository = roleRepository;
@@ -56,7 +48,7 @@ export class UserDataService {
     return role?.name;
   }
 
-  public async queryProfessors<T>(args: ProfessorsQueryArgs<T>) {
+  public async queryProfessors<T>(args: QueryArgs.Professor<T>) {
     try {
       const result = await this._professorRepository.execQuery(args);
 
@@ -81,7 +73,7 @@ export class UserDataService {
     }
   }
 
-  public async queryStudents<T>(args: StudentsQueryArgs<T>) {
+  public async queryStudents<T>(args: QueryArgs.Student<T>) {
     try {
       const result = await this._studentRepository.execQuery(args);
 
@@ -106,7 +98,7 @@ export class UserDataService {
     }
   }
 
-  public async queryUsers<T>(args: UsersQueryArgs<T>) {
+  public async queryUsers<T>(args: QueryArgs.User<T>) {
     try {
       const result = await this._userRepository.execQuery(args);
 

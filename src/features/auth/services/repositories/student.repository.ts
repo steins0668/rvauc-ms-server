@@ -2,15 +2,7 @@ import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../../db/create-context";
 import { students } from "../../../../models";
 import { Repository } from "../../../../services";
-import { InsertModels, Tables } from "../../types";
-
-export type StudentsQueryArgs<T> = {
-  dbOrTx?: DbContext | TxContext | undefined;
-  fn: (
-    query: DbContext["query"]["students"],
-    filterConverter: StudentRepository["buildWhereClause"]
-  ) => Promise<T>;
-};
+import { InsertModels, QueryArgs, QueryFilters, Tables } from "../../types";
 
 export class StudentRepository extends Repository<Tables.Student> {
   public constructor(context: DbContext) {
@@ -36,7 +28,7 @@ export class StudentRepository extends Repository<Tables.Student> {
     return inserted?.id;
   }
 
-  public async execQuery<T>(args: StudentsQueryArgs<T>) {
+  public async execQuery<T>(args: QueryArgs.Student<T>) {
     return await args.fn(this.getQuery(args.dbOrTx), this.buildWhereClause);
   }
 
@@ -60,7 +52,7 @@ export class StudentRepository extends Repository<Tables.Student> {
    * @returns The composed `WHERE` SQL statement, or `undefined` if no
    * conditions are set.
    */
-  protected buildWhereClause(filter?: StudentFilter): SQL | undefined {
+  protected buildWhereClause(filter?: QueryFilters.Student): SQL | undefined {
     const conditions = [];
 
     if (filter) {
@@ -89,25 +81,4 @@ export class StudentRepository extends Repository<Tables.Student> {
 
     return undefined;
   }
-}
-
-/**
- * @interface StudentFilter
- * @description An interface for the filter used for Db queries on the `students` table.
- * Contains the following fields:
- * ### Filters:
- * - `filterType`: Option to decide whether the filter is an `or` or an `and`.
- * - `id`: Matches the student's id.
- * - `departmentId`: Matches the student's departmentId.
- * - `studentNumber`: Matches the student's studentNumber.
- * - `yearLevel`: Matches the student's yearLevel.
- * - `block`: Matches the student's block.
- */
-export interface StudentFilter {
-  filterType?: "and" | "or" | undefined;
-  id?: number | undefined;
-  departmentId?: number | undefined;
-  studentNumber?: string | undefined;
-  yearLevel?: number | undefined;
-  block?: string | undefined;
 }

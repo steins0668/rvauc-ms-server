@@ -4,7 +4,7 @@ import { DbAccess } from "../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { Session } from "../../error";
 import { SessionResult } from "../../types";
-import { SessionTokenRepository, UserSessionRepository } from "../repositories";
+import { Repositories } from "../repositories";
 
 /**
  * @class
@@ -12,12 +12,12 @@ import { SessionTokenRepository, UserSessionRepository } from "../repositories";
  * existing sessions, as well as ending sessions.
  */
 export class SessionStarter {
-  private readonly _sessionTokenRepository: SessionTokenRepository;
-  private readonly _userSessionRepository: UserSessionRepository;
+  private readonly _sessionTokenRepository: Repositories.SessionToken;
+  private readonly _userSessionRepository: Repositories.UserSession;
 
   public constructor(
-    sessionTokenRepository: SessionTokenRepository,
-    userSessionRepository: UserSessionRepository
+    sessionTokenRepository: Repositories.SessionToken,
+    userSessionRepository: Repositories.UserSession
   ) {
     this._sessionTokenRepository = sessionTokenRepository;
     this._userSessionRepository = userSessionRepository;
