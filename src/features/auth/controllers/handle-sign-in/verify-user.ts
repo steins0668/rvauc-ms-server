@@ -35,10 +35,11 @@ export async function verifyUser(
       message: "Incorrect sign-in credentials. Please try again.",
     });
 
-  const queryResult = await req.userDataService.tryGetUser({
-    type: "login",
-    signInMethod,
-    authDetails,
+  const queryResult = await req.userDataService.queryUsers({
+    fn: async (query, converter) => {
+      const filter = { [signInMethod]: authDetails.identifier };
+      return await query.findFirst({ where: converter(filter) });
+    },
   });
 
   if (queryResult.success) {

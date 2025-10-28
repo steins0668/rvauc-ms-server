@@ -39,18 +39,18 @@ export const TOKEN_CONFIG_RECORD: TokenConfigRecord = {
       clearCookie: {
         httpOnly: true,
         sameSite: "none",
-        secure: true, // *change to true in production/when not using thunderclient
+        secure: false, // *change to true in production/when not using thunderclient
       },
       persistentCookie: {
         httpOnly: true,
         sameSite: "none",
-        secure: true,
+        secure: false,
         maxAge: 24 * 60 * 60 * 1000, // 1 day
       },
       sessionCookie: {
         httpOnly: true,
         sameSite: "none",
-        secure: true,
+        secure: false,
       },
     },
   },

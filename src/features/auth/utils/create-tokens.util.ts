@@ -1,3 +1,4 @@
+import { DbAccess } from "../../../error";
 import { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { ENUMS } from "../data";
@@ -52,11 +53,16 @@ export async function createTokens(args: {
   } = args;
 
   try {
-    const accessToken = await createAccessToken({
+    const createAccessTkn = await createAccessToken({
       userDataService,
       verifiedUser,
       role,
     });
+
+    if (!createAccessTkn.success) throw createAccessTkn.error;
+
+    const accessToken = createAccessTkn.result;
+
     const refreshToken = createRefreshToken({
       sessionNumber,
       userId: verifiedUser.id,
@@ -89,40 +95,80 @@ async function createAccessToken(args: {
   let payload: Payloads.AccessToken.Professor | Payloads.AccessToken.Student;
   switch (role) {
     case "professor": {
+      const query = await userDataService.queryProfessors({
+        fn: async (query, converter) => {
+          const result = await query.findFirst({
+            where: converter({ filterType: "or", id: verifiedUser.id }),
+            with: { college: true },
+          });
+
+          if (result === undefined)
+            throw new DbAccess.ErrorClass({
+              name: "DB_ACCESS_QUERY_ERROR",
+              message: "Failed querying professors.",
+            });
+
+          return result;
+        },
+      });
+
+      if (!query.success) return query;
+
+      const { college, ...professor } = query.result;
+
       payload = {
         userInfo: {
           ...verifiedUser,
           role,
         },
         professorInfo: {
-          college: "some_colleg",
-          facultyRank: "some_rank",
+          college: college.name,
+          ...professor,
         },
       } as Payloads.AccessToken.Professor;
       break;
     }
     case "student": {
+      const query = await userDataService.queryStudents({
+        fn: async (query, converter) => {
+          const result = await query.findFirst({
+            where: converter({ filterType: "or", id: verifiedUser.id }),
+            with: { department: true },
+          });
+
+          if (result === undefined)
+            throw new DbAccess.ErrorClass({
+              name: "DB_ACCESS_QUERY_ERROR",
+              message: "Failed querying students.",
+            });
+
+          return result;
+        },
+      });
+
+      if (!query.success) return query;
+
+      const { department, ...student } = query.result;
+
       payload = {
         userInfo: {
           ...verifiedUser,
           role,
         },
         studentInfo: {
-          department: "some_dept",
-          studentNumber: "some_num",
-          yearLevel: 1,
-          block: "some_block",
+          department: department.name,
+          ...student,
         },
       } as Payloads.AccessToken.Student;
     }
-    default:
-      throw new Error("Unknown Role.");
   }
 
-  return createJwt({
-    tokenType: "access",
-    payload,
-  });
+  return ResultBuilder.success(
+    createJwt({
+      tokenType: "access",
+      payload,
+    })
+  );
 }
 
 function createRefreshToken(args: {

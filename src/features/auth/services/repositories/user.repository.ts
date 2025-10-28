@@ -7,6 +7,14 @@ import { InsertModels, Tables, ViewModels } from "../../types";
 type NewUser = InsertModels.User;
 type UserViewModel = ViewModels.User;
 
+export type UsersQueryArgs<T> = {
+  dbOrTx?: DbContext | TxContext | undefined;
+  fn: (
+    query: DbContext["query"]["users"],
+    filterConverter: UserRepository["buildWhereClause"]
+  ) => Promise<T>;
+};
+
 export class UserRepository extends Repository<Tables.Users> {
   public constructor(context: DbContext) {
     super(context, users);
@@ -45,6 +53,14 @@ export class UserRepository extends Repository<Tables.Users> {
     const whereClause = this.buildWhereClause(filter);
 
     return await this._getOne({ whereClause });
+  }
+
+  public async execQuery<T>(args: UsersQueryArgs<T>) {
+    return await args.fn(this.getQuery(args.dbOrTx), this.buildWhereClause);
+  }
+
+  public getQuery(dbOrTx?: DbContext | TxContext | undefined) {
+    return (dbOrTx ?? this._dbContext).query.users;
   }
 
   /**

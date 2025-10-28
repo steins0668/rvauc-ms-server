@@ -6,11 +6,13 @@ import { ResultBuilder } from "../../../utils";
 import { RegisterSchemas, SignInSchema } from "../schemas";
 import type { InsertModels, ViewModels } from "../types";
 import {
+  StudentsQueryArgs,
   ProfessorRepository,
   RoleRepository,
   StudentRepository,
   UserRepository,
-  type IUserFilter,
+  ProfessorsQueryArgs,
+  UsersQueryArgs,
 } from "./repositories";
 
 export async function createUserDataService() {
@@ -52,6 +54,80 @@ export class UserDataService {
     });
 
     return role?.name;
+  }
+
+  public async queryProfessors<T>(args: ProfessorsQueryArgs<T>) {
+    try {
+      const result = await this._professorRepository.execQuery(args);
+
+      if (result === undefined)
+        return ResultBuilder.fail(
+          new DbAccess.ErrorClass({
+            name: "DB_ACCESS_QUERY_ERROR",
+            message:
+              "Failed querying professors table. Result is undefined/null.",
+          })
+        );
+
+      return ResultBuilder.success(result);
+    } catch (err) {
+      return ResultBuilder.fail(
+        DbAccess.normalizeError({
+          name: "DB_ACCESS_QUERY_ERROR",
+          message: "Failed querying professors table.",
+          err,
+        })
+      );
+    }
+  }
+
+  public async queryStudents<T>(args: StudentsQueryArgs<T>) {
+    try {
+      const result = await this._studentRepository.execQuery(args);
+
+      if (result === undefined || result === null)
+        return ResultBuilder.fail(
+          new DbAccess.ErrorClass({
+            name: "DB_ACCESS_QUERY_ERROR",
+            message:
+              "Failed querying students table. Result is undefined/null.",
+          })
+        );
+
+      return ResultBuilder.success(result);
+    } catch (err) {
+      return ResultBuilder.fail(
+        DbAccess.normalizeError({
+          name: "DB_ACCESS_QUERY_ERROR",
+          message: "Failed querying students table.",
+          err,
+        })
+      );
+    }
+  }
+
+  public async queryUsers<T>(args: UsersQueryArgs<T>) {
+    try {
+      const result = await this._userRepository.execQuery(args);
+
+      if (result === undefined || result === null)
+        return ResultBuilder.fail(
+          new DbAccess.ErrorClass({
+            name: "DB_ACCESS_QUERY_ERROR",
+            message: "Failed querying users table. Result is undefined/null.",
+          })
+        );
+
+      return ResultBuilder.success(result);
+    } catch (err) {
+      return ResultBuilder.fail(
+        DbAccess.normalizeError({
+          name: "DB_ACCESS_QUERY_ERROR",
+          message: "Failed querying students table.",
+          err,
+        })
+      );
+    }
   }
 
   /**
@@ -143,67 +219,6 @@ export class UserDataService {
   }
 
   /**
-   * @deprecated
-   * @public
-   * @async
-   * @function tryGetUser
-   * @description Asynchronously attempts to retrieve a `User` from the database filtered using fields
-   * provided by either an insert model of the `users` table, or a {@link LoginOptions} object.
-   * @param args.user An object used for filtering the database query during register operations.
-   * @param args.signInMethod A `string` specifying whether the user is logging in through email or
-   * username. Matches the `keys` of the {@link IUserFilter} type.
-   * @param args.authDetails A {@link SignInSchema} object used for filtering the database query
-   * during login operations.
-   * @returns A `promise` resolving to a success result object containing {@link UserViewModel} if a `User`
-   * is found, or `undefined` if no `User` is found. If the query operation fails, returns a fail result
-   * object containing a message as well as the stack trace.
-   */
-  public async tryGetUser(
-    args: TryGetUserArgs
-  ): Promise<
-    | BaseResult.Success<ViewModels.User | undefined>
-    | BaseResult.Fail<DbAccess.ErrorClass>
-  > {
-    let userFilter: IUserFilter = {};
-
-    try {
-      switch (args.type) {
-        case "user": {
-          const { email, username } = args.user;
-
-          userFilter = {
-            filterType: "or",
-            email,
-            username,
-          };
-          break;
-        }
-        case "login": {
-          const { signInMethod, authDetails } = args;
-          userFilter[signInMethod] = authDetails.identifier;
-          break;
-        }
-        case "userId": {
-          userFilter.userId = args.userId;
-          break;
-        }
-      }
-
-      const user = await this._userRepository.getOne(userFilter);
-
-      return ResultBuilder.success(user);
-    } catch (err) {
-      return ResultBuilder.fail(
-        new DbAccess.ErrorClass({
-          name: "DB_ACCESS_QUERY_ERROR",
-          message: "Error querying the database. Please try again later.",
-          cause: err,
-        })
-      );
-    }
-  }
-
-  /**
    * Returns true if there are no duplicates and false otherwise.
    * @param args
    * @returns
@@ -231,9 +246,15 @@ export class UserDataService {
       //  * additional checks in extended tables as needed.
       switch (args.type) {
         case "student": {
-          const student = await this._studentRepository.getOne({
-            filterType: "or",
-            studentNumber: args.schema.studentNumber,
+          const student = await this._studentRepository.execQuery({
+            fn: async (query, converter) => {
+              return await query.findFirst({
+                where: converter({
+                  filterType: "or",
+                  studentNumber: args.schema.studentNumber,
+                }),
+              });
+            },
           });
           if (student) return getResult(true, "students"); //  ! duplicate in students table
         }
