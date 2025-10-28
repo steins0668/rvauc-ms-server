@@ -36,7 +36,7 @@ export namespace Payloads {
   export namespace RefreshToken {
     export type Payload = z.infer<typeof payload>;
 
-    export const payload = z.strictObject({
+    export const payload = z.object({
       userId: z.number(),
       sessionNumber: z.string(),
       isPersistentAuth: z.boolean().optional(),
