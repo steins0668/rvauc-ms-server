@@ -1,7 +1,7 @@
 import { Request } from "express";
 import jwt from "jsonwebtoken";
 import { getTknSecrets } from "../data";
-import { refreshTknPayload, RefreshTknPayload } from "../schemas";
+import { Payloads } from "../schemas";
 import { Session } from "../error";
 import { SessionResult } from "../types";
 import { ResultBuilder } from "../../../utils";
@@ -23,7 +23,7 @@ export function verifyRefreshTkn(
   req: Request,
   refreshToken: string
 ):
-  | SessionResult.Success<RefreshTknPayload, "SESSION_TOKEN_VERIFY">
+  | SessionResult.Success<Payloads.RefreshToken.Payload, "SESSION_TOKEN_VERIFY">
   | SessionResult.Fail {
   const { requestLogger } = req;
 
@@ -41,7 +41,7 @@ export function verifyRefreshTkn(
     );
   }
 
-  const payloadParse = refreshTknPayload.safeParse(payload);
+  const payloadParse = Payloads.RefreshToken.payload.safeParse(payload);
   if (!payloadParse.success) {
     requestLogger.log("error", "Malformed refresh token.");
     return ResultBuilder.fail({

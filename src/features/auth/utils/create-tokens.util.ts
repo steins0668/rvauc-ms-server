@@ -1,11 +1,14 @@
-import { Request } from "express";
+import { DbAccess } from "../../../error";
 import { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
+import { ENUMS } from "../data";
 import { Session } from "../error";
-import { AccessTknPayload, RefreshTknPayload } from "../schemas";
+import { Payloads } from "../schemas";
+import { UserDataService } from "../services";
 import { ViewModels } from "../types";
 import { createJwt } from "./create-jwt.util";
-import { createPayload } from "./create-payload.util";
+
+type Roles = keyof typeof ENUMS.ROLES;
 
 type Tokens = {
   accessToken: string;
@@ -31,50 +34,39 @@ type Tokens = {
  * @returns A `Promise` that resolves to a {@link Tokens} object containing the `accessToken`
  * and `refreshToken`.
  */
-export async function createTokens(
-  req: Request,
-  options: {
-    verifiedUser: ViewModels.User;
-    sessionNumber: string;
-    isPersistentAuth?: boolean | undefined;
-  }
-): Promise<
+export async function createTokens(args: {
+  userDataService: UserDataService;
+  verifiedUser: ViewModels.User;
+  sessionNumber: string;
+  isPersistentAuth?: boolean | undefined;
+  role: Roles;
+}): Promise<
   | BaseResult.Success<Tokens, "TOKEN_CREATION">
   | BaseResult.Fail<Session.ErrorClass>
 > {
-  const { requestLogger } = req;
-  const { verifiedUser, sessionNumber, isPersistentAuth } = options;
-
-  requestLogger.log("debug", "Creating tokens.");
-
-  const role = await req.userDataService.getUserRole(verifiedUser.roleId);
-  if (role === undefined)
-    //  failed finding role for some reason.
-    return ResultBuilder.fail({
-      name: "SESSION_TOKEN_CREATION_ERROR",
-      message: "Could not retrieve user's role.",
-    });
-
-  const accessTokenPayload: AccessTknPayload = createPayload({
-    tknType: "access",
-    user: verifiedUser,
-    role,
-  });
-  const refreshTokenPayload: RefreshTknPayload = createPayload({
-    tknType: "refresh",
+  const {
+    userDataService,
+    verifiedUser,
     sessionNumber,
-    userId: verifiedUser.id,
-    isPersistentAuth: isPersistentAuth ?? false,
-  });
+    isPersistentAuth,
+    role,
+  } = args;
 
   try {
-    const accessToken = createJwt({
-      tokenType: "access",
-      payload: accessTokenPayload,
+    const createAccessTkn = await createAccessToken({
+      userDataService,
+      verifiedUser,
+      role,
     });
-    const refreshToken = createJwt({
-      tokenType: "refresh",
-      payload: refreshTokenPayload,
+
+    if (!createAccessTkn.success) throw createAccessTkn.error;
+
+    const accessToken = createAccessTkn.result;
+
+    const refreshToken = createRefreshToken({
+      sessionNumber,
+      userId: verifiedUser.id,
+      isPersistentAuth,
     });
 
     return ResultBuilder.success(
@@ -90,4 +82,109 @@ export async function createTokens(
       })
     );
   }
+}
+
+async function createAccessToken(args: {
+  userDataService: UserDataService;
+  verifiedUser: ViewModels.User;
+  role: Roles;
+}) {
+  const { userDataService, role, verifiedUser } = args;
+
+  //  todo: REMOVE HARDCORE HERE
+  let payload: Payloads.AccessToken.Professor | Payloads.AccessToken.Student;
+  switch (role) {
+    case "professor": {
+      const query = await userDataService.queryProfessors({
+        fn: async (query, converter) => {
+          const result = await query.findFirst({
+            where: converter({ filterType: "or", id: verifiedUser.id }),
+            with: { college: true },
+          });
+
+          if (result === undefined)
+            throw new DbAccess.ErrorClass({
+              name: "DB_ACCESS_QUERY_ERROR",
+              message: "Failed querying professors.",
+            });
+
+          return result;
+        },
+      });
+
+      if (!query.success) return query;
+
+      const { college, ...professor } = query.result;
+
+      payload = {
+        userInfo: {
+          ...verifiedUser,
+          role,
+        },
+        professorInfo: {
+          college: college.name,
+          ...professor,
+        },
+      } as Payloads.AccessToken.Professor;
+      break;
+    }
+    case "student": {
+      const query = await userDataService.queryStudents({
+        fn: async (query, converter) => {
+          const result = await query.findFirst({
+            where: converter({ filterType: "or", id: verifiedUser.id }),
+            with: { department: true },
+          });
+
+          if (result === undefined)
+            throw new DbAccess.ErrorClass({
+              name: "DB_ACCESS_QUERY_ERROR",
+              message: "Failed querying students.",
+            });
+
+          return result;
+        },
+      });
+
+      if (!query.success) return query;
+
+      const { department, ...student } = query.result;
+
+      payload = {
+        userInfo: {
+          ...verifiedUser,
+          role,
+        },
+        studentInfo: {
+          department: department.name,
+          ...student,
+        },
+      } as Payloads.AccessToken.Student;
+    }
+  }
+
+  return ResultBuilder.success(
+    createJwt({
+      tokenType: "access",
+      payload,
+    })
+  );
+}
+
+function createRefreshToken(args: {
+  sessionNumber: string;
+  userId: number;
+  isPersistentAuth?: boolean | undefined;
+}) {
+  const { sessionNumber, userId, isPersistentAuth } = args;
+
+  const payload: Payloads.RefreshToken.Payload = {
+    sessionNumber,
+    userId,
+    isPersistentAuth,
+  };
+  return createJwt({
+    tokenType: "refresh",
+    payload,
+  });
 }

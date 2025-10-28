@@ -22,8 +22,12 @@ AuthRoutes.post(
 
 AuthRoutes.use(attachSessionManager);
 
-AuthRoutes.post("/sign-in", controllers.handleSignIn);
+AuthRoutes.post("/sign-in/professor", controllers.handleSignIn("professor"));
+
+AuthRoutes.post("/sign-in/student", controllers.handleSignIn("student"));
 
 AuthRoutes.post("/sign-out", controllers.handleSignOut);
 
-AuthRoutes.post("/refresh", controllers.handleRefresh);
+AuthRoutes.post("/refresh/professor", controllers.handleRefresh("professor"));
+
+AuthRoutes.post("/refresh/student", controllers.handleRefresh("student"));

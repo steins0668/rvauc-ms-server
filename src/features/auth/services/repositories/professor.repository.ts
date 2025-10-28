@@ -2,8 +2,15 @@ import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../../db/create-context";
 import { professors } from "../../../../models";
 import { Repository } from "../../../../services";
-import { InsertModels, Tables, ViewModels } from "../../types";
+import { InsertModels, Tables } from "../../types";
 
+export type ProfessorsQueryArgs<T> = {
+  dbOrTx?: DbContext | TxContext | undefined;
+  fn: (
+    query: DbContext["query"]["professors"],
+    filterConverter: ProfessorRepository["buildWhereClause"]
+  ) => Promise<T>;
+};
 export class ProfessorRepository extends Repository<Tables.Professors> {
   public constructor(context: DbContext) {
     super(context, professors);
@@ -28,23 +35,13 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
     const inserted = await this._insertOne({ dbOrTx, value: professor });
     return inserted?.id;
   }
-  /**
-   * @public
-   * @async
-   * @function getOne
-   * @description Asynchronously retrieves a row from the `professors` table, optionally
-   * applying a filter of type `ProfessorFilter`.
-   *
-   * @param filter - The filter to apply to the table.
-   * @returns - A `Promise` resolving to a viewmodel of the found row or
-   * `undefined`.
-   */
-  public async getOne(
-    filter?: ProfessorFilter
-  ): Promise<ViewModels.Professor | undefined> {
-    const whereClause = this.buildWhereClause(filter);
 
-    return await this._getOne({ whereClause });
+  public async execQuery<T>(args: ProfessorsQueryArgs<T>) {
+    return await args.fn(this.getQuery(args.dbOrTx), this.buildWhereClause);
+  }
+
+  public getQuery(dbOrTx?: DbContext | TxContext | undefined) {
+    return (dbOrTx ?? this._dbContext).query.professors;
   }
 
   /**

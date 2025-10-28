@@ -1,17 +1,17 @@
 import jwt from "jsonwebtoken";
 import { AuthToken } from "../types";
-import { AccessTknPayload, RefreshTknPayload } from "../schemas";
+import { Payloads } from "../schemas";
 import { TOKEN_CONFIG_RECORD } from "../data";
 import { AuthConfig } from "../error";
 
 type AccessOptions = {
   tokenType: Extract<AuthToken, "access">;
-  payload: AccessTknPayload;
+  payload: Payloads.AccessToken.Professor | Payloads.AccessToken.Student;
 };
 
 type RefreshOptions = {
   tokenType: Extract<AuthToken, "refresh">;
-  payload: RefreshTknPayload;
+  payload: Payloads.RefreshToken.Payload;
 };
 
 type JwtOptions = AccessOptions | RefreshOptions;
