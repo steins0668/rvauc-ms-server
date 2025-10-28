@@ -5,19 +5,14 @@ import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { RegisterSchemas } from "../schemas";
 import type { InsertModels, QueryArgs } from "../types";
-import {
-  ProfessorRepository,
-  RoleRepository,
-  StudentRepository,
-  UserRepository,
-} from "./repositories";
+import { Repositories } from "./repositories";
 
 export async function createUserDataService() {
   const dbContext = await createContext();
-  const professorRepoInstance = new ProfessorRepository(dbContext);
-  const roleRepoInstance = new RoleRepository(dbContext);
-  const studentRepoInstance = new StudentRepository(dbContext);
-  const userRepoInstance = new UserRepository(dbContext);
+  const professorRepoInstance = new Repositories.Professor(dbContext);
+  const roleRepoInstance = new Repositories.Role(dbContext);
+  const studentRepoInstance = new Repositories.Student(dbContext);
+  const userRepoInstance = new Repositories.User(dbContext);
   return new UserDataService(
     professorRepoInstance,
     roleRepoInstance,
@@ -27,16 +22,16 @@ export async function createUserDataService() {
 }
 
 export class UserDataService {
-  private readonly _professorRepository: ProfessorRepository;
-  private readonly _roleRepository: RoleRepository;
-  private readonly _studentRepository: StudentRepository;
-  private readonly _userRepository: UserRepository;
+  private readonly _professorRepository: Repositories.Professor;
+  private readonly _roleRepository: Repositories.Role;
+  private readonly _studentRepository: Repositories.Student;
+  private readonly _userRepository: Repositories.User;
 
   public constructor(
-    professorRepository: ProfessorRepository,
-    roleRepository: RoleRepository,
-    studentRepository: StudentRepository,
-    userRepository: UserRepository
+    professorRepository: Repositories.Professor,
+    roleRepository: Repositories.Role,
+    studentRepository: Repositories.Student,
+    userRepository: Repositories.User
   ) {
     this._professorRepository = professorRepository;
     this._roleRepository = roleRepository;

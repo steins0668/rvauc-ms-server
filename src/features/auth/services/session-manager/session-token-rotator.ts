@@ -3,15 +3,15 @@ import { DbAccess } from "../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { Session } from "../../error";
 import { SessionResult, ViewModels } from "../../types";
-import { SessionTokenRepository, UserSessionRepository } from "../repositories";
+import { Repositories } from "../repositories";
 
 export class SessionTokenRotator {
-  private readonly _sessionTokenRepository: SessionTokenRepository;
-  private readonly _userSessionRepository: UserSessionRepository;
+  private readonly _sessionTokenRepository: Repositories.SessionToken;
+  private readonly _userSessionRepository: Repositories.UserSession;
 
   constructor(
-    sessionTokenRepository: SessionTokenRepository,
-    userSessionTokenRepository: UserSessionRepository
+    sessionTokenRepository: Repositories.SessionToken,
+    userSessionTokenRepository: Repositories.UserSession
   ) {
     this._sessionTokenRepository = sessionTokenRepository;
     this._userSessionRepository = userSessionTokenRepository;

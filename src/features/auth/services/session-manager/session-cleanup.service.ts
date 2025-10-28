@@ -1,12 +1,12 @@
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { Session } from "../../error";
 import { SessionResult } from "../../types";
-import { UserSessionRepository } from "../repositories";
+import { Repositories } from "../repositories";
 
 export class SessionCleanupService {
-  private readonly _userSessionRepository: UserSessionRepository;
+  private readonly _userSessionRepository: Repositories.UserSession;
 
-  constructor(userSessionTokenRepository: UserSessionRepository) {
+  constructor(userSessionTokenRepository: Repositories.UserSession) {
     this._userSessionRepository = userSessionTokenRepository;
   }
 

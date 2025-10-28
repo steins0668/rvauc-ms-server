@@ -1,5 +1,5 @@
 import { createContext } from "../../../../db/create-context";
-import { SessionTokenRepository, UserSessionRepository } from "../repositories";
+import { Repositories } from "../repositories";
 import { SessionResult } from "../../types";
 import { SessionCleanupService } from "./session-cleanup.service";
 import { SessionStarter } from "./session-starter";
@@ -7,8 +7,8 @@ import { SessionTokenRotator } from "./session-token-rotator";
 
 export async function createSessionManager() {
   const dbContext = await createContext();
-  const sessionTokenRepository = new SessionTokenRepository(dbContext);
-  const userSessionRepository = new UserSessionRepository(dbContext);
+  const sessionTokenRepository = new Repositories.SessionToken(dbContext);
+  const userSessionRepository = new Repositories.UserSession(dbContext);
 
   return new SessionManager(sessionTokenRepository, userSessionRepository);
 }
@@ -19,8 +19,8 @@ export class SessionManager {
   private readonly _rotator: SessionTokenRotator;
 
   constructor(
-    sessionTokenRepository: SessionTokenRepository,
-    userSessionRepository: UserSessionRepository
+    sessionTokenRepository: Repositories.SessionToken,
+    userSessionRepository: Repositories.UserSession
   ) {
     this._cleanup = new SessionCleanupService(userSessionRepository);
     this._starter = new SessionStarter(

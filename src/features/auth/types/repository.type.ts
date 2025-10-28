@@ -6,7 +6,7 @@ export namespace QueryArgs {
     dbOrTx?: DbContext | TxContext | undefined;
     fn: (
       query: DbContext["query"]["professors"],
-      filterConverter: Repositories.ProfessorRepository["buildWhereClause"]
+      filterConverter: Repositories.Professor["buildWhereClause"]
     ) => Promise<T>;
   };
 
@@ -14,7 +14,7 @@ export namespace QueryArgs {
     dbOrTx?: DbContext | TxContext | undefined;
     fn: (
       query: DbContext["query"]["students"],
-      filterConverter: Repositories.StudentRepository["buildWhereClause"]
+      filterConverter: Repositories.Student["buildWhereClause"]
     ) => Promise<T>;
   };
 
@@ -22,7 +22,7 @@ export namespace QueryArgs {
     dbOrTx?: DbContext | TxContext | undefined;
     fn: (
       query: DbContext["query"]["users"],
-      filterConverter: Repositories.UserRepository["buildWhereClause"]
+      filterConverter: Repositories.User["buildWhereClause"]
     ) => Promise<T>;
   };
 }
