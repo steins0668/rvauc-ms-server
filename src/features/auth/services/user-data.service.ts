@@ -4,14 +4,13 @@ import { DbAccess } from "../../../error";
 import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { RegisterSchemas } from "../schemas";
-import type { InsertModels } from "../types";
+import type { InsertModels, QueryArgs } from "../types";
 import {
   StudentsQueryArgs,
   ProfessorRepository,
   RoleRepository,
   StudentRepository,
   UserRepository,
-  ProfessorsQueryArgs,
   UsersQueryArgs,
 } from "./repositories";
 
@@ -56,7 +55,7 @@ export class UserDataService {
     return role?.name;
   }
 
-  public async queryProfessors<T>(args: ProfessorsQueryArgs<T>) {
+  public async queryProfessors<T>(args: QueryArgs.Professor<T>) {
     try {
       const result = await this._professorRepository.execQuery(args);
 

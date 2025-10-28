@@ -2,15 +2,8 @@ import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../../db/create-context";
 import { professors } from "../../../../models";
 import { Repository } from "../../../../services";
-import { InsertModels, Tables } from "../../types";
+import { InsertModels, QueryArgs, QueryFilters, Tables } from "../../types";
 
-export type ProfessorsQueryArgs<T> = {
-  dbOrTx?: DbContext | TxContext | undefined;
-  fn: (
-    query: DbContext["query"]["professors"],
-    filterConverter: ProfessorRepository["buildWhereClause"]
-  ) => Promise<T>;
-};
 export class ProfessorRepository extends Repository<Tables.Professors> {
   public constructor(context: DbContext) {
     super(context, professors);
@@ -36,7 +29,7 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
     return inserted?.id;
   }
 
-  public async execQuery<T>(args: ProfessorsQueryArgs<T>) {
+  public async execQuery<T>(args: QueryArgs.Professor<T>) {
     return await args.fn(this.getQuery(args.dbOrTx), this.buildWhereClause);
   }
 
@@ -60,7 +53,7 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
    * @returns The composed `WHERE` SQL statement, or `undefined` if no
    * conditions are set.
    */
-  protected buildWhereClause(filter?: ProfessorFilter): SQL | undefined {
+  protected buildWhereClause(filter?: QueryFilters.Professor): SQL | undefined {
     const conditions = [];
 
     if (filter) {
@@ -83,21 +76,4 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
 
     return undefined;
   }
-}
-
-/**
- * @interface ProfessorFilter
- * @description An interface for the filter used for Db queries on the `students` table.
- * Contains the following fields:
- * ### Filters:
- * - `filterType`: Option to decide whether the filter is an `or` or an `and`.
- * - `id`: Matches the student's id.
- * - `collegeId`: Matches the professor's collegeId.
- * - `facultyRank`: Matches the student's facultyRank.
- */
-export interface ProfessorFilter {
-  filterType?: "and" | "or" | undefined;
-  id?: number | undefined;
-  collegeId?: number | undefined;
-  facultyRank?: string | undefined;
 }
