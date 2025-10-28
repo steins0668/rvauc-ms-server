@@ -3,8 +3,8 @@ import { createContext } from "../../../db/create-context";
 import { DbAccess } from "../../../error";
 import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
-import { RegisterSchemas, SignInSchema } from "../schemas";
-import type { InsertModels, ViewModels } from "../types";
+import { RegisterSchemas } from "../schemas";
+import type { InsertModels } from "../types";
 import {
   StudentsQueryArgs,
   ProfessorRepository,
