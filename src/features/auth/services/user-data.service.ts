@@ -6,7 +6,6 @@ import { ResultBuilder } from "../../../utils";
 import { RegisterSchemas } from "../schemas";
 import type { InsertModels, QueryArgs } from "../types";
 import {
-  StudentsQueryArgs,
   ProfessorRepository,
   RoleRepository,
   StudentRepository,
@@ -80,7 +79,7 @@ export class UserDataService {
     }
   }
 
-  public async queryStudents<T>(args: StudentsQueryArgs<T>) {
+  public async queryStudents<T>(args: QueryArgs.Student<T>) {
     try {
       const result = await this._studentRepository.execQuery(args);
 
