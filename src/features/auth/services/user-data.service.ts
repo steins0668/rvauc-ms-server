@@ -235,10 +235,20 @@ export class UserDataService {
 
     try {
       //  * check in users table
-      const user = await this._userRepository.getOne({
-        filterType: "or",
-        email: args.schema.email,
-        username: args.schema.username,
+      const user = await this._userRepository.execQuery({
+        fn: async (query, converter) => {
+          const { email, username } = args.schema;
+          const where = converter({ email, username });
+          const result = await query.findFirst({ where });
+
+          if (result === undefined)
+            throw new DbAccess.ErrorClass({
+              name: "DB_ACCESS_QUERY_ERROR",
+              message: "Failed querying users table.",
+            });
+
+          return result;
+        },
       });
 
       if (user) return getResult(true, "users"); //  ! duplicate in users table.
