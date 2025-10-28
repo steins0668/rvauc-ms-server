@@ -10,7 +10,6 @@ import {
   RoleRepository,
   StudentRepository,
   UserRepository,
-  UsersQueryArgs,
 } from "./repositories";
 
 export async function createUserDataService() {
@@ -104,7 +103,7 @@ export class UserDataService {
     }
   }
 
-  public async queryUsers<T>(args: UsersQueryArgs<T>) {
+  public async queryUsers<T>(args: QueryArgs.User<T>) {
     try {
       const result = await this._userRepository.execQuery(args);
 
