@@ -282,20 +282,6 @@ export class UserDataService {
     }
   }
 }
-type TryGetUserArgs =
-  | {
-      type: "user";
-      user: InsertModels.User;
-    }
-  | {
-      type: "login";
-      signInMethod: "email" | "username";
-      authDetails: SignInSchema;
-    }
-  | {
-      type: "userId";
-      userId: number;
-    };
 
 type InsertArgs =
   | { type: "student"; user: InsertModels.User; student: InsertModels.Student }
