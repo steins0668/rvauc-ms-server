@@ -1,12 +1,12 @@
-import { DbAccess } from "../../../error";
-import { BaseResult } from "../../../types";
-import { ResultBuilder } from "../../../utils";
-import { ENUMS } from "../data";
-import { Session } from "../error";
-import { Payloads } from "../schemas";
-import { UserDataService } from "../services";
-import { ViewModels } from "../types";
+import { BaseResult } from "../../../../types";
+import { ResultBuilder } from "../../../../utils";
+import { ENUMS } from "../../data";
+import { Session } from "../../error";
+import { Payloads } from "../../schemas";
+import { UserDataService } from "../../services";
+import { ViewModels } from "../../types";
 import { createJwt } from "./create-jwt.util";
+import { payloadResolver } from "./payload-resolver.util";
 
 type Roles = keyof typeof ENUMS.ROLES;
 
@@ -92,81 +92,17 @@ async function createAccessToken(args: {
   const { userDataService, role, verifiedUser } = args;
 
   //  todo: REMOVE HARDCORE HERE
-  let payload: Payloads.AccessToken.Professor | Payloads.AccessToken.Student;
-  switch (role) {
-    case "professor": {
-      const query = await userDataService.queryProfessors({
-        fn: async (query, converter) => {
-          const result = await query.findFirst({
-            where: converter({ filterType: "or", id: verifiedUser.id }),
-            with: { college: true },
-          });
+  const payloadResolution = await payloadResolver[role](
+    userDataService,
+    verifiedUser
+  );
 
-          if (result === undefined)
-            throw new DbAccess.ErrorClass({
-              name: "DB_ACCESS_QUERY_ERROR",
-              message: "Failed querying professors.",
-            });
-
-          return result;
-        },
-      });
-
-      if (!query.success) return query;
-
-      const { college, ...professor } = query.result;
-
-      payload = {
-        userInfo: {
-          ...verifiedUser,
-          role,
-        },
-        professorInfo: {
-          college: college.name,
-          ...professor,
-        },
-      } as Payloads.AccessToken.Professor;
-      break;
-    }
-    case "student": {
-      const query = await userDataService.queryStudents({
-        fn: async (query, converter) => {
-          const result = await query.findFirst({
-            where: converter({ filterType: "or", id: verifiedUser.id }),
-            with: { department: true },
-          });
-
-          if (result === undefined)
-            throw new DbAccess.ErrorClass({
-              name: "DB_ACCESS_QUERY_ERROR",
-              message: "Failed querying students.",
-            });
-
-          return result;
-        },
-      });
-
-      if (!query.success) return query;
-
-      const { department, ...student } = query.result;
-
-      payload = {
-        userInfo: {
-          ...verifiedUser,
-          role,
-        },
-        studentInfo: {
-          department: department.name,
-          ...student,
-        },
-      } as Payloads.AccessToken.Student;
-    }
-  }
+  if (!payloadResolution.success) return payloadResolution;
 
   return ResultBuilder.success(
     createJwt({
       tokenType: "access",
-      payload,
+      payload: payloadResolution.result,
     })
   );
 }

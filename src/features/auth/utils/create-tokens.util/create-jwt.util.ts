@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
-import { AuthToken } from "../types";
-import { Payloads } from "../schemas";
-import { TOKEN_CONFIG_RECORD } from "../data";
-import { AuthConfig } from "../error";
+import { AuthToken } from "../../types";
+import { Payloads } from "../../schemas";
+import { TOKEN_CONFIG_RECORD } from "../../data";
+import { AuthConfig } from "../../error";
 
 type AccessOptions = {
   tokenType: Extract<AuthToken, "access">;
