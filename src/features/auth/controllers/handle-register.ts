@@ -1,15 +1,14 @@
 import type { Request, Response } from "express";
-import { RegisterSchemas } from "../schemas";
+import { type RoleBasedRegisterSchema } from "../schemas";
 
-export async function handleRegister<TBody extends RegisterSchemas.User>(
-  req: Request<{}, {}, TBody>,
+export async function handleRegister(
+  req: Request<{}, {}, RoleBasedRegisterSchema>,
   res: Response
 ) {
   const { body, requestLogger, userDataService } = req;
 
   //  * check duplicates
-  const parsedBody = getSchemaType<TBody>(body);
-  const duplicateCheck = await userDataService.ensureNoDuplicates(parsedBody);
+  const duplicateCheck = await userDataService.ensureNoDuplicates(body);
 
   if (duplicateCheck.success && duplicateCheck.result.hasDuplicate) {
     const message = "User already exists.";
@@ -29,7 +28,7 @@ export async function handleRegister<TBody extends RegisterSchemas.User>(
 
   // * inserting user
   requestLogger.log("debug", "Inserting new user...");
-  const userInsert = await insertUser<TBody>(req, parsedBody);
+  const userInsert = await userDataService.insertUser(body);
 
   if (userInsert.success) {
     console.log(`Inserted from ${userInsert.source}`);
@@ -48,46 +47,4 @@ export async function handleRegister<TBody extends RegisterSchemas.User>(
   }
 
   return;
-}
-
-async function insertUser<TBody extends RegisterSchemas.User>(
-  req: Request<{}, {}, TBody>,
-  parsedBody: RegisterSchemas.Types
-) {
-  const { userDataService } = req;
-  const { type, schema } = parsedBody;
-
-  //  * the register schemas themselves inherit the fields of the insert model.
-  //  * the professor and student schema extends the user schema
-  switch (type) {
-    case "professor":
-      return await userDataService.insertUser({
-        type,
-        user: schema,
-        professor: schema,
-      });
-    case "student":
-      return await userDataService.insertUser({
-        type,
-        user: schema,
-        student: schema,
-      });
-    case "user":
-      return await userDataService.insertUser({ type, user: schema });
-    default:
-      throw new Error("Invalid Register Form Schema.");
-  }
-}
-
-function getSchemaType<TObject extends RegisterSchemas.User>(object: TObject) {
-  for (const [name, schema] of Object.entries(RegisterSchemas.dictionary)) {
-    const parsedObject = schema.safeParse(object);
-
-    const type = name as keyof typeof RegisterSchemas.dictionary;
-
-    if (parsedObject.success)
-      return { type, schema: parsedObject.data } as RegisterSchemas.Types;
-  }
-
-  throw new Error("Failed parsing Register Form Schema.");
 }

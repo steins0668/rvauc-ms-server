@@ -1,4 +1,4 @@
-import type { DbAccess } from "../error";
+import type { DbAccess, RequestValidation } from "../error";
 import type { Exhaustive } from "../types";
 
 export namespace StatusCode {
@@ -9,5 +9,10 @@ export namespace StatusCode {
     DB_ACCESS_QUERY_ERROR: 500,
     DB_ACCESS_UPDATE_ERROR: 500,
     DB_ACCESS_DELETE_ERROR: 500,
+  } as const;
+
+  export const RequestSchemaError: Exhaustive<RequestValidation.ErrorName> = {
+    REQUEST_VALIDATION_INVALID_SCHEMA_ERROR: 400, //  * 400 Bad Request
+    REQUEST_VALIDATION_INVALID_FIELD_VALUE_ERROR: 400, //  * 400 Bad Request
   } as const;
 }
