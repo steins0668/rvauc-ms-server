@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { RegisterSchemas } from "../schemas";
+import { UserDataService } from "../services";
 
 export async function handleRegister<TBody extends RegisterSchemas.User>(
   req: Request<{}, {}, TBody>,
@@ -29,7 +30,9 @@ export async function handleRegister<TBody extends RegisterSchemas.User>(
 
   // * inserting user
   requestLogger.log("debug", "Inserting new user...");
-  const userInsert = await insertUser<TBody>(req, parsedBody);
+  const { type, schema } = parsedBody;
+  const resolver = insertResolver[type];
+  const userInsert = await resolver({ userDataService, schema } as never); //  * sidestep type mismatch
 
   if (userInsert.success) {
     console.log(`Inserted from ${userInsert.source}`);
@@ -50,35 +53,6 @@ export async function handleRegister<TBody extends RegisterSchemas.User>(
   return;
 }
 
-async function insertUser<TBody extends RegisterSchemas.User>(
-  req: Request<{}, {}, TBody>,
-  parsedBody: RegisterSchemas.Types
-) {
-  const { userDataService } = req;
-  const { type, schema } = parsedBody;
-
-  //  * the register schemas themselves inherit the fields of the insert model.
-  //  * the professor and student schema extends the user schema
-  switch (type) {
-    case "professor":
-      return await userDataService.insertUser({
-        type,
-        user: schema,
-        professor: schema,
-      });
-    case "student":
-      return await userDataService.insertUser({
-        type,
-        user: schema,
-        student: schema,
-      });
-    case "user":
-      return await userDataService.insertUser({ type, user: schema });
-    default:
-      throw new Error("Invalid Register Form Schema.");
-  }
-}
-
 function getSchemaType<TObject extends RegisterSchemas.User>(object: TObject) {
   for (const [name, schema] of Object.entries(RegisterSchemas.dictionary)) {
     const parsedObject = schema.safeParse(object);
@@ -91,3 +65,49 @@ function getSchemaType<TObject extends RegisterSchemas.User>(object: TObject) {
 
   throw new Error("Failed parsing Register Form Schema.");
 }
+
+type InsertResolverArgs<T extends RegisterSchemas.Types> = {
+  userDataService: UserDataService;
+  schema: T["schema"];
+};
+
+const insertResolver = {
+  professor: async (
+    args: InsertResolverArgs<{
+      type: "professor";
+      schema: RegisterSchemas.Professor;
+    }>
+  ) => {
+    const schema = args.schema;
+    return await args.userDataService.insertUser({
+      type: "professor",
+      user: schema,
+      professor: schema,
+    });
+  },
+  student: async (
+    args: InsertResolverArgs<{
+      type: "student";
+      schema: RegisterSchemas.Student;
+    }>
+  ) => {
+    const schema = args.schema;
+    return await args.userDataService.insertUser({
+      type: "student",
+      user: schema,
+      student: schema,
+    });
+  },
+  user: async (
+    args: InsertResolverArgs<{
+      type: "user";
+      schema: RegisterSchemas.User;
+    }>
+  ) => {
+    const schema = args.schema;
+    return await args.userDataService.insertUser({
+      type: "user",
+      user: schema,
+    });
+  },
+};
