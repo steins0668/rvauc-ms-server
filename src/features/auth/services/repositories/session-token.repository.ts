@@ -39,6 +39,8 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     return inserted?.id;
   }
 
+  public async execQuery() {}
+
   public async getMany(
     queryOptions: {
       isAscending?: boolean;

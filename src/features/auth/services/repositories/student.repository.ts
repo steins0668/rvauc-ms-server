@@ -29,11 +29,8 @@ export class StudentRepository extends Repository<Tables.Student> {
   }
 
   public async execQuery<T>(args: QueryArgs.Student<T>) {
-    return await args.fn(this.getQuery(args.dbOrTx), this.buildWhereClause);
-  }
-
-  public getQuery(dbOrTx?: DbContext | TxContext | undefined) {
-    return (dbOrTx ?? this._dbContext).query.students;
+    const query = (args.dbOrTx ?? this._dbContext).query.students;
+    return await args.fn(query, this.buildWhereClause);
   }
 
   /**

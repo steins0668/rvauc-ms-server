@@ -29,11 +29,8 @@ export class UserRepository extends Repository<Tables.Users> {
   }
 
   public async execQuery<T>(args: QueryArgs.User<T>) {
-    return await args.fn(this.getQuery(args.dbOrTx), this.buildWhereClause);
-  }
-
-  public getQuery(dbOrTx?: DbContext | TxContext | undefined) {
-    return (dbOrTx ?? this._dbContext).query.users;
+    const query = (args.dbOrTx ?? this._dbContext).query.users;
+    return await args.fn(query, this.buildWhereClause);
   }
 
   /**

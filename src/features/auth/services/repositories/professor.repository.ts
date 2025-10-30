@@ -30,11 +30,8 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
   }
 
   public async execQuery<T>(args: QueryArgs.Professor<T>) {
-    return await args.fn(this.getQuery(args.dbOrTx), this.buildWhereClause);
-  }
-
-  public getQuery(dbOrTx?: DbContext | TxContext | undefined) {
-    return (dbOrTx ?? this._dbContext).query.professors;
+    const query = (args.dbOrTx ?? this._dbContext).query.professors;
+    return await args.fn(query, this.buildWhereClause);
   }
 
   /**
