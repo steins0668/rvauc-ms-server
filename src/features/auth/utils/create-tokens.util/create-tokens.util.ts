@@ -8,7 +8,7 @@ import { ViewModels } from "../../types";
 import { createJwt } from "./create-jwt.util";
 import { payloadResolver } from "./payload-resolver.util";
 
-type Roles = keyof typeof ENUMS.ROLES;
+type Role = keyof typeof ENUMS.ROLES;
 
 type Tokens = {
   accessToken: string;
@@ -39,20 +39,15 @@ export async function createTokens(args: {
   verifiedUser: ViewModels.User;
   sessionNumber: string;
   isPersistentAuth?: boolean | undefined;
-  role: Roles;
 }): Promise<
   | BaseResult.Success<Tokens, "TOKEN_CREATION">
   | BaseResult.Fail<Session.ErrorClass>
 > {
-  const {
-    userDataService,
-    verifiedUser,
-    sessionNumber,
-    isPersistentAuth,
-    role,
-  } = args;
+  const { userDataService, verifiedUser, sessionNumber, isPersistentAuth } =
+    args;
 
   try {
+    const role = ENUMS.ROLES[verifiedUser.roleId] as Role;
     const createAccessTkn = await createAccessToken({
       userDataService,
       verifiedUser,
@@ -87,11 +82,10 @@ export async function createTokens(args: {
 async function createAccessToken(args: {
   userDataService: UserDataService;
   verifiedUser: ViewModels.User;
-  role: Roles;
+  role: Role;
 }) {
   const { userDataService, role, verifiedUser } = args;
 
-  //  todo: REMOVE HARDCORE HERE
   const payloadResolution = await payloadResolver[role](
     userDataService,
     verifiedUser

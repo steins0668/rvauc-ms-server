@@ -4,116 +4,113 @@ import { SignInSchema } from "../../schemas";
 import { createTokens, getRefreshConfig } from "../../utils";
 import { verifyUser } from "./verify-user";
 import { getSignInMethod } from "./get-sign-in-method";
-import { ENUMS } from "../../data";
 
-type Roles = keyof typeof ENUMS.ROLES;
+export async function handleSignIn(
+  req: Request<{}, {}, SignInSchema>,
+  res: Response
+) {
+  const {
+    body: authDetails,
+    requestLogger: logger,
+    sessionManager,
+    userDataService,
+  } = req;
 
-export function handleSignIn(role: Roles) {
-  return async (req: Request<{}, {}, SignInSchema>, res: Response) => {
-    const {
-      body: authDetails,
-      requestLogger: logger,
-      sessionManager,
-      userDataService,
-    } = req;
+  //  *validate and verify user credentials
+  const verificationResult = await verifyUser(req);
 
-    //  *validate and verify user credentials
-    const verificationResult = await verifyUser(req);
+  if (!verificationResult.success) {
+    //  !authentication failed
+    const { error } = verificationResult;
 
-    if (!verificationResult.success) {
-      //  !authentication failed
-      const { error } = verificationResult;
+    res
+      .status(AuthError.SignIn.getErrStatusCode(error))
+      .json({ success: false, message: error.message });
 
-      res
-        .status(AuthError.SignIn.getErrStatusCode(error))
-        .json({ success: false, message: error.message });
+    const safeId = getSafeId(authDetails.identifier);
+    const logMsg = `Failed sign-in attempt from user ${safeId}.`;
+    logger.log("error", logMsg, error);
 
-      const safeId = getSafeId(authDetails.identifier);
-      const logMsg = `Failed sign-in attempt from user ${safeId}.`;
-      logger.log("error", logMsg, error);
+    return;
+  }
 
-      return;
-    }
+  //  *start session creation
+  const { isPersistentAuth } = authDetails;
+  const { result: user } = verificationResult;
+  const sessionNumber = sessionManager.generateSessionNumber(user.id);
 
-    //  *start session creation
-    const { isPersistentAuth } = authDetails;
-    const { result: user } = verificationResult;
-    const sessionNumber = sessionManager.generateSessionNumber(user.id);
+  //  *create tokens
+  const tokenResult = await createTokens({
+    userDataService,
+    verifiedUser: user,
+    sessionNumber,
+    isPersistentAuth,
+  });
 
-    //  *create tokens
-    const tokenResult = await createTokens({
-      userDataService,
-      verifiedUser: user,
-      sessionNumber,
-      isPersistentAuth,
-      role,
-    });
+  const internalErrMsg =
+    "An error occurred while authenticating. Please try again later.";
+  if (!tokenResult.success) {
+    //  !failed creating tokens
+    const { error } = tokenResult;
 
-    const internalErrMsg =
-      "An error occurred while authenticating. Please try again later.";
-    if (!tokenResult.success) {
-      //  !failed creating tokens
-      const { error } = tokenResult;
+    res
+      .status(AuthError.Session.getErrStatusCode(error))
+      .json({ success: false, message: internalErrMsg });
 
-      res
-        .status(AuthError.Session.getErrStatusCode(error))
-        .json({ success: false, message: internalErrMsg });
+    logger.log("error", "Failed creating tokens.", error);
 
-      logger.log("error", "Failed creating tokens.", error);
+    return;
+  }
 
-      return;
-    }
+  //  *start session
+  const { accessToken, refreshToken } = tokenResult.result;
 
-    //  *start session
-    const { accessToken, refreshToken } = tokenResult.result;
+  const persistentTokenExpiry = new Date();
+  persistentTokenExpiry.setDate(persistentTokenExpiry.getDate() + 30);
+  const sessionResult = await sessionManager.startSession({
+    sessionNumber,
+    userId: user.id,
+    refreshToken,
+    expiresAt: isPersistentAuth ? persistentTokenExpiry : null,
+  });
 
-    const persistentTokenExpiry = new Date();
-    persistentTokenExpiry.setDate(persistentTokenExpiry.getDate() + 30);
-    const sessionResult = await sessionManager.startSession({
-      sessionNumber,
-      userId: user.id,
-      refreshToken,
-      expiresAt: isPersistentAuth ? persistentTokenExpiry : null,
-    });
+  if (!sessionResult.success) {
+    //  !failed starting session
+    const { error } = sessionResult;
 
-    if (!sessionResult.success) {
-      //  !failed starting session
-      const { error } = sessionResult;
+    res
+      .status(AuthError.Session.getErrStatusCode(error))
+      .json({ success: false, message: internalErrMsg });
 
-      res
-        .status(AuthError.Session.getErrStatusCode(error))
-        .json({ success: false, message: internalErrMsg });
+    logger.log("error", "Failed starting session.", error);
 
-      logger.log("error", "Failed starting session.", error);
+    return;
+  }
 
-      return;
-    }
+  const cookieResult = getRefreshConfig();
 
-    const cookieResult = getRefreshConfig();
+  if (!cookieResult.success) {
+    //  !failed getting refresh token config
+    const { error } = cookieResult;
 
-    if (!cookieResult.success) {
-      //  !failed getting refresh token config
-      const { error } = cookieResult;
+    res
+      .status(AuthError.AuthConfig.getErrStatusCode(error))
+      .json({ success: false, message: internalErrMsg });
 
-      res
-        .status(AuthError.AuthConfig.getErrStatusCode(error))
-        .json({ success: false, message: internalErrMsg });
+    logger.log("error", "Failed getting refresh token config.", error);
 
-      logger.log("error", "Failed getting refresh token config.", error);
+    return;
+  }
 
-      return;
-    }
+  const { cookieName, persistentCookie, sessionCookie } = cookieResult.result;
 
-    const { cookieName, persistentCookie, sessionCookie } = cookieResult.result;
-
-    //  *cookie creation
-    res.cookie(
-      cookieName,
-      refreshToken,
-      isPersistentAuth ? persistentCookie : sessionCookie
-    );
-    res.json({ success: true, accessToken, refreshToken }); //  ! refresh token is for demo only
-  };
+  //  *cookie creation
+  res.cookie(
+    cookieName,
+    refreshToken,
+    isPersistentAuth ? persistentCookie : sessionCookie
+  );
+  res.json({ success: true, accessToken, refreshToken }); //  ! refresh token is for demo only
 }
 
 function getSafeId(identifier: string): string {
