@@ -9,15 +9,9 @@ export const AuthRoutes = Router();
 AuthRoutes.use(attachUserDataService);
 
 AuthRoutes.post(
-  "/register/professor",
-  validateRequest(RegisterSchemas.professor),
-  controllers.handleRegister<RegisterSchemas.Professor>
-);
-
-AuthRoutes.post(
-  "/register/student",
-  validateRequest(RegisterSchemas.student),
-  controllers.handleRegister<RegisterSchemas.Student>
+  "/register",
+  validateRequest(RegisterSchemas.base),
+  controllers.handleRegister
 );
 
 AuthRoutes.use(attachSessionManager);

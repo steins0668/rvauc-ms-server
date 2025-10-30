@@ -1,16 +1,14 @@
 import type { Request, Response } from "express";
 import { RegisterSchemas } from "../schemas";
-import { UserDataService } from "../services";
 
-export async function handleRegister<TBody extends RegisterSchemas.User>(
-  req: Request<{}, {}, TBody>,
+export async function handleRegister(
+  req: Request<{}, {}, RegisterSchemas.Base>,
   res: Response
 ) {
   const { body, requestLogger, userDataService } = req;
 
   //  * check duplicates
-  const parsedBody = getSchemaType<TBody>(body);
-  const duplicateCheck = await userDataService.ensureNoDuplicates(parsedBody);
+  const duplicateCheck = await userDataService.ensureNoDuplicates(body);
 
   if (duplicateCheck.success && duplicateCheck.result.hasDuplicate) {
     const message = "User already exists.";
@@ -30,9 +28,7 @@ export async function handleRegister<TBody extends RegisterSchemas.User>(
 
   // * inserting user
   requestLogger.log("debug", "Inserting new user...");
-  const { type, schema } = parsedBody;
-  const resolver = insertResolver[type];
-  const userInsert = await resolver({ userDataService, schema } as never); //  * sidestep type mismatch
+  const userInsert = await userDataService.insertUser(body);
 
   if (userInsert.success) {
     console.log(`Inserted from ${userInsert.source}`);
@@ -52,62 +48,3 @@ export async function handleRegister<TBody extends RegisterSchemas.User>(
 
   return;
 }
-
-function getSchemaType<TObject extends RegisterSchemas.User>(object: TObject) {
-  for (const [name, schema] of Object.entries(RegisterSchemas.dictionary)) {
-    const parsedObject = schema.safeParse(object);
-
-    const type = name as keyof typeof RegisterSchemas.dictionary;
-
-    if (parsedObject.success)
-      return { type, schema: parsedObject.data } as RegisterSchemas.Types;
-  }
-
-  throw new Error("Failed parsing Register Form Schema.");
-}
-
-type InsertResolverArgs<T extends RegisterSchemas.Types> = {
-  userDataService: UserDataService;
-  schema: T["schema"];
-};
-
-const insertResolver = {
-  professor: async (
-    args: InsertResolverArgs<{
-      type: "professor";
-      schema: RegisterSchemas.Professor;
-    }>
-  ) => {
-    const schema = args.schema;
-    return await args.userDataService.insertUser({
-      type: "professor",
-      user: schema,
-      professor: schema,
-    });
-  },
-  student: async (
-    args: InsertResolverArgs<{
-      type: "student";
-      schema: RegisterSchemas.Student;
-    }>
-  ) => {
-    const schema = args.schema;
-    return await args.userDataService.insertUser({
-      type: "student",
-      user: schema,
-      student: schema,
-    });
-  },
-  user: async (
-    args: InsertResolverArgs<{
-      type: "user";
-      schema: RegisterSchemas.User;
-    }>
-  ) => {
-    const schema = args.schema;
-    return await args.userDataService.insertUser({
-      type: "user",
-      user: schema,
-    });
-  },
-};
