@@ -218,7 +218,7 @@ export class UserDataService {
   public async ensureNoDuplicates(args: RegisterSchemas.Types): Promise<
     | BaseResult.Success<{
         hasDuplicate: boolean;
-        from?: "students" | "users" | undefined;
+        from?: "students" | "users" | "professors" | undefined;
       }>
     | BaseResult.Fail<DbAccess.ErrorClass>
   > {
