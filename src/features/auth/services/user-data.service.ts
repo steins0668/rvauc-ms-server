@@ -231,15 +231,7 @@ export class UserDataService {
         fn: async (query, converter) => {
           const { email, username } = args.schema;
           const where = converter({ email, username });
-          const result = await query.findFirst({ where });
-
-          if (result === undefined)
-            throw new DbAccess.ErrorClass({
-              name: "DB_ACCESS_QUERY_ERROR",
-              message: "Failed querying users table.",
-            });
-
-          return result;
+          return await query.findFirst({ where });
         },
       });
 
