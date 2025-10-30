@@ -2,7 +2,7 @@ import { Router } from "express";
 import { validateRequest } from "../../middlewares";
 import * as controllers from "./controllers";
 import { attachSessionManager, attachUserDataService } from "./middlewares";
-import { RegisterSchemas, signInSchema } from "./schemas";
+import { roleBasedRegisterSchema, signInSchema } from "./schemas";
 
 export const AuthRoutes = Router();
 
@@ -10,7 +10,7 @@ AuthRoutes.use(attachUserDataService);
 
 AuthRoutes.post(
   "/register",
-  validateRequest(RegisterSchemas.base),
+  validateRequest(roleBasedRegisterSchema),
   controllers.handleRegister
 );
 

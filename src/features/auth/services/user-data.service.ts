@@ -4,9 +4,9 @@ import { DbAccess } from "../../../error";
 import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { ENUMS } from "../data";
-import { RegisterSchemas } from "../schemas";
 import type { QueryArgs } from "../types";
 import { Repositories } from "./repositories";
+import { RoleBasedRegisterSchema } from "../schemas";
 
 export async function createUserDataService() {
   const dbContext = await createContext();
@@ -142,7 +142,7 @@ export class UserDataService {
    * 3. Returns a success or failure result depending on the outcome.
    */
   public async insertUser(
-    form: RegisterSchemas.Base
+    form: RoleBasedRegisterSchema
   ): Promise<
     | BaseResult.Success<number | undefined, Role>
     | BaseResult.Fail<DbAccess.ErrorClass>
@@ -194,7 +194,7 @@ export class UserDataService {
    * @param form
    * @returns
    */
-  public async ensureNoDuplicates(form: RegisterSchemas.Base): Promise<
+  public async ensureNoDuplicates(form: RoleBasedRegisterSchema): Promise<
     | BaseResult.Success<{
         hasDuplicate: boolean;
         from?: Role | undefined;
@@ -304,9 +304,9 @@ export class UserDataService {
 
 //#region Types
 type Role = keyof typeof ENUMS.ROLES;
-type RoleId = RegisterSchemas.Base["roleId"];
+type RoleId = RoleBasedRegisterSchema["roleId"];
 type RegisterSchema<R extends RoleId> = Extract<
-  RegisterSchemas.Base,
+  RoleBasedRegisterSchema,
   { roleId: R }
 >;
 type DuplicateCheckResolvers = {

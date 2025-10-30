@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
-import { RegisterSchemas } from "../schemas";
+import { type RoleBasedRegisterSchema } from "../schemas";
 
 export async function handleRegister(
-  req: Request<{}, {}, RegisterSchemas.Base>,
+  req: Request<{}, {}, RoleBasedRegisterSchema>,
   res: Response
 ) {
   const { body, requestLogger, userDataService } = req;
