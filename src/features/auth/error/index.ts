@@ -1,5 +1,2 @@
-export * from "./auth-config.error";
-export * from "./register.error";
-export * from "./session.error";
-export * from "./sign-in.error";
-export * from "./user-data.error";
+export * from "./auth.error";
+export * as AuthError from "./auth.error";

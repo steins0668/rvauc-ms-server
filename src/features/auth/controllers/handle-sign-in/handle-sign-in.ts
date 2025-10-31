@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import * as AuthError from "../../error";
+import { AuthError } from "../../error";
 import { SignInSchema } from "../../schemas";
 import { createTokens, getRefreshConfig } from "../../utils";
 import { verifyUser } from "./verify-user";
