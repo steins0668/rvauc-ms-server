@@ -11,7 +11,7 @@ export namespace InsertArgs {
   type BaseInsertArgs<
     TInsertBuilder extends object,
     TFilterConverter extends Function,
-    TResult
+    TResult = ResultSet
   > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (
