@@ -3,23 +3,39 @@ import {
   SQLiteInsertBuilder,
   SQLiteUpdateBuilder,
 } from "drizzle-orm/sqlite-core";
-import { DbContext, TxContext } from "../../../db/create-context";
+import { DbContext, DbOrTx } from "../../../db/create-context";
 import { Repositories } from "../services";
 import * as Tables from "./auth-tables.type";
 
 export namespace InsertArgs {
-  export type SessionToken<T> = {
-    dbOrTx?: DbContext | TxContext | undefined;
+  type BaseInsertArgs<
+    TInsertBuilder extends object,
+    TFilterConverter extends Function,
+    TResult
+  > = {
+    dbOrTx?: DbOrTx | undefined;
     fn: (
-      insert: SQLiteInsertBuilder<Tables.SessionTokens, "async", ResultSet>,
-      filterConverter: Repositories.SessionToken["buildWhereClause"]
-    ) => Promise<T>;
+      insert: TInsertBuilder,
+      filterConverter: TFilterConverter
+    ) => Promise<TResult>;
   };
+
+  export type Professor<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.Professors, "async", ResultSet>,
+    Repositories.Professor["buildWhereClause"],
+    T
+  >;
+
+  export type SessionToken<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.SessionTokens, "async", ResultSet>,
+    Repositories.SessionToken["buildWhereClause"],
+    T
+  >;
 }
 
 export namespace UpdateArgs {
   export type SessionToken<T> = {
-    dbOrTx?: DbContext | TxContext | undefined;
+    dbOrTx?: DbOrTx | undefined;
     fn: (
       update: SQLiteUpdateBuilder<Tables.SessionTokens, "async", ResultSet>,
       filterConverter: Repositories.SessionToken["buildWhereClause"]
@@ -29,7 +45,7 @@ export namespace UpdateArgs {
 
 export namespace QueryArgs {
   export type Professor<T> = {
-    dbOrTx?: DbContext | TxContext | undefined;
+    dbOrTx?: DbOrTx | undefined;
     fn: (
       query: DbContext["query"]["professors"],
       filterConverter: Repositories.Professor["buildWhereClause"]
@@ -37,7 +53,7 @@ export namespace QueryArgs {
   };
 
   export type SessionToken<T> = {
-    dbOrTx?: DbContext | TxContext | undefined;
+    dbOrTx?: DbOrTx | undefined;
     fn: (
       query: DbContext["query"]["sessionTokens"],
       filterConverter: Repositories.SessionToken["buildWhereClause"]
@@ -45,7 +61,7 @@ export namespace QueryArgs {
   };
 
   export type Student<T> = {
-    dbOrTx?: DbContext | TxContext | undefined;
+    dbOrTx?: DbOrTx | undefined;
     fn: (
       query: DbContext["query"]["students"],
       filterConverter: Repositories.Student["buildWhereClause"]
@@ -53,7 +69,7 @@ export namespace QueryArgs {
   };
 
   export type User<T> = {
-    dbOrTx?: DbContext | TxContext | undefined;
+    dbOrTx?: DbOrTx | undefined;
     fn: (
       query: DbContext["query"]["users"],
       filterConverter: Repositories.User["buildWhereClause"]
