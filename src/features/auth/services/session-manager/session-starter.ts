@@ -73,16 +73,16 @@ export class SessionStarter {
   /**
    * @description Create a `UserSession` object and insert it to the `user_sessions`
    * table.
-   * @param options
+   * @param args
    * @returns
    */
-  private async createSession(options: {
+  private async createSession(args: {
     tx: TxContext;
     sessionNumber: string;
     userId: number;
     expiresAt?: Date | null;
   }): Promise<number> {
-    const { tx, userId, sessionNumber, expiresAt } = options;
+    const { tx, userId, sessionNumber, expiresAt } = args;
 
     const now = new Date();
     const nowISO = now.toISOString();
@@ -124,17 +124,17 @@ export class SessionStarter {
    * @description Create a `SessionToken` object and insert it to the
    * `session_tokens` table.
    * @param tx
-   * @param tknData
+   * @param args
    */
-  private async storeRefreshTkn(tknData: {
+  private async storeRefreshTkn(args: {
     tx: TxContext;
     sessionId: number;
     refreshToken: string;
   }): Promise<void> {
-    const { tx, sessionId, refreshToken } = tknData;
+    const { tx, sessionId, refreshToken } = args;
 
     const tknId = await this._sessionTokenRepository.execInsert({
-      dbOrTx: tknData.tx,
+      dbOrTx: tx,
       fn: async (insert) => {
         return await insert
           .values({

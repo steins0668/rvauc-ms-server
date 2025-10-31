@@ -2,7 +2,7 @@ import { TxContext } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { Session } from "../../error";
-import { QueryArgs, SessionResult, ViewModels } from "../../types";
+import { SessionResult } from "../../types";
 import { Repositories } from "../repositories";
 
 export class SessionTokenRotator {
@@ -17,14 +17,14 @@ export class SessionTokenRotator {
     this._userSessionRepository = userSessionTokenRepository;
   }
 
-  public async rotate(data: {
+  public async rotate(args: {
     sessionNumber: string;
     oldToken: string;
     newToken: string;
   }): Promise<
     SessionResult.Success<number, "SESSION_TOKEN_ROTATION"> | SessionResult.Fail
   > {
-    const { sessionNumber, oldToken, newToken } = data;
+    const { sessionNumber, oldToken, newToken } = args;
 
     try {
       const result = await this._userSessionRepository.execTransaction(
@@ -37,7 +37,7 @@ export class SessionTokenRotator {
 
           const newTknHash = HashUtil.byCrypto(newToken);
 
-          await this.ensureTokenUnused({ tx, tknHash: newTknHash });
+          await this.ensureTokenUnused({ tx, tokenHash: newTknHash });
 
           //  add new token
           await this.storeNewTkn({
@@ -65,10 +65,10 @@ export class SessionTokenRotator {
   /**
    * Update `lastUsed` field for session with the matching hash of the provided
    * `sessionNumber`.
-   * @param options
+   * @param args
    * @returns
    */
-  private async updateLastUsed(options: {
+  private async updateLastUsed(args: {
     tx: TxContext;
     sessionNumber: string;
   }): Promise<number> {
@@ -83,9 +83,9 @@ export class SessionTokenRotator {
     try {
       //  updated last used for session
       const updatedId = await this._userSessionRepository.updateLastUsed({
-        dbOrTx: options.tx,
+        dbOrTx: args.tx,
         queryBy: "session_hash",
-        sessionHash: HashUtil.byCrypto(options.sessionNumber),
+        sessionHash: HashUtil.byCrypto(args.sessionNumber),
       });
 
       if (updatedId === undefined) throw getUpdateErr();
@@ -101,18 +101,18 @@ export class SessionTokenRotator {
   /**
    * Invalidate the provided token string if found in the database by
    * setting the `isUsed` field to `true`.
-   * @param options
+   * @param args
    */
-  private async invalidateToken(options: {
+  private async invalidateToken(args: {
     tx: TxContext;
     oldToken: string;
   }): Promise<void> {
     try {
       await this._sessionTokenRepository.execUpdate({
-        dbOrTx: options.tx,
+        dbOrTx: args.tx,
         fn: async (update, converter) => {
           const where = converter({
-            tokenHash: HashUtil.byCrypto(options.oldToken),
+            tokenHash: HashUtil.byCrypto(args.oldToken),
           });
           return await update.set({ isUsed: true }).where(where);
         },
@@ -129,17 +129,17 @@ export class SessionTokenRotator {
   /**
    * Get the stored tokens in the database matching the provided hash.
    * If one of them has the `isUsed` field set to `true`, throw an error.
-   * @param options
+   * @param args
    */
-  private async ensureTokenUnused(options: {
+  private async ensureTokenUnused(args: {
     tx: TxContext;
-    tknHash: string;
+    tokenHash: string;
   }): Promise<void> {
     const usedToken = await this._sessionTokenRepository.execQuery({
       fn: async (query, converter) => {
         const where = converter({
           filterType: "and",
-          tokenHash: options.tknHash,
+          tokenHash: args.tokenHash,
           isUsed: true,
         });
         return await query.findFirst({ where });
@@ -154,18 +154,6 @@ export class SessionTokenRotator {
       });
   }
 
-  private async queryTokens<T>(args: QueryArgs.SessionToken<T>) {
-    try {
-      return await this._sessionTokenRepository.execQuery(args);
-    } catch (err) {
-      throw DbAccess.normalizeError({
-        name: "DB_ACCESS_QUERY_ERROR",
-        message: "Failed checking refresh tokens.",
-        err,
-      });
-    }
-  }
-
   /**
    * @description Create a new `SessionToken` object and insert it to the
    * `session_tokens` table.
@@ -177,10 +165,10 @@ export class SessionTokenRotator {
     tokenHash: string;
   }) {
     const getInsertErr = (cause?: unknown) => {
-      return new DbAccess.ErrorClass({
+      return DbAccess.normalizeError({
         name: "DB_ACCESS_INSERT_ERROR",
         message: "Failed to store new token.",
-        cause,
+        err: cause,
       });
     };
 
