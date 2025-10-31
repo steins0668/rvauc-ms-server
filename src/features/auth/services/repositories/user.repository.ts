@@ -48,9 +48,9 @@ export class UserRepository extends Repository<Tables.Users> {
     const conditions = [];
 
     if (filter) {
-      const { filterType = "or", userId, email, username } = filter;
-      if (userId !== undefined) {
-        conditions.push(eq(users.id, userId));
+      const { filterType = "or", id, email, username } = filter;
+      if (id !== undefined) {
+        conditions.push(eq(users.id, id));
       }
 
       if (email && email.trim()) {

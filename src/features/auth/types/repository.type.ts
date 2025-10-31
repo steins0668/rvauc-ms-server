@@ -1,6 +1,7 @@
 import { ResultSet } from "@libsql/client/.";
 import {
   SQLiteInsertBuilder,
+  SQLiteTable,
   SQLiteUpdateBuilder,
 } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx } from "../../../db/create-context";
@@ -110,6 +111,10 @@ export namespace QueryFilters {
   type PartialWithUndefined<T> = {
     [K in keyof T]?: T[K] | undefined;
   };
+
+  type BaseQueryFilter<TModel> = {
+    filterType?: "and" | "or" | undefined;
+  } & PartialWithUndefined<TModel>;
   /**
    * @description A type for the filter used for Db queries on the `students` table.
    * Contains the following fields:
@@ -119,24 +124,11 @@ export namespace QueryFilters {
    * - `collegeId`: Matches the professor's collegeId.
    * - `facultyRank`: Matches the student's facultyRank.
    */
-  export type Professor = {
-    filterType?: "and" | "or" | undefined;
-    id?: number | undefined;
-    collegeId?: number | undefined;
-    facultyRank?: string | undefined;
-  };
+  export type Professor = BaseQueryFilter<ViewModels.Professor>;
 
-  export type SessionToken = {
-    filterType?: "and" | "or" | undefined;
-    id?: number | undefined;
-    sessionId?: number | undefined;
-    tokenHash?: string | undefined;
-    isUsed?: boolean | undefined;
-  };
+  export type SessionToken = BaseQueryFilter<ViewModels.SessionToken>;
 
-  export type Role = {
-    filterType?: "and" | "or" | undefined;
-  } & PartialWithUndefined<ViewModels.Role>;
+  export type Role = BaseQueryFilter<ViewModels.Role>;
 
   /**
    * @description A type for the filter used for Db queries on the `students` table.
@@ -149,14 +141,7 @@ export namespace QueryFilters {
    * - `yearLevel`: Matches the student's yearLevel.
    * - `block`: Matches the student's block.
    */
-  export type Student = {
-    filterType?: "and" | "or" | undefined;
-    id?: number | undefined;
-    departmentId?: number | undefined;
-    studentNumber?: string | undefined;
-    yearLevel?: number | undefined;
-    block?: string | undefined;
-  };
+  export type Student = BaseQueryFilter<ViewModels.Student>;
 
   /**
    * @description A type for the filter used for Db queries on the {@link users} table.
@@ -167,10 +152,5 @@ export namespace QueryFilters {
    * - {@link email}: Matches the user's email.
    * - {@link username}: Matches the user's username.
    */
-  export type User = {
-    filterType?: "and" | "or";
-    userId?: number;
-    email?: string;
-    username?: string;
-  };
+  export type User = BaseQueryFilter<ViewModels.User>;
 }
