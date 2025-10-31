@@ -34,47 +34,61 @@ export namespace InsertArgs {
 }
 
 export namespace UpdateArgs {
-  export type SessionToken<T> = {
+  type BaseUpdateArgs<
+    TUpdateBuilder extends object,
+    TFilterConverter extends Function,
+    TResult = ResultSet
+  > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (
-      update: SQLiteUpdateBuilder<Tables.SessionTokens, "async", ResultSet>,
-      filterConverter: Repositories.SessionToken["buildWhereClause"]
-    ) => Promise<T>;
+      update: TUpdateBuilder,
+      filterConverter: TFilterConverter
+    ) => Promise<TResult>;
   };
+
+  export type SessionToken<T> = BaseUpdateArgs<
+    SQLiteUpdateBuilder<Tables.SessionTokens, "async", ResultSet>,
+    Repositories.SessionToken["buildWhereClause"],
+    T
+  >;
 }
 
 export namespace QueryArgs {
-  export type Professor<T> = {
+  type BaseQueryArgs<
+    TRelationalQueryBuilder extends object,
+    TFilterConverter extends Function,
+    TResult = ResultSet
+  > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (
-      query: DbContext["query"]["professors"],
-      filterConverter: Repositories.Professor["buildWhereClause"]
-    ) => Promise<T>;
+      query: TRelationalQueryBuilder,
+      filterConverter: TFilterConverter
+    ) => Promise<TResult>;
   };
 
-  export type SessionToken<T> = {
-    dbOrTx?: DbOrTx | undefined;
-    fn: (
-      query: DbContext["query"]["sessionTokens"],
-      filterConverter: Repositories.SessionToken["buildWhereClause"]
-    ) => Promise<T>;
-  };
+  export type Professor<T> = BaseQueryArgs<
+    DbContext["query"]["professors"],
+    Repositories.Professor["buildWhereClause"],
+    T
+  >;
 
-  export type Student<T> = {
-    dbOrTx?: DbOrTx | undefined;
-    fn: (
-      query: DbContext["query"]["students"],
-      filterConverter: Repositories.Student["buildWhereClause"]
-    ) => Promise<T>;
-  };
+  export type SessionToken<T> = BaseQueryArgs<
+    DbContext["query"]["sessionTokens"],
+    Repositories.SessionToken["buildWhereClause"],
+    T
+  >;
 
-  export type User<T> = {
-    dbOrTx?: DbOrTx | undefined;
-    fn: (
-      query: DbContext["query"]["users"],
-      filterConverter: Repositories.User["buildWhereClause"]
-    ) => Promise<T>;
-  };
+  export type Student<T> = BaseQueryArgs<
+    DbContext["query"]["students"],
+    Repositories.Student["buildWhereClause"],
+    T
+  >;
+
+  export type User<T> = BaseQueryArgs<
+    DbContext["query"]["users"],
+    Repositories.User["buildWhereClause"],
+    T
+  >;
 }
 
 export namespace QueryFilters {
