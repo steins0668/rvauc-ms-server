@@ -6,6 +6,7 @@ import {
 import { DbContext, DbOrTx } from "../../../db/create-context";
 import { Repositories } from "../services";
 import * as Tables from "./auth-tables.type";
+import { ViewModels } from ".";
 
 type AnyFunc = (...args: any[]) => any;
 
@@ -25,6 +26,12 @@ export namespace InsertArgs {
   export type Professor<T> = BaseInsertArgs<
     SQLiteInsertBuilder<Tables.Professors, "async", ResultSet>,
     Repositories.Professor["buildWhereClause"],
+    T
+  >;
+
+  export type Role<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.Roles, "async", ResultSet>,
+    Repositories.Role["buildWhereClause"],
     T
   >;
 
@@ -94,6 +101,9 @@ export namespace QueryArgs {
 }
 
 export namespace QueryFilters {
+  type PartialWithUndefined<T> = {
+    [K in keyof T]?: T[K] | undefined;
+  };
   /**
    * @description A type for the filter used for Db queries on the `students` table.
    * Contains the following fields:
@@ -117,6 +127,10 @@ export namespace QueryFilters {
     tokenHash?: string | undefined;
     isUsed?: boolean | undefined;
   };
+
+  export type Role = {
+    filterType?: "and" | "or" | undefined;
+  } & PartialWithUndefined<ViewModels.Role>;
 
   /**
    * @description A type for the filter used for Db queries on the `students` table.
