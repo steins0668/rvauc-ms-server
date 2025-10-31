@@ -9,6 +9,7 @@ import {
   QueryFilters,
   QueryArgs,
   UpdateArgs,
+  InsertArgs,
 } from "../../types";
 
 type TokenId = {
@@ -35,6 +36,12 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     super(context, sessionTokens);
   }
 
+  public async execInsert<T>(args: InsertArgs.SessionToken<T>) {
+    const insert = (args.dbOrTx ?? this._dbContext).insert(sessionTokens);
+    return await args.fn(insert, this._buildWhereClause);
+  }
+
+  //  todo: remove this
   public async insertOne({
     dbOrTx,
     sessionToken,

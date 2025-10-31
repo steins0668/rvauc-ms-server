@@ -1,8 +1,21 @@
 import { ResultSet } from "@libsql/client/.";
-import { SQLiteUpdateBuilder } from "drizzle-orm/sqlite-core";
+import {
+  SQLiteInsertBuilder,
+  SQLiteUpdateBuilder,
+} from "drizzle-orm/sqlite-core";
 import { DbContext, TxContext } from "../../../db/create-context";
 import { Repositories } from "../services";
 import * as Tables from "./auth-tables.type";
+
+export namespace InsertArgs {
+  export type SessionToken<T> = {
+    dbOrTx?: DbContext | TxContext | undefined;
+    fn: (
+      insert: SQLiteInsertBuilder<Tables.SessionTokens, "async", ResultSet>,
+      filterConverter: Repositories.SessionToken["_buildWhereClause"]
+    ) => Promise<T>;
+  };
+}
 
 export namespace UpdateArgs {
   export type SessionToken<T> = {
