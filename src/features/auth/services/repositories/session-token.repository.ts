@@ -48,7 +48,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
       pageNumber?: number;
     } & QueryOptions
   ): Promise<ViewModels.SessionToken[]> {
-    const whereClause = this.getWhereClause(queryOptions);
+    const whereClause = this.buildWhereClause(queryOptions);
 
     const tokens = await this._getMany({
       column: sessionTokens.sessionId,
@@ -62,7 +62,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
   public async invalidateTokens(
     queryOptions: QueryOptions
   ): Promise<ViewModels.SessionToken[]> {
-    const whereClause = this.getWhereClause(queryOptions);
+    const whereClause = this.buildWhereClause(queryOptions);
     const { dbOrTx = this._dbContext } = queryOptions;
 
     const updatedTokens = await dbOrTx
@@ -76,7 +76,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     return updatedTokens;
   }
 
-  private getWhereClause(queryOptions: QueryOptions) {
+  private buildWhereClause(queryOptions: QueryOptions) {
     switch (queryOptions.queryBy) {
       case "token_id":
         return eq(sessionTokens.id, queryOptions.id);

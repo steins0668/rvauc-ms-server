@@ -10,6 +10,14 @@ export namespace QueryArgs {
     ) => Promise<T>;
   };
 
+  export type SessionToken<T> = {
+    dbOrTx?: DbContext | TxContext | undefined;
+    fn: (
+      query: DbContext["query"]["sessionTokens"],
+      filterConverter: Repositories.SessionToken["buildWhereClause"]
+    ) => Promise<T>;
+  };
+
   export type Student<T> = {
     dbOrTx?: DbContext | TxContext | undefined;
     fn: (
