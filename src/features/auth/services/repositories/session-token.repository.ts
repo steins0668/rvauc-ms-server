@@ -8,6 +8,7 @@ import {
   Tables,
   QueryFilters,
   QueryArgs,
+  UpdateArgs,
 } from "../../types";
 
 type TokenId = {
@@ -69,6 +70,12 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     return tokens;
   }
 
+  public async execUpdate<T>(args: UpdateArgs.SessionToken<T>) {
+    const update = (args.dbOrTx ?? this._dbContext).update(sessionTokens);
+    return await args.fn(update, this._buildWhereClause);
+  }
+
+  //  todo: remove this
   public async invalidateTokens(
     queryOptions: QueryOptions
   ): Promise<ViewModels.SessionToken[]> {
@@ -109,6 +116,7 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
     return undefined;
   }
 
+  //  todo: remove this
   private buildWhereClause(queryOptions: QueryOptions) {
     switch (queryOptions.queryBy) {
       case "token_id":
