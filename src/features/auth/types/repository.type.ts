@@ -7,10 +7,12 @@ import { DbContext, DbOrTx } from "../../../db/create-context";
 import { Repositories } from "../services";
 import * as Tables from "./auth-tables.type";
 
+type AnyFunc = (...args: any[]) => any;
+
 export namespace InsertArgs {
   type BaseInsertArgs<
     TInsertBuilder extends object,
-    TFilterConverter extends Function,
+    TFilterConverter extends AnyFunc,
     TResult = ResultSet
   > = {
     dbOrTx?: DbOrTx | undefined;
@@ -36,7 +38,7 @@ export namespace InsertArgs {
 export namespace UpdateArgs {
   type BaseUpdateArgs<
     TUpdateBuilder extends object,
-    TFilterConverter extends Function,
+    TFilterConverter extends AnyFunc,
     TResult = ResultSet
   > = {
     dbOrTx?: DbOrTx | undefined;
@@ -56,7 +58,7 @@ export namespace UpdateArgs {
 export namespace QueryArgs {
   type BaseQueryArgs<
     TRelationalQueryBuilder extends object,
-    TFilterConverter extends Function,
+    TFilterConverter extends AnyFunc,
     TResult = ResultSet
   > = {
     dbOrTx?: DbOrTx | undefined;
