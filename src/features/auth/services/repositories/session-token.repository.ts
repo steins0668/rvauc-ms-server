@@ -17,22 +17,20 @@ export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
 
   public async execInsert<T>(args: InsertArgs.SessionToken<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(sessionTokens);
-    return await args.fn(insert, this._buildWhereClause);
+    return await args.fn(insert, this.buildWhereClause);
   }
 
   public async execQuery<T>(args: QueryArgs.SessionToken<T>) {
     const query = (args.dbOrTx ?? this._dbContext).query.sessionTokens;
-    return await args.fn(query, this._buildWhereClause);
+    return await args.fn(query, this.buildWhereClause);
   }
 
   public async execUpdate<T>(args: UpdateArgs.SessionToken<T>) {
     const update = (args.dbOrTx ?? this._dbContext).update(sessionTokens);
-    return await args.fn(update, this._buildWhereClause);
+    return await args.fn(update, this.buildWhereClause);
   }
 
-  private _buildWhereClause(
-    filter: QueryFilters.SessionToken
-  ): SQL | undefined {
+  private buildWhereClause(filter: QueryFilters.SessionToken): SQL | undefined {
     const conditions = [];
 
     if (filter) {

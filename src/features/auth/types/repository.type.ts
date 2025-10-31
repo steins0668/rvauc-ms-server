@@ -12,7 +12,7 @@ export namespace InsertArgs {
     dbOrTx?: DbContext | TxContext | undefined;
     fn: (
       insert: SQLiteInsertBuilder<Tables.SessionTokens, "async", ResultSet>,
-      filterConverter: Repositories.SessionToken["_buildWhereClause"]
+      filterConverter: Repositories.SessionToken["buildWhereClause"]
     ) => Promise<T>;
   };
 }
@@ -22,7 +22,7 @@ export namespace UpdateArgs {
     dbOrTx?: DbContext | TxContext | undefined;
     fn: (
       update: SQLiteUpdateBuilder<Tables.SessionTokens, "async", ResultSet>,
-      filterConverter: Repositories.SessionToken["_buildWhereClause"]
+      filterConverter: Repositories.SessionToken["buildWhereClause"]
     ) => Promise<T>;
   };
 }
@@ -40,7 +40,7 @@ export namespace QueryArgs {
     dbOrTx?: DbContext | TxContext | undefined;
     fn: (
       query: DbContext["query"]["sessionTokens"],
-      filterConverter: Repositories.SessionToken["_buildWhereClause"]
+      filterConverter: Repositories.SessionToken["buildWhereClause"]
     ) => Promise<T>;
   };
 
