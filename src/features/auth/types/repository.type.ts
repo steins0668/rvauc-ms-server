@@ -47,6 +47,12 @@ export namespace InsertArgs {
     Repositories.Student["buildWhereClause"],
     T
   >;
+
+  export type User<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.Users, "async", ResultSet>,
+    Repositories.User["buildWhereClause"],
+    T
+  >;
 }
 
 export namespace UpdateArgs {
