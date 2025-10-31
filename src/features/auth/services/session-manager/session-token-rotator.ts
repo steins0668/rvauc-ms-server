@@ -2,7 +2,7 @@ import { TxContext } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { Session } from "../../error";
-import { SessionResult, ViewModels } from "../../types";
+import { QueryArgs, SessionResult, ViewModels } from "../../types";
 import { Repositories } from "../repositories";
 
 export class SessionTokenRotator {
@@ -108,10 +108,14 @@ export class SessionTokenRotator {
     oldToken: string;
   }): Promise<void> {
     try {
-      await this._sessionTokenRepository.invalidateTokens({
+      await this._sessionTokenRepository.execUpdate({
         dbOrTx: options.tx,
-        queryBy: "token_hash",
-        tokenHash: HashUtil.byCrypto(options.oldToken),
+        fn: async (update, converter) => {
+          const where = converter({
+            tokenHash: HashUtil.byCrypto(options.oldToken),
+          });
+          return await update.set({ isUsed: true }).where(where);
+        },
       });
     } catch (err) {
       throw new DbAccess.ErrorClass({
@@ -131,27 +135,35 @@ export class SessionTokenRotator {
     tx: TxContext;
     tknHash: string;
   }): Promise<void> {
-    let usedTokens: ViewModels.SessionToken[] = [];
-    try {
-      usedTokens = await this._sessionTokenRepository.getMany({
-        dbOrTx: options.tx,
-        queryBy: "token_hash",
-        tokenHash: options.tknHash,
-      });
-    } catch (err) {
-      throw new DbAccess.ErrorClass({
-        name: "DB_ACCESS_QUERY_ERROR",
-        message: "Failed checking refresh tokens.",
-        cause: err,
-      });
-    }
+    const usedToken = await this._sessionTokenRepository.execQuery({
+      fn: async (query, converter) => {
+        const where = converter({
+          filterType: "and",
+          tokenHash: options.tknHash,
+          isUsed: true,
+        });
+        return await query.findFirst({ where });
+      },
+    });
 
     //  todo: add fallback behavior to this (delete/logout all sessions)
-    if (usedTokens.some((token) => token.isUsed))
+    if (usedToken !== undefined)
       throw new Session.ErrorClass({
         name: "SESSION_TOKEN_REUSE_ERROR",
         message: "Token is already used.",
       });
+  }
+
+  private async queryTokens<T>(args: QueryArgs.SessionToken<T>) {
+    try {
+      return await this._sessionTokenRepository.execQuery(args);
+    } catch (err) {
+      throw DbAccess.normalizeError({
+        name: "DB_ACCESS_QUERY_ERROR",
+        message: "Failed checking refresh tokens.",
+        err,
+      });
+    }
   }
 
   /**
@@ -173,11 +185,17 @@ export class SessionTokenRotator {
     };
 
     try {
-      const newTknId = await this._sessionTokenRepository.insertOne({
+      const newTknId = await this._sessionTokenRepository.execInsert({
         dbOrTx: options.tx,
-        sessionToken: {
-          ...options,
-          createdAt: new Date().toISOString(),
+        fn: async (insert) => {
+          return await insert
+            .values({
+              ...options,
+              createdAt: new Date().toISOString(),
+            })
+            .onConflictDoNothing()
+            .returning()
+            .then((result) => result[0]);
         },
       });
 

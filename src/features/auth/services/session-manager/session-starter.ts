@@ -133,12 +133,18 @@ export class SessionStarter {
   }): Promise<void> {
     const { tx, sessionId, refreshToken } = tknData;
 
-    const tknId = await this._sessionTokenRepository.insertOne({
-      dbOrTx: tx,
-      sessionToken: {
-        sessionId,
-        tokenHash: HashUtil.byCrypto(refreshToken),
-        createdAt: new Date().toISOString(),
+    const tknId = await this._sessionTokenRepository.execInsert({
+      dbOrTx: tknData.tx,
+      fn: async (insert) => {
+        return await insert
+          .values({
+            sessionId,
+            tokenHash: HashUtil.byCrypto(refreshToken),
+            createdAt: new Date().toISOString(),
+          })
+          .onConflictDoNothing()
+          .returning()
+          .then((result) => result[0]);
       },
     });
 
