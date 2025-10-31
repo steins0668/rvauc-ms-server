@@ -14,7 +14,7 @@ export namespace QueryArgs {
     dbOrTx?: DbContext | TxContext | undefined;
     fn: (
       query: DbContext["query"]["sessionTokens"],
-      filterConverter: Repositories.SessionToken["buildWhereClause"]
+      filterConverter: Repositories.SessionToken["_buildWhereClause"]
     ) => Promise<T>;
   };
 
@@ -50,6 +50,14 @@ export namespace QueryFilters {
     id?: number | undefined;
     collegeId?: number | undefined;
     facultyRank?: string | undefined;
+  };
+
+  export type SessionToken = {
+    filterType?: "and" | "or" | undefined;
+    id?: number | undefined;
+    sessionId?: number | undefined;
+    tokenHash?: string | undefined;
+    isUsed?: boolean | undefined;
   };
 
   /**
