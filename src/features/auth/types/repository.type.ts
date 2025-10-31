@@ -40,6 +40,12 @@ export namespace InsertArgs {
     Repositories.SessionToken["buildWhereClause"],
     T
   >;
+
+  export type Student<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.Student, "async", ResultSet>,
+    Repositories.Student["buildWhereClause"],
+    T
+  >;
 }
 
 export namespace UpdateArgs {

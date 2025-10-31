@@ -2,7 +2,7 @@ import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../../db/create-context";
 import { students } from "../../../../models";
 import { Repository } from "../../../../services";
-import { InsertModels, QueryArgs, QueryFilters, Tables } from "../../types";
+import { InsertModels, RepositoryTypes, Tables } from "../../types";
 
 export class StudentRepository extends Repository<Tables.Student> {
   public constructor(context: DbContext) {
@@ -17,18 +17,30 @@ export class StudentRepository extends Repository<Tables.Student> {
    * @param student - The new row to be inserted.
    * @returns - The id if the insert operation is successful, `undefined` otherwise.
    */
-  public async insertOne({
-    dbOrTx,
-    student,
-  }: {
+  public async insertOne(args: {
     dbOrTx?: DbContext | TxContext | undefined;
     student: InsertModels.Student;
   }): Promise<number | undefined> {
-    const inserted = await this._insertOne({ dbOrTx, value: student });
+    const { dbOrTx, student } = args;
+    const inserted = await this.execInsert({
+      dbOrTx,
+      fn: async (insert) => {
+        return await insert
+          .values(student)
+          .onConflictDoNothing()
+          .returning()
+          .then((result) => result[0]);
+      },
+    });
     return inserted?.id;
   }
 
-  public async execQuery<T>(args: QueryArgs.Student<T>) {
+  public async execInsert<T>(args: RepositoryTypes.InsertArgs.Student<T>) {
+    const insert = (args.dbOrTx ?? this._dbContext).insert(students);
+    return await args.fn(insert, this.buildWhereClause);
+  }
+
+  public async execQuery<T>(args: RepositoryTypes.QueryArgs.Student<T>) {
     const query = (args.dbOrTx ?? this._dbContext).query.students;
     return await args.fn(query, this.buildWhereClause);
   }
@@ -49,7 +61,9 @@ export class StudentRepository extends Repository<Tables.Student> {
    * @returns The composed `WHERE` SQL statement, or `undefined` if no
    * conditions are set.
    */
-  protected buildWhereClause(filter?: QueryFilters.Student): SQL | undefined {
+  protected buildWhereClause(
+    filter?: RepositoryTypes.QueryFilters.Student
+  ): SQL | undefined {
     const conditions = [];
 
     if (filter) {
