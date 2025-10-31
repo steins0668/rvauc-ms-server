@@ -9,6 +9,8 @@ export type TxContext = LibSQLTransaction<
   ExtractTablesWithRelations<typeof Schema>
 >;
 
+export type DbOrTx = DbContext | TxContext;
+
 let dbContext: DbContext | undefined;
 
 export async function createContext(): Promise<DbContext> {

@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext } from "../../../../db/create-context";
 import { roles } from "../../../../models";
 import { Repository } from "../../../../services";
-import { InsertModels, Tables, ViewModels } from "../../types";
+import { InsertModels, RepositoryTypes, Tables, ViewModels } from "../../types";
 
 type NewRole = InsertModels.Role;
 type RoleViewModel = ViewModels.Role;
@@ -31,9 +31,25 @@ export class RoleRepository extends Repository<Tables.Roles> {
    * @returns - The {@link roles.id} if the insert operation is successful, `undefined` otherwise.
    */
   public async insertOne(role: NewRole): Promise<number | undefined> {
-    const inserted = await this._insertOne({ value: role });
+    // const inserted = await this._insertOne({ value: role });
+    const inserted = await this.execInsert({
+      fn: async (insert, converter) => {
+        return await insert
+          .values(role)
+          .onConflictDoNothing()
+          .returning()
+          .then((result) => result[0]);
+      },
+    });
+
     return inserted?.id;
   }
+
+  public async execInsert<T>(args: RepositoryTypes.InsertArgs.Role<T>) {
+    const insert = (args.dbOrTx ?? this._dbContext).insert(roles);
+    return await args.fn(insert, this.buildWhereClause);
+  }
+
   /**
    * @public
    * @async
@@ -48,5 +64,24 @@ export class RoleRepository extends Repository<Tables.Roles> {
         : eq(roles.name, filter.name);
 
     return await this._getOne({ whereClause });
+  }
+
+  protected buildWhereClause(
+    filter?: RepositoryTypes.QueryFilters.Role | undefined
+  ): SQL | undefined {
+    const conditions = [];
+
+    if (filter) {
+      const { filterType, id, name } = filter;
+
+      if (id !== undefined) conditions.push(eq(roles.id, id));
+      if (name && name.trim()) conditions.push(eq(roles.name, name));
+
+      if (conditions.length > 0) {
+        return filterType === "or" ? or(...conditions) : and(...conditions);
+      }
+    }
+
+    return undefined;
   }
 }

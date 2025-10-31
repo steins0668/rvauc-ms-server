@@ -2,7 +2,7 @@ import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../../db/create-context";
 import { professors } from "../../../../models";
 import { Repository } from "../../../../services";
-import { InsertModels, QueryArgs, QueryFilters, Tables } from "../../types";
+import { InsertModels, RepositoryTypes, Tables } from "../../types";
 
 export class ProfessorRepository extends Repository<Tables.Professors> {
   public constructor(context: DbContext) {
@@ -18,23 +18,33 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
    * @param professor - The new row to be inserted.
    * @returns - The id if the insert operation is successful, `undefined` otherwise.
    */
-  public async insertOne({
-    dbOrTx,
-    professor,
-  }: {
+  public async insertOne(args: {
     dbOrTx?: DbContext | TxContext | undefined;
     professor: InsertModels.Professor;
   }): Promise<number | undefined> {
-    const inserted = await this._insertOne({ dbOrTx, value: professor });
+    const { dbOrTx, professor } = args;
+    // const inserted = await this._insertOne({ dbOrTx, value: professor });
+    const inserted = await this.execInsert({
+      dbOrTx,
+      fn: async (insert, converter) => {
+        return await insert
+          .values(professor)
+          .onConflictDoNothing()
+          .returning()
+          .then((result) => result[0]);
+      },
+    });
     return inserted?.id;
   }
 
-  public async execQuery<T>(args: QueryArgs.Professor<T>) {
-    return await args.fn(this.getQuery(args.dbOrTx), this.buildWhereClause);
+  public async execInsert<T>(args: RepositoryTypes.InsertArgs.Professor<T>) {
+    const insert = (args.dbOrTx ?? this._dbContext).insert(professors);
+    return await args.fn(insert, this.buildWhereClause);
   }
 
-  public getQuery(dbOrTx?: DbContext | TxContext | undefined) {
-    return (dbOrTx ?? this._dbContext).query.professors;
+  public async execQuery<T>(args: RepositoryTypes.QueryArgs.Professor<T>) {
+    const query = (args.dbOrTx ?? this._dbContext).query.professors;
+    return await args.fn(query, this.buildWhereClause);
   }
 
   /**
@@ -53,7 +63,9 @@ export class ProfessorRepository extends Repository<Tables.Professors> {
    * @returns The composed `WHERE` SQL statement, or `undefined` if no
    * conditions are set.
    */
-  protected buildWhereClause(filter?: QueryFilters.Professor): SQL | undefined {
+  protected buildWhereClause(
+    filter?: RepositoryTypes.QueryFilters.Professor
+  ): SQL | undefined {
     const conditions = [];
 
     if (filter) {

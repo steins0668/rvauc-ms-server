@@ -1,33 +1,126 @@
-import { DbContext, TxContext } from "../../../db/create-context";
+import { ResultSet } from "@libsql/client/.";
+import {
+  SQLiteInsertBuilder,
+  SQLiteTable,
+  SQLiteUpdateBuilder,
+} from "drizzle-orm/sqlite-core";
+import { DbContext, DbOrTx } from "../../../db/create-context";
 import { Repositories } from "../services";
+import * as Tables from "./auth-tables.type";
+import { ViewModels } from ".";
+
+type AnyFunc = (...args: any[]) => any;
+
+export namespace InsertArgs {
+  type BaseInsertArgs<
+    TInsertBuilder extends object,
+    TFilterConverter extends AnyFunc,
+    TResult = ResultSet
+  > = {
+    dbOrTx?: DbOrTx | undefined;
+    fn: (
+      insert: TInsertBuilder,
+      filterConverter: TFilterConverter
+    ) => Promise<TResult>;
+  };
+
+  export type Professor<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.Professors, "async", ResultSet>,
+    Repositories.Professor["buildWhereClause"],
+    T
+  >;
+
+  export type Role<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.Roles, "async", ResultSet>,
+    Repositories.Role["buildWhereClause"],
+    T
+  >;
+
+  export type SessionToken<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.SessionTokens, "async", ResultSet>,
+    Repositories.SessionToken["buildWhereClause"],
+    T
+  >;
+
+  export type Student<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.Student, "async", ResultSet>,
+    Repositories.Student["buildWhereClause"],
+    T
+  >;
+
+  export type User<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.Users, "async", ResultSet>,
+    Repositories.User["buildWhereClause"],
+    T
+  >;
+}
+
+export namespace UpdateArgs {
+  type BaseUpdateArgs<
+    TUpdateBuilder extends object,
+    TFilterConverter extends AnyFunc,
+    TResult = ResultSet
+  > = {
+    dbOrTx?: DbOrTx | undefined;
+    fn: (
+      update: TUpdateBuilder,
+      filterConverter: TFilterConverter
+    ) => Promise<TResult>;
+  };
+
+  export type SessionToken<T> = BaseUpdateArgs<
+    SQLiteUpdateBuilder<Tables.SessionTokens, "async", ResultSet>,
+    Repositories.SessionToken["buildWhereClause"],
+    T
+  >;
+}
 
 export namespace QueryArgs {
-  export type Professor<T> = {
-    dbOrTx?: DbContext | TxContext | undefined;
+  type BaseQueryArgs<
+    TRelationalQueryBuilder extends object,
+    TFilterConverter extends AnyFunc,
+    TResult = ResultSet
+  > = {
+    dbOrTx?: DbOrTx | undefined;
     fn: (
-      query: DbContext["query"]["professors"],
-      filterConverter: Repositories.Professor["buildWhereClause"]
-    ) => Promise<T>;
+      query: TRelationalQueryBuilder,
+      filterConverter: TFilterConverter
+    ) => Promise<TResult>;
   };
 
-  export type Student<T> = {
-    dbOrTx?: DbContext | TxContext | undefined;
-    fn: (
-      query: DbContext["query"]["students"],
-      filterConverter: Repositories.Student["buildWhereClause"]
-    ) => Promise<T>;
-  };
+  export type Professor<T> = BaseQueryArgs<
+    DbContext["query"]["professors"],
+    Repositories.Professor["buildWhereClause"],
+    T
+  >;
 
-  export type User<T> = {
-    dbOrTx?: DbContext | TxContext | undefined;
-    fn: (
-      query: DbContext["query"]["users"],
-      filterConverter: Repositories.User["buildWhereClause"]
-    ) => Promise<T>;
-  };
+  export type SessionToken<T> = BaseQueryArgs<
+    DbContext["query"]["sessionTokens"],
+    Repositories.SessionToken["buildWhereClause"],
+    T
+  >;
+
+  export type Student<T> = BaseQueryArgs<
+    DbContext["query"]["students"],
+    Repositories.Student["buildWhereClause"],
+    T
+  >;
+
+  export type User<T> = BaseQueryArgs<
+    DbContext["query"]["users"],
+    Repositories.User["buildWhereClause"],
+    T
+  >;
 }
 
 export namespace QueryFilters {
+  type PartialWithUndefined<T> = {
+    [K in keyof T]?: T[K] | undefined;
+  };
+
+  type BaseQueryFilter<TModel> = {
+    filterType?: "and" | "or" | undefined;
+  } & PartialWithUndefined<TModel>;
   /**
    * @description A type for the filter used for Db queries on the `students` table.
    * Contains the following fields:
@@ -37,12 +130,11 @@ export namespace QueryFilters {
    * - `collegeId`: Matches the professor's collegeId.
    * - `facultyRank`: Matches the student's facultyRank.
    */
-  export type Professor = {
-    filterType?: "and" | "or" | undefined;
-    id?: number | undefined;
-    collegeId?: number | undefined;
-    facultyRank?: string | undefined;
-  };
+  export type Professor = BaseQueryFilter<ViewModels.Professor>;
+
+  export type SessionToken = BaseQueryFilter<ViewModels.SessionToken>;
+
+  export type Role = BaseQueryFilter<ViewModels.Role>;
 
   /**
    * @description A type for the filter used for Db queries on the `students` table.
@@ -55,14 +147,7 @@ export namespace QueryFilters {
    * - `yearLevel`: Matches the student's yearLevel.
    * - `block`: Matches the student's block.
    */
-  export type Student = {
-    filterType?: "and" | "or" | undefined;
-    id?: number | undefined;
-    departmentId?: number | undefined;
-    studentNumber?: string | undefined;
-    yearLevel?: number | undefined;
-    block?: string | undefined;
-  };
+  export type Student = BaseQueryFilter<ViewModels.Student>;
 
   /**
    * @description A type for the filter used for Db queries on the {@link users} table.
@@ -73,10 +158,5 @@ export namespace QueryFilters {
    * - {@link email}: Matches the user's email.
    * - {@link username}: Matches the user's username.
    */
-  export type User = {
-    filterType?: "and" | "or";
-    userId?: number;
-    email?: string;
-    username?: string;
-  };
+  export type User = BaseQueryFilter<ViewModels.User>;
 }
