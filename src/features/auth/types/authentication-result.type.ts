@@ -3,6 +3,7 @@ import { AuthError } from "../error";
 
 export namespace AuthenticationResult {
   type SuccessSource =
+    | "AUTHENTICATION_PASSWORD_RESET_CREATE_TOKEN"
     | "AUTHENTICATION_SIGN_IN_VERIFY_USER"
     | "AUTHENTICATION_SIGN_IN_COOKIE_CONFIG"
     | "AUTHENTICATION_SESSION_END"
