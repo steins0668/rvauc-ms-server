@@ -22,6 +22,13 @@
       "when": 1761989182941,
       "tag": "0002_overjoyed_starbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1761996738543,
+      "tag": "0003_tiny_black_bolt",
+      "breakpoints": true
     }
   ]
 }
