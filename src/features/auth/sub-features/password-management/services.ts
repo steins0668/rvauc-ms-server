@@ -66,6 +66,35 @@ export namespace Services {
           return fail(err);
         }
       }
+
+      public async deleteResetToken(
+        id: number
+      ): Promise<
+        | AuthenticationResult.Success<number | undefined>
+        | AuthenticationResult.Fail
+      > {
+        try {
+          const deleted = await this._passwordResetTokenRepo.execDelete({
+            fn: async (deleteBase, converter) => {
+              const where = converter({ id });
+              return await deleteBase
+                .where(where)
+                .returning()
+                .then((result) => result[0]);
+            },
+          });
+
+          return ResultBuilder.success(deleted?.id);
+        } catch (err) {
+          return ResultBuilder.fail(
+            AuthError.Authentication.normalizeError({
+              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR",
+              message: `Failed deleteing reset token with id ${id}`,
+              err,
+            })
+          );
+        }
+      }
     }
   }
 }
