@@ -1,5 +1,6 @@
 import { Schema } from "../../../models";
 
+export type PasswordResetToken = typeof Schema.passwordResetTokens;
 export type Professors = typeof Schema.professors;
 export type Roles = typeof Schema.roles;
 export type SessionTokens = typeof Schema.sessionTokens;

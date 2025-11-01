@@ -24,6 +24,12 @@ export namespace InsertArgs {
     ) => Promise<TResult>;
   };
 
+  export type PasswordResetToken<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.PasswordResetToken, "async", ResultSet>,
+    Repositories.PasswordResetToken["buildWhereClause"],
+    T
+  >;
+
   export type Professor<T> = BaseInsertArgs<
     SQLiteInsertBuilder<Tables.Professors, "async", ResultSet>,
     Repositories.Professor["buildWhereClause"],
@@ -68,6 +74,12 @@ export namespace UpdateArgs {
     ) => Promise<TResult>;
   };
 
+  export type PasswordResetToken<T> = BaseUpdateArgs<
+    SQLiteUpdateBuilder<Tables.PasswordResetToken, "async", ResultSet>,
+    Repositories.PasswordResetToken["buildWhereClause"],
+    T
+  >;
+
   export type SessionToken<T> = BaseUpdateArgs<
     SQLiteUpdateBuilder<Tables.SessionTokens, "async", ResultSet>,
     Repositories.SessionToken["buildWhereClause"],
@@ -87,6 +99,11 @@ export namespace QueryArgs {
       filterConverter: TFilterConverter
     ) => Promise<TResult>;
   };
+  export type PasswordResetToken<T> = BaseQueryArgs<
+    DbContext["query"]["passwordResetTokens"],
+    Repositories.PasswordResetToken["buildWhereClause"],
+    T
+  >;
 
   export type Professor<T> = BaseQueryArgs<
     DbContext["query"]["professors"],
@@ -121,6 +138,9 @@ export namespace QueryFilters {
   type BaseQueryFilter<TModel> = {
     filterType?: "and" | "or" | undefined;
   } & PartialWithUndefined<TModel>;
+
+  export type PasswordResetToken =
+    BaseQueryFilter<ViewModels.PasswordResetToken>;
   /**
    * @description A type for the filter used for Db queries on the `students` table.
    * Contains the following fields:
