@@ -9,6 +9,15 @@ export class PasswordResetTokenRepository extends Repository<Tables.PasswordRese
     super(context, passwordResetTokens);
   }
 
+  public async execDelete<T>(
+    args: RepositoryTypes.DeleteArgs.PasswordResetToken<T>
+  ) {
+    const deleteBase = (args.dbOrTx ?? this._dbContext).delete(
+      passwordResetTokens
+    );
+    return await args.fn(deleteBase, this.buildWhereClause);
+  }
+
   public async execInsert<T>(
     args: RepositoryTypes.InsertArgs.PasswordResetToken<T>
   ) {
