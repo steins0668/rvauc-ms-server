@@ -5,6 +5,7 @@ import { AuthStatusCode } from "../data";
 export namespace Authentication {
   export type ErrorName =
     | "AUTHENTICATION_IDENTITY_USER_NOT_FOUND_ERROR" // for users not found
+    | "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR" // for password reset token failing to create or store
     | "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR" //  for incorrect login credentials
     | "AUTHENTICATION_SIGN_IN_SYSTEM_ERROR" //  internal errors (e.g. db)
     | "AUTHENTICATION_SESSION_START_ERROR" //  failed starting session
