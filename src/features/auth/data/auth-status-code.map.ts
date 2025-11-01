@@ -9,6 +9,7 @@ export namespace AuthStatusCode {
 
   export const AuthenticationError: Exhaustive<AuthError.Authentication.ErrorName> =
     {
+      AUTHENTICATION_IDENTITY_USER_NOT_FOUND_ERROR: 401,
       AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR: 401, //  unauthorized
       AUTHENTICATION_SIGN_IN_SYSTEM_ERROR: 500, //  internal server error
       AUTHENTICATION_SESSION_CLEANUP_ERROR: 500,
