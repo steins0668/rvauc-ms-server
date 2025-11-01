@@ -1,7 +1,7 @@
 import { ResultSet } from "@libsql/client/.";
 import {
+  SQLiteDeleteBase,
   SQLiteInsertBuilder,
-  SQLiteTable,
   SQLiteUpdateBuilder,
 } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx } from "../../../db/create-context";
@@ -10,6 +10,26 @@ import * as Tables from "./auth-tables.type";
 import { ViewModels } from ".";
 
 type AnyFunc = (...args: any[]) => any;
+
+export namespace DeleteArgs {
+  type BaseDeleteArgs<
+    TDeleteBuilder extends object,
+    TFilterConverter extends AnyFunc,
+    TResult = ResultSet
+  > = {
+    dbOrTx?: DbOrTx | undefined;
+    fn: (
+      deleteBase: TDeleteBuilder,
+      filterConverter: TFilterConverter
+    ) => Promise<TResult>;
+  };
+
+  export type PasswordResetToken<T> = BaseDeleteArgs<
+    SQLiteDeleteBase<Tables.PasswordResetToken, "async", ResultSet>,
+    Repositories.PasswordResetToken["buildWhereClause"],
+    T
+  >;
+}
 
 export namespace InsertArgs {
   type BaseInsertArgs<
