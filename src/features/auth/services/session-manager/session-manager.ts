@@ -1,6 +1,6 @@
 import { createContext } from "../../../../db/create-context";
 import { Repositories } from "../repositories";
-import { SessionResult } from "../../types";
+import { AuthenticationResult } from "../../types";
 import { SessionCleanupService } from "./session-cleanup.service";
 import { SessionStarter } from "./session-starter";
 import { SessionTokenRotator } from "./session-token-rotator";
@@ -55,7 +55,7 @@ export class SessionManager {
     refreshToken: string;
     expiresAt?: Date | null;
   }): Promise<
-    SessionResult.Success<string, "SESSION_START"> | SessionResult.Fail
+    AuthenticationResult.Success<string> | AuthenticationResult.Fail
   > {
     return await this._starter.newSession(sessionData);
   }
@@ -75,7 +75,7 @@ export class SessionManager {
     oldToken: string;
     newToken: string;
   }): Promise<
-    SessionResult.Success<number, "SESSION_TOKEN_ROTATION"> | SessionResult.Fail
+    AuthenticationResult.Success<number> | AuthenticationResult.Fail
   > {
     return await this._rotator.rotate(sessionData);
   }
@@ -91,8 +91,7 @@ export class SessionManager {
   public async endSession(
     sessionNumber: string
   ): Promise<
-    | SessionResult.Success<number | undefined, "SESSION_END">
-    | SessionResult.Fail
+    AuthenticationResult.Success<number | undefined> | AuthenticationResult.Fail
   > {
     return await this._cleanup.endSession(sessionNumber);
   }
@@ -106,7 +105,7 @@ export class SessionManager {
    * the error class is returned.
    */
   public async endIdleSessions(): Promise<
-    SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
+    AuthenticationResult.Success<number[]> | AuthenticationResult.Fail
   > {
     return await this._cleanup.endIdleSessions();
   }
@@ -119,7 +118,7 @@ export class SessionManager {
    * containing the error class is returned.
    */
   public async endExpiredSessions(): Promise<
-    SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
+    AuthenticationResult.Success<number[]> | AuthenticationResult.Fail
   > {
     return await this._cleanup.endExpiredSessions();
   }

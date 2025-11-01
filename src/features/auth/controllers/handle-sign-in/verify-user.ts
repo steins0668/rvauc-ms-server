@@ -2,7 +2,7 @@ import { Request } from "express";
 import bcrypt from "bcrypt";
 import { ResultBuilder } from "../../../../utils";
 import { SignInSchema } from "../../schemas";
-import { SignInResult, ViewModels } from "../../types";
+import { AuthenticationResult, ViewModels } from "../../types";
 import { getSignInMethod } from "./get-sign-in-method";
 
 /**
@@ -21,7 +21,9 @@ import { getSignInMethod } from "./get-sign-in-method";
  */
 export async function verifyUser(
   req: Request<{}, {}, SignInSchema>
-): Promise<SignInResult.Success<ViewModels.User> | SignInResult.Fail> {
+): Promise<
+  AuthenticationResult.Success<ViewModels.User> | AuthenticationResult.Fail
+> {
   const { body: authDetails, requestLogger } = req;
 
   requestLogger.log("debug", "Verifying user...");
@@ -54,7 +56,10 @@ export async function verifyUser(
 
       //  success authenticating with password.
       if (isAuthenticated)
-        return ResultBuilder.success(result, "SIGN_IN_VERIFY_USER");
+        return ResultBuilder.success(
+          result,
+          "AUTHENTICATION_SIGN_IN_VERIFY_USER"
+        );
     }
 
     //  no user found with credentials or incorrect password.

@@ -3,7 +3,7 @@ import { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { type CookieConfig, ENUMS, TOKEN_CONFIG_RECORD } from "../data";
 import { AuthError } from "../error";
-import { SessionResult, ViewModels } from "../types";
+import { AuthenticationResult, ViewModels } from "../types";
 import { createTokens } from "../utils";
 import { verifyRefreshTkn } from "../utils/verify-refresh-tkn";
 
@@ -141,8 +141,7 @@ async function resolveUser(
   req: Request,
   id: number
 ): Promise<
-  | SessionResult.Success<ViewModels.User, "SESSION_TOKEN_VERIFY">
-  | SessionResult.Fail
+  AuthenticationResult.Success<ViewModels.User> | AuthenticationResult.Fail
 > {
   const { userDataService } = req;
 
@@ -153,7 +152,10 @@ async function resolveUser(
   });
 
   if (userQuery.success && userQuery.result)
-    return ResultBuilder.success(userQuery.result, "SESSION_TOKEN_VERIFY");
+    return ResultBuilder.success(
+      userQuery.result,
+      "AUTHENTICATION_SESSION_TOKEN_VERIFY"
+    );
 
   //  !user query fails or user query result is undefined
   return ResultBuilder.fail(

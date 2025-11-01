@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { getTknSecrets } from "../data";
 import { Payloads } from "../schemas";
 import { AuthError } from "../error";
-import { SessionResult } from "../types";
+import { AuthenticationResult } from "../types";
 import { ResultBuilder } from "../../../utils";
 
 /**
@@ -23,8 +23,8 @@ export function verifyRefreshTkn(
   req: Request,
   refreshToken: string
 ):
-  | SessionResult.Success<Payloads.RefreshToken.Payload, "SESSION_TOKEN_VERIFY">
-  | SessionResult.Fail {
+  | AuthenticationResult.Success<Payloads.RefreshToken.Payload>
+  | AuthenticationResult.Fail {
   const { requestLogger } = req;
 
   let payload;
@@ -50,5 +50,8 @@ export function verifyRefreshTkn(
     });
   }
 
-  return ResultBuilder.success(payloadParse.data, "SESSION_TOKEN_VERIFY");
+  return ResultBuilder.success(
+    payloadParse.data,
+    "AUTHENTICATION_SESSION_TOKEN_VERIFY"
+  );
 }

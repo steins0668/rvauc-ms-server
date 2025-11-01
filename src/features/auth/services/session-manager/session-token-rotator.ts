@@ -2,7 +2,7 @@ import { TxContext } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { AuthError } from "../../error";
-import { SessionResult } from "../../types";
+import { AuthenticationResult } from "../../types";
 import { Repositories } from "../repositories";
 
 export class SessionTokenRotator {
@@ -22,7 +22,7 @@ export class SessionTokenRotator {
     oldToken: string;
     newToken: string;
   }): Promise<
-    SessionResult.Success<number, "SESSION_TOKEN_ROTATION"> | SessionResult.Fail
+    AuthenticationResult.Success<number> | AuthenticationResult.Fail
   > {
     const { sessionNumber, oldToken, newToken } = args;
 
@@ -50,7 +50,10 @@ export class SessionTokenRotator {
         }
       );
 
-      return ResultBuilder.success(result, "SESSION_TOKEN_ROTATION");
+      return ResultBuilder.success(
+        result,
+        "AUTHENTICATION_SESSION_TOKEN_ROTATION"
+      );
     } catch (err) {
       const error = AuthError.Authentication.normalizeError({
         name: "AUTHENTICATION_SESSION_TOKEN_ROTATION_ERROR",
