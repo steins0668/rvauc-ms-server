@@ -139,7 +139,7 @@ function getRefreshConfig():
 
 async function resolveUser(
   req: Request,
-  userId: number
+  id: number
 ): Promise<
   | SessionResult.Success<ViewModels.User, "SESSION_TOKEN_VERIFY">
   | SessionResult.Fail
@@ -148,7 +148,7 @@ async function resolveUser(
 
   const userQuery = await userDataService.queryUsers({
     fn: async (query, converter) => {
-      return await query.findFirst({ where: converter({ userId }) });
+      return await query.findFirst({ where: converter({ id }) });
     },
   });
 
