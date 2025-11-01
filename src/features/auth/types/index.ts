@@ -6,4 +6,3 @@ export * as RepositoryTypes from "./repository.type";
 export * from "./repository.type";
 export * from "./session-result.type";
 export * from "./sign-in-result.type";
-export * from "./user-data-result.type";

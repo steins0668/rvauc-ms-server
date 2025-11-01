@@ -31,7 +31,7 @@ export async function verifyUser(
   if (signInMethod === null)
     //  garbage input guard
     return ResultBuilder.fail({
-      name: "SIGN_IN_INVALID_CREDENTIALS_ERROR",
+      name: "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR",
       message: "Incorrect sign-in credentials. Please try again.",
     });
 
@@ -59,14 +59,14 @@ export async function verifyUser(
 
     //  no user found with credentials or incorrect password.
     return ResultBuilder.fail({
-      name: "SIGN_IN_VERIFICATION_ERROR",
+      name: "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR",
       message: "Incorrect sign-in credentials. Please try again.",
     });
   }
 
   //  db query failed for some reason.
   return ResultBuilder.fail({
-    name: "SIGN_IN_SYSTEM_ERROR",
+    name: "AUTHENTICATION_SIGN_IN_SYSTEM_ERROR",
     message: "An error occurred while authenticating. Please try again later.",
     cause: queryResult.error,
   });

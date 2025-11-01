@@ -1,7 +1,7 @@
 import { TxContext } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../utils";
-import { Session } from "../../error";
+import { AuthError } from "../../error";
 import { SessionResult } from "../../types";
 import { Repositories } from "../repositories";
 
@@ -52,8 +52,8 @@ export class SessionTokenRotator {
 
       return ResultBuilder.success(result, "SESSION_TOKEN_ROTATION");
     } catch (err) {
-      const error = Session.normalizeError({
-        name: "SESSION_TOKEN_ROTATION_ERROR",
+      const error = AuthError.Authentication.normalizeError({
+        name: "AUTHENTICATION_SESSION_TOKEN_ROTATION_ERROR",
         message: "Failed rotating tokens. Please try again later.",
         err,
       });
@@ -148,8 +148,8 @@ export class SessionTokenRotator {
 
     //  todo: add fallback behavior to this (delete/logout all sessions)
     if (usedToken !== undefined)
-      throw new Session.ErrorClass({
-        name: "SESSION_TOKEN_REUSE_ERROR",
+      throw new AuthError.Authentication.ErrorClass({
+        name: "AUTHENTICATION_SESSION_TOKEN_REUSE_ERROR",
         message: "Token is already used.",
       });
   }

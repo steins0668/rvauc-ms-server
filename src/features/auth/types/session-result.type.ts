@@ -1,5 +1,5 @@
 import { BaseResult } from "../../../types";
-import { Session } from "../error";
+import { AuthError } from "../error";
 
 export namespace SessionResult {
   type SuccessSource =
@@ -12,5 +12,5 @@ export namespace SessionResult {
     TResult,
     TSource extends SuccessSource
   > = BaseResult.Success<TResult, TSource>;
-  export type Fail = BaseResult.Fail<Session.ErrorClass>;
+  export type Fail = BaseResult.Fail<AuthError.Authentication.ErrorClass>;
 }

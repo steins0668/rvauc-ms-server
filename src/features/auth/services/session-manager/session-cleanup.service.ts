@@ -1,5 +1,5 @@
 import { HashUtil, ResultBuilder } from "../../../../utils";
-import { Session } from "../../error";
+import { AuthError } from "../../error";
 import { SessionResult } from "../../types";
 import { Repositories } from "../repositories";
 
@@ -36,8 +36,8 @@ export class SessionCleanupService {
 
       return ResultBuilder.success(deletedId, "SESSION_END");
     } catch (err) {
-      const error: Session.ErrorClass = {
-        name: "SESSION_CLEANUP_ERROR",
+      const error: AuthError.Authentication.ErrorClass = {
+        name: "AUTHENTICATION_SESSION_CLEANUP_ERROR",
         message: "Failed deleting session. Please try again later.",
         cause: err,
       };
@@ -63,8 +63,8 @@ export class SessionCleanupService {
 
       return ResultBuilder.success(deletedSessionIds, "SESSION_END");
     } catch (err) {
-      const error: Session.ErrorClass = {
-        name: "SESSION_CLEANUP_ERROR",
+      const error: AuthError.Authentication.ErrorClass = {
+        name: "AUTHENTICATION_SESSION_CLEANUP_ERROR",
         message: "Failed deleting idle sessions.",
         cause: err,
       };
@@ -91,8 +91,8 @@ export class SessionCleanupService {
 
       return ResultBuilder.success(deletedSessionIds, "SESSION_END");
     } catch (err) {
-      const error: Session.ErrorClass = {
-        name: "SESSION_CLEANUP_ERROR",
+      const error: AuthError.Authentication.ErrorClass = {
+        name: "AUTHENTICATION_SESSION_CLEANUP_ERROR",
         message: "Failed deleting idle sessions.",
         cause: err,
       };

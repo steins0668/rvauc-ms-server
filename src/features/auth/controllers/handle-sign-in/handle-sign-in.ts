@@ -24,7 +24,7 @@ export async function handleSignIn(
     const { error } = verificationResult;
 
     res
-      .status(AuthError.SignIn.getErrStatusCode(error))
+      .status(AuthError.Authentication.getErrStatusCode(error))
       .json({ success: false, message: error.message });
 
     const safeId = getSafeId(authDetails.identifier);
@@ -54,7 +54,7 @@ export async function handleSignIn(
     const { error } = tokenResult;
 
     res
-      .status(AuthError.Session.getErrStatusCode(error))
+      .status(AuthError.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed creating tokens.", error);
@@ -79,7 +79,7 @@ export async function handleSignIn(
     const { error } = sessionResult;
 
     res
-      .status(AuthError.Session.getErrStatusCode(error))
+      .status(AuthError.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed starting session.", error);
