@@ -38,29 +38,24 @@ export namespace Services {
           );
 
         try {
-          const stored = await this._passwordResetTokenRepo.execTransaction(
-            async (tx) => {
-              await this._passwordResetTokenRepo.execInsert({
-                dbOrTx: tx,
-                fn: async (insert) => {
-                  const now = new Date();
-                  const expiry = new Date();
-                  expiry.setMinutes(now.getMinutes() + 10);
+          const stored = await this._passwordResetTokenRepo.execInsert({
+            fn: async (insert) => {
+              const now = new Date();
+              const expiry = new Date();
+              expiry.setMinutes(now.getMinutes() + 10);
 
-                  return await insert
-                    .values({
-                      userId,
-                      tokenHash,
-                      createdAt: now.toISOString(),
-                      expiresAt: expiry.toISOString(),
-                    })
-                    .onConflictDoNothing()
-                    .returning()
-                    .then((result) => result[0]);
-                },
-              });
-            }
-          );
+              return await insert
+                .values({
+                  userId,
+                  tokenHash,
+                  createdAt: now.toISOString(),
+                  expiresAt: expiry.toISOString(),
+                })
+                .onConflictDoNothing()
+                .returning()
+                .then((result) => result[0]);
+            },
+          });
 
           if (stored === undefined) return fail();
 
