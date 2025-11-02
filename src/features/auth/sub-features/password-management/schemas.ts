@@ -1,4 +1,5 @@
 import z from "zod";
+import { REGEX } from "../../data";
 
 export namespace Schemas {
   export type ForgotPassword = z.infer<typeof forgotPassword>;
@@ -8,5 +9,30 @@ export namespace Schemas {
       error: (iss) =>
         iss.input === undefined ? "Email is required." : "Invalid email.",
     }),
+  });
+
+  export type ResetPassword = z.infer<typeof resetPassword>;
+
+  export const resetPassword = z.strictObject({
+    password: z
+      .string({
+        error: (iss) =>
+          iss.input === undefined
+            ? "Password is required."
+            : "Invalid Password",
+      })
+      .regex(REGEX.AUTH.PASSWORD, {
+        error: "Invalid password.",
+      }),
+    confirmPassword: z
+      .string({
+        error: (iss) =>
+          iss.input === undefined
+            ? "Confirm Password is required."
+            : "Invalid Password",
+      })
+      .regex(REGEX.AUTH.PASSWORD, {
+        error: "Invalid confirm password.",
+      }),
   });
 }
