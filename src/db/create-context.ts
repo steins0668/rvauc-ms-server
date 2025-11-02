@@ -21,3 +21,8 @@ export async function createContext(): Promise<DbContext> {
 
   return dbContext;
 }
+
+export async function createTransaction() {
+  const context = await createContext();
+  return context.transaction;
+}
