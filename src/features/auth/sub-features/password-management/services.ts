@@ -123,8 +123,8 @@ export namespace Services {
         args: RepositoryTypes.UpdateArgs.PasswordResetToken<T>
       ) {
         try {
-          await this._passwordResetTokenRepo.execUpdate(args);
-          return ResultBuilder.success(null);
+          const update = await this._passwordResetTokenRepo.execUpdate(args);
+          return ResultBuilder.success(update);
         } catch (err) {
           return ResultBuilder.fail(
             DbAccess.normalizeError({
