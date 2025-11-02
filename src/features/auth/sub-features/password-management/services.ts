@@ -2,7 +2,7 @@ import { createContext } from "../../../../db/create-context";
 import { ResultBuilder } from "../../../../utils";
 import { AuthError } from "../../error";
 import { Repositories } from "../../services";
-import { AuthenticationResult } from "../../types";
+import { AuthenticationResult, ViewModels } from "../../types";
 
 export namespace Services {
   export namespace PasswordManagement {
@@ -25,7 +25,8 @@ export namespace Services {
         userId: number,
         tokenHash: string
       ): Promise<
-        AuthenticationResult.Success<string> | AuthenticationResult.Fail
+        | AuthenticationResult.Success<ViewModels.PasswordResetToken>
+        | AuthenticationResult.Fail
       > {
         const fail = (err?: unknown) =>
           ResultBuilder.fail(
@@ -59,7 +60,7 @@ export namespace Services {
           if (stored === undefined) return fail();
 
           return ResultBuilder.success(
-            tokenHash,
+            stored,
             "AUTHENTICATION_PASSWORD_RESET_CREATE_TOKEN"
           );
         } catch (err) {
