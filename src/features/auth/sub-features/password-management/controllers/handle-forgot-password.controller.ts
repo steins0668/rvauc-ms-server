@@ -167,7 +167,7 @@ async function sendEmail(args: {
   try {
     const { req, resetToken, email } = args;
     const { protocol } = req;
-    const host = req.get("host");
+    const host = req.get("host"); //  ! better to use CLIENT_URL here in prod
     const resetUrl = `${protocol}://${host}/auth/reset-password/${resetToken}`;
     const subject = "Password change request received.";
     const text = `We have received a password reset request. Please use the link below to reset your password\n\n${resetUrl}\n\nThis link will be valid for 10 minutes only.`;
