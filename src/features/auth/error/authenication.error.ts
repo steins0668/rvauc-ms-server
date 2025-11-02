@@ -6,8 +6,11 @@ export namespace Authentication {
   export type ErrorName =
     | "AUTHENTICATION_IDENTITY_USER_NOT_FOUND_ERROR" // for users not found
     | "AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR" //  for failure of sending reset url email to users
+    | "AUTHENTICATION_PASSWORD_RESET_PASSWORD_MISMATCH_ERROR" // for password and confirm password mismatch
     | "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR" // for password reset token failing to create or store
     | "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR" //  for failing password reset token deletion
+    | "AUTHENTICATION_PASSWORD_RESET_TOKEN_EXPIRED_ERROR" //  for attempting to use expired tokens
+    | "AUTHENTICATION_PASSWORD_RESET_TOKEN_NOT_FOUND_ERROR" //  for missing token
     | "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR" //  for failure finding reset token
     | "AUTHENTICATION_PASSWORD_RESET_TOKEN_EXISTING_TOKEN_ERROR" //  for duplicate forgot password requests
     | "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR" //  for incorrect login credentials
