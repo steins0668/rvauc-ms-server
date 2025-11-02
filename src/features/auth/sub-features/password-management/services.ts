@@ -1,8 +1,9 @@
 import { createContext } from "../../../../db/create-context";
+import { DbAccess } from "../../../../error";
 import { ResultBuilder } from "../../../../utils";
 import { AuthError } from "../../error";
 import { Repositories } from "../../services";
-import { AuthenticationResult, ViewModels } from "../../types";
+import { AuthenticationResult, RepositoryTypes, ViewModels } from "../../types";
 
 export namespace Services {
   export namespace PasswordManagement {
@@ -68,6 +69,28 @@ export namespace Services {
         }
       }
 
+      public async queryResetTokenStrict(
+        args: Partial<ViewModels.PasswordResetToken>
+      ): Promise<
+        | AuthenticationResult.Success<ViewModels.PasswordResetToken>
+        | AuthenticationResult.Fail
+      > {
+        const query = await this.queryResetToken(args);
+
+        if (query.success && query.result === undefined) {
+          return ResultBuilder.fail(
+            new AuthError.Authentication.ErrorClass({
+              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_NOT_FOUND_ERROR",
+              message: "Could not find token.",
+            })
+          );
+        }
+
+        return query as
+          | AuthenticationResult.Success<ViewModels.PasswordResetToken>
+          | AuthenticationResult.Fail;
+      }
+
       public async queryResetToken(
         args: Partial<ViewModels.PasswordResetToken>
       ): Promise<
@@ -90,6 +113,23 @@ export namespace Services {
             AuthError.Authentication.normalizeError({
               name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
               message: "Failed querying password_reset_tokens table.",
+              err,
+            })
+          );
+        }
+      }
+
+      public async updateResetToken<T>(
+        args: RepositoryTypes.UpdateArgs.PasswordResetToken<T>
+      ) {
+        try {
+          await this._passwordResetTokenRepo.execUpdate(args);
+          return ResultBuilder.success(null);
+        } catch (err) {
+          return ResultBuilder.fail(
+            DbAccess.normalizeError({
+              name: "DB_ACCESS_UPDATE_ERROR",
+              message: "Failed updating reset token",
               err,
             })
           );
