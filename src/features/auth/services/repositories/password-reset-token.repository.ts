@@ -52,10 +52,8 @@ export class PasswordResetTokenRepository extends Repository<Tables.PasswordRese
         conditions.push(eq(passwordResetTokens.userId, userId));
       if (tokenHash && tokenHash.trim())
         conditions.push(eq(passwordResetTokens.tokenHash, tokenHash));
-      if (expiresAt && expiresAt.trim()) {
-        const nowISO = new Date().toISOString();
-        conditions.push(lte(passwordResetTokens.expiresAt, nowISO));
-      }
+      if (expiresAt && expiresAt.trim())
+        conditions.push(lte(passwordResetTokens.expiresAt, expiresAt));
       if (isUsed !== undefined)
         conditions.push(eq(passwordResetTokens.isUsed, isUsed));
 
