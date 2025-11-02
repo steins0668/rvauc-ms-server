@@ -1,15 +1,15 @@
 import { Request, Response } from "express";
-import crypto from "crypto";
-import { ResultBuilder } from "../../../../../utils";
-import { Schemas } from "../schemas";
+import { execTransaction } from "../../../../../db/create-context";
+import { HashUtil, ResultBuilder } from "../../../../../utils";
 import { AuthError } from "../../../error";
 import { ViewModels } from "../../../types";
+import { Schemas } from "../schemas";
 
 export async function handleResetPassword(
   req: Request<{ token: string }, {}, Schemas.ResetPassword>,
   res: Response
 ) {
-  const { body, passwordManagementService, requestLogger: logger } = req;
+  const { body, requestLogger: logger } = req;
   const { password, confirmPassword } = body;
 
   logger.log("debug", "Resetting password...");
@@ -47,11 +47,31 @@ export async function handleResetPassword(
     return;
   }
 
-  //    *   update user password
-  //    set reset token is_used to true
-  //    optional: sign in user
-}
+  //    *   update user password and set reset token is_used to true
+  const updateOperation = await execUpdate({
+    req,
+    token: tokenVerification.result,
+    password,
+  });
 
+  if (!updateOperation.success) {
+    const { error } = updateOperation;
+    const message = "Something went wrong. Please try again later.";
+
+    res
+      .status(AuthError.Authentication.getErrStatusCode(error))
+      .json({ success: false, message });
+
+    logger.log("debug", error.message, error);
+    return;
+  }
+
+  //    todo: sign in user
+  res
+    .status(200)
+    .json({ success: true, message: "Password changed successfully." });
+}
+//#region Util
 /**
  * @description queries the db for an unused token with the given hash.
  * ! note that there is only ever one unused token.
@@ -61,10 +81,7 @@ export async function handleResetPassword(
 async function verifyResetToken(
   req: Request<{ token: string }, {}, Schemas.ResetPassword>
 ) {
-  const tokenHash = crypto
-    .createHash("sha256")
-    .update(req.params.token)
-    .digest("hex");
+  const tokenHash = HashUtil.byCrypto(req.params.token);
   const query = await req.passwordManagementService.queryResetTokenStrict({
     tokenHash,
     isUsed: false,
@@ -73,7 +90,7 @@ async function verifyResetToken(
   if (query.success) {
     const now = new Date().getTime();
     const expiry = new Date(query.result.expiresAt).getTime();
-    const isExpired = expiry <= now;
+    const isExpired = now > expiry;
 
     if (isExpired)
       return ResultBuilder.fail(
@@ -87,10 +104,66 @@ async function verifyResetToken(
   return query;
 }
 
-async function updateTransaction(args: {
+async function execUpdate(args: {
   req: Request<{ token: string }, {}, Schemas.ResetPassword>;
   token: ViewModels.PasswordResetToken;
   password: string;
 }) {
-  const { passwordManagementService } = args.req;
+  const { passwordManagementService, userDataService } = args.req;
+
+  try {
+    return await execTransaction(async (tx) => {
+      //    ! update user password
+      args.req.requestLogger.log("debug", "Updating password...");
+      const userUpdate = await userDataService.updateUsers({
+        dbOrTx: tx,
+        fn: async (update, converter) => {
+          const passwordHash = HashUtil.byCrypto(args.password);
+          return await update
+            .set({ passwordHash })
+            .where(converter({ id: args.token.userId }));
+        },
+      });
+
+      if (!userUpdate.success)
+        return ResultBuilder.fail(
+          AuthError.Authentication.normalizeError({
+            name: "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR",
+            message: "Fail updating password.",
+            err: userUpdate.error,
+          })
+        );
+
+      //    ! update token
+      args.req.requestLogger.log("debug", "Updating reset token.");
+      const tokenUpdate = await passwordManagementService.updateResetToken({
+        dbOrTx: tx,
+        fn: async (update, converter) => {
+          return await update
+            .set({ isUsed: true, expiresAt: new Date().toISOString() })
+            .where(converter({ id: args.token.id, isUsed: false }));
+        },
+      });
+
+      if (!tokenUpdate.success)
+        return ResultBuilder.fail(
+          AuthError.Authentication.normalizeError({
+            name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_UPDATE_ERROR",
+            message: "Fail updating token.",
+            err: tokenUpdate.error,
+          })
+        );
+
+      return ResultBuilder.success(null); //  * no need for result data
+    });
+  } catch (err) {
+    return ResultBuilder.fail(
+      AuthError.Authentication.normalizeError({
+        name: "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR",
+        message: "Transaction failed.",
+        err,
+      })
+    );
+  }
 }
+//#endregion

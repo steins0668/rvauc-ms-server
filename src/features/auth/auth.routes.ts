@@ -35,3 +35,9 @@ AuthRoutes.post(
   validateRequest(PasswordManagement.Schemas.forgotPassword),
   PasswordManagement.Controllers.handleForgotPassword
 );
+
+AuthRoutes.post(
+  "/reset-password/:token",
+  validateRequest(PasswordManagement.Schemas.resetPassword),
+  PasswordManagement.Controllers.handleResetPassword
+);
