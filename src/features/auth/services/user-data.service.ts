@@ -123,8 +123,8 @@ export class UserDataService {
 
   public async updateUsers<T>(args: UpdateArgs.User<T>) {
     try {
-      await this._userRepository.execUpdate(args);
-      return ResultBuilder.success(null);
+      const update = await this._userRepository.execUpdate(args);
+      return ResultBuilder.success(update);
     } catch (err) {
       return ResultBuilder.fail(
         DbAccess.normalizeError({
