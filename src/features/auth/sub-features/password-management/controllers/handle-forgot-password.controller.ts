@@ -17,6 +17,7 @@ export async function handleForgotPassword(
   const verification = await verifyUser({ userDataService, email: body.email });
 
   if (!verification.success) {
+    //  ! failed verifying user
     const { error } = verification;
 
     res
@@ -32,12 +33,15 @@ export async function handleForgotPassword(
 
   const user = verification.result;
 
+  //  * verify if no active reset token exists
+  logger.log("debug", "Verifying if no active reset tokens exist.");
   const activeTokenVerification = await verifyNoActiveToken({
     req,
     userId: user.id,
   });
 
   if (!activeTokenVerification.success) {
+    //  ! failed querying the database
     const { error } = activeTokenVerification;
     const message = "Something went wrong. Please try again later.";
 
@@ -49,6 +53,7 @@ export async function handleForgotPassword(
 
     return;
   } else if (!activeTokenVerification.result) {
+    //  ! active reset token exists
     res
       .status(403) // ! Forbidden. Active token still exists.
       .json({
@@ -70,6 +75,7 @@ export async function handleForgotPassword(
   );
 
   if (!tokenCreation.success) {
+    //  ! failed creating token
     const { error } = tokenCreation;
     const message = "Failed generating reset token. Please try again later.";
 
@@ -91,6 +97,7 @@ export async function handleForgotPassword(
   });
 
   if (!emailTransport.success) {
+    //  ! failed sending email
     //  * remove reset token from db
     const { id } = tokenCreation.result;
     await req.passwordManagementService.deleteResetToken(id);
