@@ -3,9 +3,9 @@ import crypto from "crypto";
 import { ResultBuilder } from "../../../../../utils";
 import { AuthError } from "../../../error";
 import { UserDataService } from "../../../services";
+import { AuthenticationResult } from "../../../types";
 import { Schemas } from "../schemas";
 import { Utils } from "../utils";
-import { AuthenticationResult } from "../../../types";
 
 export async function handleForgotPassword(
   req: Request<{}, {}, Schemas.ForgotPassword>,
