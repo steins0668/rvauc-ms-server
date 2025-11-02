@@ -159,6 +159,14 @@ async function verifyNoActiveToken(args: {
       const expiry = new Date(query.result.expiresAt).getTime();
       const isExpired = expiry <= now;
 
+      if (isExpired) {
+        const deletion =
+          await args.req.passwordManagementService.deleteResetToken(
+            query.result.id
+          );
+
+        if (!deletion.success) return deletion; //  ! propagate db delete error
+      }
       return ResultBuilder.success(isExpired); //  * expired token means no active tokens.
     } else return ResultBuilder.success(true); //  * no active tokens. return true
   }
