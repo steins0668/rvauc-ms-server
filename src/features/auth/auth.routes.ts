@@ -32,5 +32,6 @@ AuthRoutes.use(PasswordManagement.Middlewares.attachPasswordManagementService);
 
 AuthRoutes.post(
   "/forgot-password",
+  validateRequest(PasswordManagement.Schemas.forgotPassword),
   PasswordManagement.Controllers.handleForgotPassword
 );
