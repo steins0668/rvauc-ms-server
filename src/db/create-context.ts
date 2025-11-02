@@ -22,7 +22,9 @@ export async function createContext(): Promise<DbContext> {
   return dbContext;
 }
 
-export async function createTransaction() {
+export async function execTransaction<T>(
+  fn: (tx: TxContext) => Promise<T>
+): Promise<T> {
   const context = await createContext();
-  return context.transaction;
+  return await context.transaction(async (tx) => fn(tx));
 }
