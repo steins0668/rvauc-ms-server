@@ -3,6 +3,7 @@ import { validateRequest } from "../../middlewares";
 import * as controllers from "./controllers";
 import { attachSessionManager, attachUserDataService } from "./middlewares";
 import { roleBasedRegisterSchema, signInSchema } from "./schemas";
+import { PasswordManagement } from "./sub-features/password-management";
 
 export const AuthRoutes = Router();
 
@@ -25,3 +26,11 @@ AuthRoutes.post(
 AuthRoutes.post("/sign-out", controllers.handleSignOut);
 
 AuthRoutes.post("/refresh", controllers.handleRefresh);
+
+//  * Password Management
+AuthRoutes.use(PasswordManagement.Middlewares.attachPasswordManagementService);
+
+AuthRoutes.post(
+  "/forgot-password",
+  PasswordManagement.Controllers.handleForgotPassword
+);
