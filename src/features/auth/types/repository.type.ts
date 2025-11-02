@@ -105,6 +105,12 @@ export namespace UpdateArgs {
     Repositories.SessionToken["buildWhereClause"],
     T
   >;
+
+  export type User<T> = BaseUpdateArgs<
+    SQLiteUpdateBuilder<Tables.Users, "async", ResultSet>,
+    Repositories.User["buildWhereClause"],
+    T
+  >;
 }
 
 export namespace QueryArgs {
