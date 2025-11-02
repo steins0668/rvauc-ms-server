@@ -84,7 +84,7 @@ export async function handleForgotPassword(
     message: "Reset password url sent. Please check your email.",
   });
 }
-
+//#region Utils
 async function verifyUser(args: {
   email: string;
   userDataService: UserDataService;
@@ -137,3 +137,4 @@ async function sendEmail(args: {
     );
   }
 }
+//#endregion
