@@ -57,8 +57,7 @@ export class UserDataService {
         return ResultBuilder.fail(
           new DbAccess.ErrorClass({
             name: "DB_ACCESS_QUERY_ERROR",
-            message:
-              "Failed querying professors table. Result is undefined/null.",
+            message: "Could not find professor/s.",
           })
         );
 
@@ -82,8 +81,7 @@ export class UserDataService {
         return ResultBuilder.fail(
           new DbAccess.ErrorClass({
             name: "DB_ACCESS_QUERY_ERROR",
-            message:
-              "Failed querying students table. Result is undefined/null.",
+            message: "Could not find student/s.",
           })
         );
 
@@ -107,7 +105,7 @@ export class UserDataService {
         return ResultBuilder.fail(
           new DbAccess.ErrorClass({
             name: "DB_ACCESS_QUERY_ERROR",
-            message: "Failed querying users table. Result is undefined/null.",
+            message: "Could not find user/s.",
           })
         );
 
