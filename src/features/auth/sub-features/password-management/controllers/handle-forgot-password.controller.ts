@@ -32,6 +32,34 @@ export async function handleForgotPassword(
 
   const user = verification.result;
 
+  const activeTokenVerification = await verifyNoActiveToken({
+    req,
+    userId: user.id,
+  });
+
+  if (!activeTokenVerification.success) {
+    const { error } = activeTokenVerification;
+    const message = "Something went wrong. Please try again later.";
+
+    res
+      .status(AuthError.Authentication.getErrStatusCode(error))
+      .json({ success: false, message });
+
+    logger.log("error", error.message, error);
+
+    return;
+  } else if (!activeTokenVerification.result) {
+    res
+      .status(403) // ! Forbidden. Active token still exists.
+      .json({
+        success: false,
+        message:
+          "You still have an active request. Please try again in 10 minutes.",
+      });
+
+    return;
+  }
+
   //  * generate random reset token
   logger.log("debug", "Generating reset token...");
   const token = crypto.randomBytes(32).toString("hex");
@@ -107,6 +135,28 @@ async function verifyUser(args: {
       err: query.error,
     })
   );
+}
+
+async function verifyNoActiveToken(args: {
+  req: Request<{}, {}, Schemas.ForgotPassword>;
+  userId: number;
+}): Promise<AuthenticationResult.Success<boolean> | AuthenticationResult.Fail> {
+  const query = await args.req.passwordManagementService.queryResetToken({
+    userId: args.userId,
+    isUsed: false,
+  });
+
+  if (query.success) {
+    if (query.result) {
+      const now = new Date().getTime();
+      const expiry = new Date(query.result.expiresAt).getTime();
+      const isExpired = expiry <= now;
+
+      return ResultBuilder.success(isExpired); //  * expired token means no active tokens.
+    } else return ResultBuilder.success(true); //  * no active tokens. return true
+  }
+
+  return query; //  ! something went wrong with the query. propagate failure(query error)
 }
 
 async function sendEmail(args: {
