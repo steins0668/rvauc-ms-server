@@ -6,7 +6,7 @@ export namespace Utils {
     const mailTrapConfig = Data.getMailTrap();
 
     const transporter = nodemailer.createTransport({
-      service: mailTrapConfig.host,
+      host: mailTrapConfig.host,
       port: mailTrapConfig.port,
       auth: {
         user: mailTrapConfig.user,
