@@ -8,6 +8,8 @@ export namespace Authentication {
     | "AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR" //  for failure of sending reset url email to users
     | "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR" // for password reset token failing to create or store
     | "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR" //  for failing password reset token deletion
+    | "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR" //  for failure finding reset token
+    | "AUTHENTICATION_PASSWORD_RESET_TOKEN_EXISTING_TOKEN_ERROR" //  for duplicate forgot password requests
     | "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR" //  for incorrect login credentials
     | "AUTHENTICATION_SIGN_IN_SYSTEM_ERROR" //  internal errors (e.g. db)
     | "AUTHENTICATION_SESSION_START_ERROR" //  failed starting session
