@@ -46,6 +46,11 @@ export class UserRepository extends Repository<Tables.Users> {
     return await args.fn(query, this.buildWhereClause);
   }
 
+  public async execUpdate<T>(args: RepositoryTypes.UpdateArgs.User<T>) {
+    const update = (args.dbOrTx ?? this._dbContext).update(users);
+    return await args.fn(update, this.buildWhereClause);
+  }
+
   /**
    * @protected
    * @function buildWhereClause

@@ -4,7 +4,7 @@ import { DbAccess } from "../../../error";
 import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { ENUMS } from "../data";
-import type { QueryArgs } from "../types";
+import type { QueryArgs, UpdateArgs } from "../types";
 import { Repositories } from "./repositories";
 import { RoleBasedRegisterSchema } from "../schemas";
 
@@ -115,6 +115,21 @@ export class UserDataService {
         DbAccess.normalizeError({
           name: "DB_ACCESS_QUERY_ERROR",
           message: "Failed querying students table.",
+          err,
+        })
+      );
+    }
+  }
+
+  public async updateUsers<T>(args: UpdateArgs.User<T>) {
+    try {
+      await this._userRepository.execUpdate(args);
+      return ResultBuilder.success(null);
+    } catch (err) {
+      return ResultBuilder.fail(
+        DbAccess.normalizeError({
+          name: "DB_ACCESS_UPDATE_ERROR",
+          message: "Could not update user/s.",
           err,
         })
       );
