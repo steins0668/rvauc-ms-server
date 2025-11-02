@@ -68,6 +68,34 @@ export namespace Services {
         }
       }
 
+      public async queryResetToken(
+        args: Partial<ViewModels.PasswordResetToken>
+      ): Promise<
+        | AuthenticationResult.Success<
+            ViewModels.PasswordResetToken | undefined
+          >
+        | AuthenticationResult.Fail
+      > {
+        try {
+          const queried = await this._passwordResetTokenRepo.execQuery({
+            fn: async (query, converter) => {
+              const where = converter(args);
+              return await query.findFirst({ where });
+            },
+          });
+
+          return ResultBuilder.success(queried);
+        } catch (err) {
+          return ResultBuilder.fail(
+            AuthError.Authentication.normalizeError({
+              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
+              message: "Failed querying password_reset_tokens table.",
+              err,
+            })
+          );
+        }
+      }
+
       public async deleteResetToken(
         id: number
       ): Promise<
