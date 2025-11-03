@@ -69,7 +69,7 @@ export async function handleForgotPassword(
   logger.log("debug", "Generating reset token...");
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-  const tokenCreation = await req.passwordManagementService.storeResetToken(
+  const tokenCreation = await req.passwordManagementService.storeNewToken(
     user.id,
     tokenHash
   );

@@ -22,50 +22,67 @@ export namespace Services {
         this._passwordResetTokenRepo = passwordResetTokenRepo;
       }
 
-      public async storeResetToken(
+      public async storeNewToken(
         userId: number,
         tokenHash: string
       ): Promise<
         | AuthenticationResult.Success<ViewModels.PasswordResetToken>
         | AuthenticationResult.Fail
       > {
-        const fail = (err?: unknown) =>
-          ResultBuilder.fail(
-            AuthError.Authentication.normalizeError({
+        const now = new Date();
+        const expiry = new Date();
+        expiry.setMinutes(now.getMinutes() + 10);
+
+        const insertion = await this.insertResetToken({
+          fn: async (insert) => {
+            return await insert
+              .values({
+                userId,
+                tokenHash,
+                createdAt: now.toISOString(),
+                expiresAt: expiry.toISOString(),
+              })
+              .onConflictDoNothing()
+              .returning()
+              .then((result) => result[0]);
+          },
+        });
+
+        if (insertion.success && insertion.result === undefined)
+          return ResultBuilder.fail(
+            new AuthError.Authentication.ErrorClass({
               name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR",
               message: "Failed to store password reset token",
-              err,
             })
           );
 
+        return insertion.success
+          ? ResultBuilder.success(
+              insertion.result as ViewModels.PasswordResetToken
+            )
+          : ResultBuilder.fail(
+              AuthError.Authentication.normalizeError({
+                name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR",
+                message: "Failed to store password reset token.",
+                err: insertion.error,
+              })
+            );
+      }
+
+      public async insertResetToken<T>(
+        args: RepositoryTypes.InsertArgs.PasswordResetToken<T>
+      ) {
         try {
-          const stored = await this._passwordResetTokenRepo.execInsert({
-            fn: async (insert) => {
-              const now = new Date();
-              const expiry = new Date();
-              expiry.setMinutes(now.getMinutes() + 10);
-
-              return await insert
-                .values({
-                  userId,
-                  tokenHash,
-                  createdAt: now.toISOString(),
-                  expiresAt: expiry.toISOString(),
-                })
-                .onConflictDoNothing()
-                .returning()
-                .then((result) => result[0]);
-            },
-          });
-
-          if (stored === undefined) return fail();
-
-          return ResultBuilder.success(
-            stored,
-            "AUTHENTICATION_PASSWORD_RESET_CREATE_TOKEN"
-          );
+          const result = await this._passwordResetTokenRepo.execInsert(args);
+          return ResultBuilder.success(result);
         } catch (err) {
-          return fail(err);
+          return ResultBuilder.fail(
+            DbAccess.normalizeError({
+              name: "DB_ACCESS_INSERT_ERROR",
+              message: "Failed inserting reset token.",
+              err,
+            })
+          );
         }
       }
 
