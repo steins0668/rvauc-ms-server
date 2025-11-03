@@ -30,7 +30,9 @@ export async function handleResetPassword(
 
   //    *   find non-expired reset token with token (encrypt first) from req params
   logger.log("debug", "Finding reset token in db...");
-  const tokenVerification = await verifyResetToken(req);
+  const tokenHash = HashUtil.byCrypto(req.params.token);
+  const tokenVerification =
+    await req.passwordManagementService.verifyResetToken(tokenHash);
 
   if (!tokenVerification.success) {
     const { error } = tokenVerification;
@@ -72,47 +74,6 @@ export async function handleResetPassword(
     .json({ success: true, message: "Password changed successfully." });
 }
 //#region Util
-/**
- * @description queries the db for an unused token with the given hash.
- * ! note that there is only ever one unused token.
- * @param req
- * @returns
- */
-async function verifyResetToken(
-  req: Request<{ token: string }, {}, Schemas.ResetPassword>
-): Promise<
-  | AuthenticationResult.Success<ViewModels.PasswordResetToken>
-  | AuthenticationResult.Fail
-> {
-  const tokenHash = HashUtil.byCrypto(req.params.token);
-  const query = await req.passwordManagementService.findTokenWhereStrict({
-    filter: { tokenHash, isUsed: false },
-  });
-
-  if (query.success) {
-    const now = new Date().getTime();
-    const expiry = new Date(query.result.expiresAt).getTime();
-    const isExpired = now > expiry;
-
-    if (isExpired)
-      return ResultBuilder.fail(
-        new AuthError.Authentication.ErrorClass({
-          name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_EXPIRED_ERROR",
-          message: "Token is already expired.",
-        })
-      );
-
-    return ResultBuilder.success(query.result);
-  }
-
-  return ResultBuilder.fail(
-    AuthError.Authentication.normalizeError({
-      name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
-      message: "Failed querying tokens.",
-      err: query.error,
-    })
-  );
-}
 
 async function execUpdate(args: {
   req: Request<{ token: string }, {}, Schemas.ResetPassword>;

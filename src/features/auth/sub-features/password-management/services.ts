@@ -23,6 +23,46 @@ export namespace Services {
         this._passwordResetTokenRepo = passwordResetTokenRepo;
       }
 
+      /**
+       * @description queries the db for an unused token with the given hash.
+       * ! note that there is only ever one unused token.
+       * @param req
+       * @returns
+       */
+      public async verifyResetToken(
+        tokenHash: string
+      ): Promise<
+        | AuthenticationResult.Success<ViewModels.PasswordResetToken>
+        | AuthenticationResult.Fail
+      > {
+        const query = await this.findTokenWhereStrict({
+          filter: { tokenHash, isUsed: false },
+        });
+
+        if (!query.success)
+          return ResultBuilder.fail(
+            AuthError.Authentication.normalizeError({
+              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
+              message: "Failed querying tokens.",
+              err: query.error,
+            })
+          );
+
+        const now = new Date().getTime();
+        const expiry = new Date(query.result.expiresAt).getTime();
+        const isExpired = now > expiry;
+
+        if (isExpired)
+          return ResultBuilder.fail(
+            new AuthError.Authentication.ErrorClass({
+              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_EXPIRED_ERROR",
+              message: "Token is already expired",
+            })
+          );
+
+        return ResultBuilder.success(query.result);
+      }
+
       public async verifyNoActiveToken(userId: number) {
         const query = await this.findTokenWhere({
           filter: { userId, isUsed: false },
