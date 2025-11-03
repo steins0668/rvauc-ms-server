@@ -23,6 +23,45 @@ export namespace Services {
         this._passwordResetTokenRepo = passwordResetTokenRepo;
       }
 
+      public async verifyNoActiveToken(userId: number) {
+        const query = await this.findTokenWhere({
+          filter: { userId, isUsed: false },
+        });
+
+        if (!query.success)
+          return ResultBuilder.fail(
+            AuthError.Authentication.normalizeError({
+              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
+              message: "Failed querying reset tokens.",
+              err: query.error,
+            })
+          ); //  ! something went wrong with the query. propagate failure(query error)
+
+        const { result } = query;
+        if (result) {
+          const now = new Date().getTime();
+          const expiry = new Date(result.expiresAt).getTime();
+          const isExpired = expiry <= now;
+
+          if (isExpired) {
+            const deletion = await this.deleteTokenWhere({
+              filter: { id: result.id },
+            });
+
+            if (!deletion.success)
+              //  ! propagate db delete error
+              return ResultBuilder.fail(
+                AuthError.Authentication.normalizeError({
+                  name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR",
+                  message: "Failed to remove unused expired token.",
+                  err: deletion.error,
+                })
+              );
+          }
+          return ResultBuilder.success(isExpired); //  * expired token means no active tokens.
+        } else return ResultBuilder.success(true); //  * no active tokens. return true
+      }
+
       public async storeNewToken(
         userId: number,
         tokenHash: string
@@ -70,6 +109,7 @@ export namespace Services {
             );
       }
 
+      //#region Wrappers
       public async insertResetToken<T>(
         args: RepositoryTypes.InsertArgs.PasswordResetToken<T>
       ) {
@@ -220,6 +260,7 @@ export namespace Services {
           );
         }
       }
+      //#endregion
     }
   }
 }

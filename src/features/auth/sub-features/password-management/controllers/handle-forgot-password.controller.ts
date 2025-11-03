@@ -35,10 +35,8 @@ export async function handleForgotPassword(
 
   //  * verify if no active reset token exists
   logger.log("debug", "Verifying if no active reset tokens exist.");
-  const activeTokenVerification = await verifyNoActiveToken({
-    req,
-    userId: user.id,
-  });
+  const activeTokenVerification =
+    await req.passwordManagementService.verifyNoActiveToken(user.id);
 
   if (!activeTokenVerification.success) {
     //  ! failed querying the database
@@ -142,50 +140,6 @@ async function verifyUser(args: {
       err: query.error,
     })
   );
-}
-
-async function verifyNoActiveToken(args: {
-  req: Request<{}, {}, Schemas.ForgotPassword>;
-  userId: number;
-}): Promise<AuthenticationResult.Success<boolean> | AuthenticationResult.Fail> {
-  const { passwordManagementService } = args.req;
-  const query = await passwordManagementService.findTokenWhere({
-    filter: { userId: args.userId, isUsed: false },
-  });
-
-  if (query.success) {
-    const { result } = query;
-    if (result) {
-      const now = new Date().getTime();
-      const expiry = new Date(result.expiresAt).getTime();
-      const isExpired = expiry <= now;
-
-      if (isExpired) {
-        const deletion = await passwordManagementService.deleteTokenWhere({
-          filter: { id: result.id },
-        });
-
-        if (!deletion.success)
-          //  ! propagate db delete error
-          return ResultBuilder.fail(
-            AuthError.Authentication.normalizeError({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR",
-              message: "Failed to remove unused expired token.",
-              err: deletion.error,
-            })
-          );
-      }
-      return ResultBuilder.success(isExpired); //  * expired token means no active tokens.
-    } else return ResultBuilder.success(true); //  * no active tokens. return true
-  }
-
-  return ResultBuilder.fail(
-    AuthError.Authentication.normalizeError({
-      name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
-      message: "Failed querying reset tokens.",
-      err: query.error,
-    })
-  ); //  ! something went wrong with the query. propagate failure(query error)
 }
 
 async function sendEmail(args: {
