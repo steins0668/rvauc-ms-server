@@ -80,47 +80,29 @@ async function execUpdate(args: {
   token: ViewModels.PasswordResetToken;
   password: string;
 }) {
-  const { passwordManagementService, userDataService } = args.req;
+  const { passwordManagementService } = args.req;
 
   try {
     return await execTransaction(async (tx) => {
       //    ! update user password
       args.req.requestLogger.log("debug", "Updating password...");
-      const userUpdate = await userDataService.updateUsers({
+      const userUpdate = await passwordManagementService.updatePassword({
         dbOrTx: tx,
-        fn: async (update, converter) => {
-          const passwordHash = HashUtil.byCrypto(args.password);
-          return await update
-            .set({ passwordHash })
-            .where(converter({ id: args.token.userId }));
-        },
+        tokenId: args.token.id,
+        userId: args.token.userId,
+        password: args.password,
       });
 
-      if (!userUpdate.success)
-        return ResultBuilder.fail(
-          AuthError.Authentication.normalizeError({
-            name: "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR",
-            message: "Fail updating password.",
-            err: userUpdate.error,
-          })
-        );
+      if (!userUpdate.success) return userUpdate; //  ! propagate error
 
       //    ! update token
       args.req.requestLogger.log("debug", "Updating reset token.");
-      const tokenUpdate = await passwordManagementService.updateTokenWhere({
+      const tokenUpdate = await passwordManagementService.invalidateToken({
         dbOrTx: tx,
-        values: { isUsed: true, expiresAt: new Date().toISOString() },
-        filter: { id: args.token.id, isUsed: false },
+        tokenId: args.token.id,
       });
 
-      if (!tokenUpdate.success)
-        return ResultBuilder.fail(
-          AuthError.Authentication.normalizeError({
-            name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_UPDATE_ERROR",
-            message: "Fail updating token.",
-            err: tokenUpdate.error,
-          })
-        );
+      if (!tokenUpdate.success) return tokenUpdate; //  ! propagate error
 
       return ResultBuilder.success(null); //  * no need for result data
     });

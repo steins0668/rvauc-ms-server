@@ -1,7 +1,7 @@
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { BaseResult } from "../../../../types";
-import { ResultBuilder } from "../../../../utils";
+import { HashUtil, ResultBuilder } from "../../../../utils";
 import { AuthError } from "../../error";
 import { Repositories } from "../../services";
 import { AuthenticationResult, RepositoryTypes, ViewModels } from "../../types";
@@ -13,14 +13,81 @@ export namespace Services {
       const passwordResetTokenRepo = new Repositories.PasswordResetToken(
         dbContext
       );
-      return new Service(passwordResetTokenRepo);
+      const userRepo = new Repositories.User(dbContext);
+      return new Service(passwordResetTokenRepo, userRepo);
     }
 
     export class Service {
       private readonly _passwordResetTokenRepo: Repositories.PasswordResetToken;
+      private readonly _userRepo: Repositories.User;
 
-      constructor(passwordResetTokenRepo: Repositories.PasswordResetToken) {
+      constructor(
+        passwordResetTokenRepo: Repositories.PasswordResetToken,
+        userRepo: Repositories.User
+      ) {
         this._passwordResetTokenRepo = passwordResetTokenRepo;
+        this._userRepo = userRepo;
+      }
+
+      public async updatePassword(args: {
+        dbOrTx?: DbOrTx | undefined;
+        tokenId: number;
+        userId: number;
+        password: string;
+      }): Promise<
+        | AuthenticationResult.Success<ViewModels.User>
+        | AuthenticationResult.Fail
+      > {
+        const failResult = (err?: unknown) =>
+          ResultBuilder.fail(
+            AuthError.Authentication.normalizeError({
+              name: "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR",
+              message: "Failed updating password",
+              err,
+            })
+          );
+
+        try {
+          const updated = await this._userRepo.execUpdate({
+            dbOrTx: args.dbOrTx,
+            fn: async (update, converter) => {
+              const passwordHash = HashUtil.byCrypto(args.password);
+              return await update
+                .set({ passwordHash })
+                .where(converter({ id: args.userId }))
+                .returning()
+                .then((result) => result[0]);
+            },
+          });
+
+          if (updated === undefined) return failResult();
+
+          return ResultBuilder.success(updated);
+        } catch (err) {
+          return failResult(err);
+        }
+      }
+
+      public async invalidateToken(args: {
+        dbOrTx?: DbOrTx | undefined;
+        tokenId: number;
+      }) {
+        const update = await this.updateTokenWhere({
+          dbOrTx: args.dbOrTx,
+          values: { isUsed: true, expiresAt: new Date().toISOString() },
+          filter: { id: args.tokenId, isUsed: false },
+        });
+
+        if (!update.success)
+          return ResultBuilder.fail(
+            AuthError.Authentication.normalizeError({
+              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_UPDATE_ERROR",
+              message: "Failed invalidating token.",
+              err: update.error,
+            })
+          );
+
+        return ResultBuilder.success(update.result);
       }
 
       /**
@@ -225,14 +292,17 @@ export namespace Services {
        * @returns
        */
       public async updateTokenWhere(args: {
-        dbOrTx?: DbOrTx;
+        dbOrTx?: DbOrTx | undefined;
         values: Partial<ViewModels.PasswordResetToken>;
         filter: RepositoryTypes.QueryFilters.PasswordResetToken;
       }) {
         return await this.updateResetToken({
           dbOrTx: args.dbOrTx,
           fn: async (update, converter) => {
-            return await update.set(args.values).where(converter(args.filter));
+            return await update
+              .set(args.values)
+              .where(converter(args.filter))
+              .returning();
           },
         });
       }
