@@ -150,6 +150,7 @@ export namespace Services {
         filter: RepositoryTypes.QueryFilters.PasswordResetToken;
       }) {
         return await this.updateResetToken({
+          dbOrTx: args.dbOrTx,
           fn: async (update, converter) => {
             return await update.set(args.values).where(converter(args.filter));
           },
