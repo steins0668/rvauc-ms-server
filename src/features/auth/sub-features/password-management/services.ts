@@ -1,4 +1,4 @@
-import { createContext } from "../../../../db/create-context";
+import { createContext, DbOrTx } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { ResultBuilder } from "../../../../utils";
 import { AuthError } from "../../error";
@@ -136,29 +136,42 @@ export namespace Services {
         }
       }
 
-      public async deleteResetToken(
-        id: number
-      ): Promise<
-        | AuthenticationResult.Success<number | undefined>
-        | AuthenticationResult.Fail
-      > {
-        try {
-          const deleted = await this._passwordResetTokenRepo.execDelete({
-            fn: async (deleteBase, converter) => {
-              const where = converter({ id });
-              return await deleteBase
-                .where(where)
-                .returning()
-                .then((result) => result[0]);
-            },
-          });
+      /**
+       * @description Wrapper for `deleteResetToken` to remove implementation
+       * boilerplate by directly passing a filter for the where clause.
+       * @param dbOrTx
+       * @param filter
+       * @returns
+       */
+      public async deleteTokenWhere(args: {
+        dbOrTx?: DbOrTx;
+        filter: RepositoryTypes.QueryFilters.PasswordResetToken;
+      }) {
+        return await this.deleteResetToken({
+          dbOrTx: args.dbOrTx,
+          fn: async (deleteBase, converter) => {
+            return await deleteBase.where(converter(args.filter));
+          },
+        });
+      }
 
-          return ResultBuilder.success(deleted?.id);
+      /**
+       * @description Wrapper for `execDelete` that integrates result objects to the return type.
+       * @param args
+       * @returns
+       */
+      public async deleteResetToken<T>(
+        args: RepositoryTypes.DeleteArgs.PasswordResetToken<T>
+      ): Promise<AuthenticationResult.Success<T> | AuthenticationResult.Fail> {
+        try {
+          const deletion = await this._passwordResetTokenRepo.execDelete(args);
+
+          return ResultBuilder.success(deletion);
         } catch (err) {
           return ResultBuilder.fail(
             AuthError.Authentication.normalizeError({
               name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR",
-              message: `Failed deleteing reset token with id ${id}`,
+              message: `Failed deleting reset token/s.`,
               err,
             })
           );

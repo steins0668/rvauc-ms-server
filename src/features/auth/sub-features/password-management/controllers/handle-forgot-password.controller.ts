@@ -100,7 +100,7 @@ export async function handleForgotPassword(
     //  ! failed sending email
     //  * remove reset token from db
     const { id } = tokenCreation.result;
-    await req.passwordManagementService.deleteResetToken(id);
+    await req.passwordManagementService.deleteTokenWhere({ filter: { id } });
 
     const { error } = emailTransport;
 
@@ -148,22 +148,23 @@ async function verifyNoActiveToken(args: {
   req: Request<{}, {}, Schemas.ForgotPassword>;
   userId: number;
 }): Promise<AuthenticationResult.Success<boolean> | AuthenticationResult.Fail> {
-  const query = await args.req.passwordManagementService.queryResetToken({
+  const { passwordManagementService } = args.req;
+  const query = await passwordManagementService.queryResetToken({
     userId: args.userId,
     isUsed: false,
   });
 
   if (query.success) {
-    if (query.result) {
+    const { result } = query;
+    if (result) {
       const now = new Date().getTime();
-      const expiry = new Date(query.result.expiresAt).getTime();
+      const expiry = new Date(result.expiresAt).getTime();
       const isExpired = expiry <= now;
 
       if (isExpired) {
-        const deletion =
-          await args.req.passwordManagementService.deleteResetToken(
-            query.result.id
-          );
+        const deletion = await passwordManagementService.deleteTokenWhere({
+          filter: { id: result.id },
+        });
 
         if (!deletion.success) return deletion; //  ! propagate db delete error
       }
