@@ -149,9 +149,8 @@ async function verifyNoActiveToken(args: {
   userId: number;
 }): Promise<AuthenticationResult.Success<boolean> | AuthenticationResult.Fail> {
   const { passwordManagementService } = args.req;
-  const query = await passwordManagementService.queryResetToken({
-    userId: args.userId,
-    isUsed: false,
+  const query = await passwordManagementService.findTokenWhere({
+    filter: { userId: args.userId, isUsed: false },
   });
 
   if (query.success) {
@@ -180,7 +179,13 @@ async function verifyNoActiveToken(args: {
     } else return ResultBuilder.success(true); //  * no active tokens. return true
   }
 
-  return query; //  ! something went wrong with the query. propagate failure(query error)
+  return ResultBuilder.fail(
+    AuthError.Authentication.normalizeError({
+      name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
+      message: "Failed querying reset tokens.",
+      err: query.error,
+    })
+  ); //  ! something went wrong with the query. propagate failure(query error)
 }
 
 async function sendEmail(args: {

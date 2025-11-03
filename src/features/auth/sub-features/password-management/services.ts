@@ -1,5 +1,6 @@
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
+import { BaseResult } from "../../../../types";
 import { ResultBuilder } from "../../../../utils";
 import { AuthError } from "../../error";
 import { Repositories } from "../../services";
@@ -86,49 +87,48 @@ export namespace Services {
         }
       }
 
-      public async queryResetTokenStrict(
-        args: Partial<ViewModels.PasswordResetToken>
-      ): Promise<
-        | AuthenticationResult.Success<ViewModels.PasswordResetToken>
-        | AuthenticationResult.Fail
-      > {
-        const query = await this.queryResetToken(args);
+      public async findTokenWhereStrict(args: {
+        dbOrTx?: DbOrTx;
+        filter: RepositoryTypes.QueryFilters.PasswordResetToken;
+      }) {
+        const query = await this.findTokenWhere(args);
 
-        if (query.success && query.result === undefined) {
+        if (query.success && query.result === undefined)
           return ResultBuilder.fail(
-            new AuthError.Authentication.ErrorClass({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_NOT_FOUND_ERROR",
-              message: "Could not find token.",
+            new DbAccess.ErrorClass({
+              name: "DB_ACCESS_QUERY_ERROR",
+              message: "Failed finding reset token.",
             })
           );
-        }
 
         return query as
-          | AuthenticationResult.Success<ViewModels.PasswordResetToken>
-          | AuthenticationResult.Fail;
+          | BaseResult.Success<ViewModels.PasswordResetToken>
+          | BaseResult.Fail<DbAccess.ErrorClass>;
       }
 
-      public async queryResetToken(
-        args: Partial<ViewModels.PasswordResetToken>
-      ): Promise<
-        | AuthenticationResult.Success<
-            ViewModels.PasswordResetToken | undefined
-          >
-        | AuthenticationResult.Fail
-      > {
+      public async findTokenWhere(args: {
+        dbOrTx?: DbOrTx;
+        filter: RepositoryTypes.QueryFilters.PasswordResetToken;
+      }) {
+        return await this.queryResetToken({
+          dbOrTx: args.dbOrTx,
+          fn: async (query, converter) => {
+            return await query.findFirst({ where: converter(args.filter) });
+          },
+        });
+      }
+
+      public async queryResetToken<T>(
+        args: RepositoryTypes.QueryArgs.PasswordResetToken<T>
+      ) {
         try {
-          const queried = await this._passwordResetTokenRepo.execQuery({
-            fn: async (query, converter) => {
-              const where = converter(args);
-              return await query.findFirst({ where });
-            },
-          });
+          const queried = await this._passwordResetTokenRepo.execQuery(args);
 
           return ResultBuilder.success(queried);
         } catch (err) {
           return ResultBuilder.fail(
-            AuthError.Authentication.normalizeError({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
+            DbAccess.normalizeError({
+              name: "DB_ACCESS_QUERY_ERROR",
               message: "Failed querying password_reset_tokens table.",
               err,
             })

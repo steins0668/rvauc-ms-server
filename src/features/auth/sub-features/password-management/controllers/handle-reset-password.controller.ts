@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { execTransaction } from "../../../../../db/create-context";
 import { HashUtil, ResultBuilder } from "../../../../../utils";
 import { AuthError } from "../../../error";
-import { ViewModels } from "../../../types";
+import { AuthenticationResult, ViewModels } from "../../../types";
 import { Schemas } from "../schemas";
 
 export async function handleResetPassword(
@@ -80,11 +80,13 @@ export async function handleResetPassword(
  */
 async function verifyResetToken(
   req: Request<{ token: string }, {}, Schemas.ResetPassword>
-) {
+): Promise<
+  | AuthenticationResult.Success<ViewModels.PasswordResetToken>
+  | AuthenticationResult.Fail
+> {
   const tokenHash = HashUtil.byCrypto(req.params.token);
-  const query = await req.passwordManagementService.queryResetTokenStrict({
-    tokenHash,
-    isUsed: false,
+  const query = await req.passwordManagementService.findTokenWhereStrict({
+    filter: { tokenHash, isUsed: false },
   });
 
   if (query.success) {
@@ -99,9 +101,17 @@ async function verifyResetToken(
           message: "Token is already expired.",
         })
       );
+
+    return ResultBuilder.success(query.result);
   }
 
-  return query;
+  return ResultBuilder.fail(
+    AuthError.Authentication.normalizeError({
+      name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
+      message: "Failed querying tokens.",
+      err: query.error,
+    })
+  );
 }
 
 async function execUpdate(args: {
