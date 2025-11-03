@@ -1,10 +1,10 @@
-import { REGEX } from "../../data";
+import { Registration } from "../../sub-features/registration";
 
 export function getSignInMethod(
   identifier: string
 ): "email" | "username" | null {
-  const isEmail = REGEX.AUTH.EMAIL.test(identifier);
-  const isUsername = REGEX.AUTH.USERNAME.test(identifier);
+  const isEmail = Registration.Data.Regex.Auth.Email.test(identifier);
+  const isUsername = Registration.Data.Regex.Auth.Username.test(identifier);
 
   if (isEmail) return "email";
   else if (isUsername) return "username";

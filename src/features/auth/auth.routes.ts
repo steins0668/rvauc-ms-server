@@ -2,17 +2,19 @@ import { Router } from "express";
 import { validateRequest } from "../../middlewares";
 import * as controllers from "./controllers";
 import { attachSessionManager, attachUserDataService } from "./middlewares";
-import { roleBasedRegisterSchema, signInSchema } from "./schemas";
+import { signInSchema } from "./schemas";
 import { PasswordManagement } from "./sub-features/password-management";
+import { Registration } from "./sub-features/registration";
 
 export const AuthRoutes = Router();
 
 AuthRoutes.use(attachUserDataService);
 
+//  * Registration
 AuthRoutes.post(
   "/register",
-  validateRequest(roleBasedRegisterSchema),
-  controllers.handleRegister
+  validateRequest(Registration.Schemas.Register.roleBased),
+  Registration.Controllers.handleRegister
 );
 
 AuthRoutes.use(attachSessionManager);
