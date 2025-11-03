@@ -119,6 +119,31 @@ export namespace Services {
         }
       }
 
+      /**
+       * @description Wrapper for `updateResetToken` to remove implementation
+       * boilerplate by directly passing a value and filter for the where clause.
+       * @param dbOrTx
+       * @param values
+       * @param filter
+       * @returns
+       */
+      public async updateTokenWhere(args: {
+        dbOrTx?: DbOrTx;
+        values: Partial<ViewModels.PasswordResetToken>;
+        filter: RepositoryTypes.QueryFilters.PasswordResetToken;
+      }) {
+        return await this.updateResetToken({
+          fn: async (update, converter) => {
+            return await update.set(args.values).where(converter(args.filter));
+          },
+        });
+      }
+
+      /**
+       * @description Wrapper for `execUpdate` that integrates result objects to the return type.
+       * @param args
+       * @returns
+       */
       public async updateResetToken<T>(
         args: RepositoryTypes.UpdateArgs.PasswordResetToken<T>
       ) {

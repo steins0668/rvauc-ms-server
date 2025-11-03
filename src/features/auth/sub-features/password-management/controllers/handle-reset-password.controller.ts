@@ -136,13 +136,10 @@ async function execUpdate(args: {
 
       //    ! update token
       args.req.requestLogger.log("debug", "Updating reset token.");
-      const tokenUpdate = await passwordManagementService.updateResetToken({
+      const tokenUpdate = await passwordManagementService.updateTokenWhere({
         dbOrTx: tx,
-        fn: async (update, converter) => {
-          return await update
-            .set({ isUsed: true, expiresAt: new Date().toISOString() })
-            .where(converter({ id: args.token.id, isUsed: false }));
-        },
+        values: { isUsed: true, expiresAt: new Date().toISOString() },
+        filter: { id: args.token.id, isUsed: false },
       });
 
       if (!tokenUpdate.success)
