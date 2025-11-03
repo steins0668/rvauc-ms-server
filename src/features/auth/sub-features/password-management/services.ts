@@ -204,15 +204,15 @@ export namespace Services {
        */
       public async deleteResetToken<T>(
         args: RepositoryTypes.DeleteArgs.PasswordResetToken<T>
-      ): Promise<AuthenticationResult.Success<T> | AuthenticationResult.Fail> {
+      ) {
         try {
           const deletion = await this._passwordResetTokenRepo.execDelete(args);
 
           return ResultBuilder.success(deletion);
         } catch (err) {
           return ResultBuilder.fail(
-            AuthError.Authentication.normalizeError({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR",
+            DbAccess.normalizeError({
+              name: "DB_ACCESS_DELETE_ERROR",
               message: `Failed deleting reset token/s.`,
               err,
             })

@@ -166,7 +166,15 @@ async function verifyNoActiveToken(args: {
           filter: { id: result.id },
         });
 
-        if (!deletion.success) return deletion; //  ! propagate db delete error
+        if (!deletion.success)
+          //  ! propagate db delete error
+          return ResultBuilder.fail(
+            AuthError.Authentication.normalizeError({
+              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR",
+              message: "Failed to remove unused expired token.",
+              err: deletion.error,
+            })
+          );
       }
       return ResultBuilder.success(isExpired); //  * expired token means no active tokens.
     } else return ResultBuilder.success(true); //  * no active tokens. return true
