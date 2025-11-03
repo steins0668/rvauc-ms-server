@@ -1,15 +1,15 @@
 import { Request, Response } from "express";
-import crypto from "crypto";
-import { ResultBuilder } from "../../../../../utils";
-import { Schemas } from "../schemas";
+import { execTransaction } from "../../../../../db/create-context";
+import { HashUtil, ResultBuilder } from "../../../../../utils";
 import { AuthError } from "../../../error";
-import { ViewModels } from "../../../types";
+import { AuthenticationResult, ViewModels } from "../../../types";
+import { Schemas } from "../schemas";
 
 export async function handleResetPassword(
   req: Request<{ token: string }, {}, Schemas.ResetPassword>,
   res: Response
 ) {
-  const { body, passwordManagementService, requestLogger: logger } = req;
+  const { body, requestLogger: logger } = req;
   const { password, confirmPassword } = body;
 
   logger.log("debug", "Resetting password...");
@@ -30,7 +30,9 @@ export async function handleResetPassword(
 
   //    *   find non-expired reset token with token (encrypt first) from req params
   logger.log("debug", "Finding reset token in db...");
-  const tokenVerification = await verifyResetToken(req);
+  const tokenHash = HashUtil.byCrypto(req.params.token);
+  const tokenVerification =
+    await req.passwordManagementService.verifyResetToken(tokenHash);
 
   if (!tokenVerification.success) {
     const { error } = tokenVerification;
@@ -47,52 +49,71 @@ export async function handleResetPassword(
     return;
   }
 
-  //    *   update user password
-  //    set reset token is_used to true
-  //    optional: sign in user
-}
-
-/**
- * @description queries the db for an unused token with the given hash.
- * ! note that there is only ever one unused token.
- * @param req
- * @returns
- */
-async function verifyResetToken(
-  req: Request<{ token: string }, {}, Schemas.ResetPassword>
-) {
-  const tokenHash = crypto
-    .createHash("sha256")
-    .update(req.params.token)
-    .digest("hex");
-  const query = await req.passwordManagementService.queryResetTokenStrict({
-    tokenHash,
-    isUsed: false,
+  //    *   update user password and set reset token is_used to true
+  const updateOperation = await execUpdate({
+    req,
+    token: tokenVerification.result,
+    password,
   });
 
-  if (query.success) {
-    const now = new Date().getTime();
-    const expiry = new Date(query.result.expiresAt).getTime();
-    const isExpired = expiry <= now;
+  if (!updateOperation.success) {
+    const { error } = updateOperation;
+    const message = "Something went wrong. Please try again later.";
 
-    if (isExpired)
-      return ResultBuilder.fail(
-        new AuthError.Authentication.ErrorClass({
-          name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_EXPIRED_ERROR",
-          message: "Token is already expired.",
-        })
-      );
+    res
+      .status(AuthError.Authentication.getErrStatusCode(error))
+      .json({ success: false, message });
+
+    logger.log("debug", error.message, error);
+    return;
   }
 
-  return query;
+  //    todo: sign in user
+  res
+    .status(200)
+    .json({ success: true, message: "Password changed successfully." });
 }
+//#region Util
 
-async function updateTransaction(args: {
+async function execUpdate(args: {
   req: Request<{ token: string }, {}, Schemas.ResetPassword>;
   token: ViewModels.PasswordResetToken;
   password: string;
 }) {
   const { passwordManagementService } = args.req;
 
-  const tx = await
+  try {
+    return await execTransaction(async (tx) => {
+      //    ! update user password
+      args.req.requestLogger.log("debug", "Updating password...");
+      const userUpdate = await passwordManagementService.updatePassword({
+        dbOrTx: tx,
+        tokenId: args.token.id,
+        userId: args.token.userId,
+        password: args.password,
+      });
+
+      if (!userUpdate.success) return userUpdate; //  ! propagate error
+
+      //    ! update token
+      args.req.requestLogger.log("debug", "Updating reset token.");
+      const tokenUpdate = await passwordManagementService.invalidateToken({
+        dbOrTx: tx,
+        tokenId: args.token.id,
+      });
+
+      if (!tokenUpdate.success) return tokenUpdate; //  ! propagate error
+
+      return ResultBuilder.success(null); //  * no need for result data
+    });
+  } catch (err) {
+    return ResultBuilder.fail(
+      AuthError.Authentication.normalizeError({
+        name: "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR",
+        message: "Transaction failed.",
+        err,
+      })
+    );
+  }
 }
+//#endregion

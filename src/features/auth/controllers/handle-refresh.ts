@@ -2,8 +2,8 @@ import type { Request, Response } from "express";
 import { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { type CookieConfig, ENUMS, TOKEN_CONFIG_RECORD } from "../data";
-import * as AuthError from "../error";
-import { SessionResult, ViewModels } from "../types";
+import { AuthError } from "../error";
+import { AuthenticationResult, ViewModels } from "../types";
 import { createTokens } from "../utils";
 import { verifyRefreshTkn } from "../utils/verify-refresh-tkn";
 
@@ -43,7 +43,7 @@ export async function handleRefresh(req: Request, res: Response) {
     const { error } = payloadVerification;
 
     res
-      .status(AuthError.Session.getErrStatusCode(error))
+      .status(AuthError.Authentication.getErrStatusCode(error))
       .json({ success: false, message: error.message });
 
     logger.log("error", "Failed verifying refresh token.", error);
@@ -78,7 +78,7 @@ export async function handleRefresh(req: Request, res: Response) {
     const { error } = tknCreation;
 
     res
-      .status(AuthError.Session.getErrStatusCode(error))
+      .status(AuthError.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed creating tokens.", error);
@@ -101,7 +101,7 @@ export async function handleRefresh(req: Request, res: Response) {
     const { error } = tknRotation;
 
     res
-      .status(AuthError.Session.getErrStatusCode(error))
+      .status(AuthError.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed rotating tokens.", error);
@@ -139,26 +139,28 @@ function getRefreshConfig():
 
 async function resolveUser(
   req: Request,
-  userId: number
+  id: number
 ): Promise<
-  | SessionResult.Success<ViewModels.User, "SESSION_TOKEN_VERIFY">
-  | SessionResult.Fail
+  AuthenticationResult.Success<ViewModels.User> | AuthenticationResult.Fail
 > {
   const { userDataService } = req;
 
   const userQuery = await userDataService.queryUsers({
     fn: async (query, converter) => {
-      return await query.findFirst({ where: converter({ userId }) });
+      return await query.findFirst({ where: converter({ id }) });
     },
   });
 
   if (userQuery.success && userQuery.result)
-    return ResultBuilder.success(userQuery.result, "SESSION_TOKEN_VERIFY");
+    return ResultBuilder.success(
+      userQuery.result,
+      "AUTHENTICATION_SESSION_TOKEN_VERIFY"
+    );
 
   //  !user query fails or user query result is undefined
   return ResultBuilder.fail(
-    AuthError.Session.normalizeError({
-      name: "SESSION_TOKEN_MALFORMED_ERROR",
+    AuthError.Authentication.normalizeError({
+      name: "AUTHENTICATION_SESSION_TOKEN_MALFORMED_ERROR",
       message: "Failed retrieving user details.",
       err: !userQuery.success ? userQuery.error : undefined,
     })

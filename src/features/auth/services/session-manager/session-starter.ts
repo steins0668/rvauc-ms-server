@@ -2,8 +2,8 @@ import { randomUUID } from "crypto";
 import { TxContext } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../utils";
-import { Session } from "../../error";
-import { SessionResult } from "../../types";
+import { AuthError } from "../../error";
+import { AuthenticationResult } from "../../types";
 import { Repositories } from "../repositories";
 
 /**
@@ -30,7 +30,7 @@ export class SessionStarter {
     refreshToken: string;
     expiresAt?: Date | null;
   }): Promise<
-    SessionResult.Success<string, "SESSION_START"> | SessionResult.Fail
+    AuthenticationResult.Success<string> | AuthenticationResult.Fail
   > {
     const {
       userId,
@@ -56,10 +56,10 @@ export class SessionStarter {
         }
       );
 
-      return ResultBuilder.success(result, "SESSION_START");
+      return ResultBuilder.success(result, "AUTHENTICATION_SESSION_START");
     } catch (err) {
-      const error = Session.normalizeError({
-        name: "SESSION_START_ERROR",
+      const error = AuthError.Authentication.normalizeError({
+        name: "AUTHENTICATION_SESSION_START_ERROR",
         message:
           "An error occured while creating session. Please try again later.",
         err,

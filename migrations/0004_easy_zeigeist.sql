@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `password_reset_tokens_active_token_uidx` ON `password_reset_tokens` (`user_id`,`is_used`) WHERE "password_reset_tokens"."is_used" = false;

@@ -2,8 +2,8 @@ import { Request } from "express";
 import jwt from "jsonwebtoken";
 import { getTknSecrets } from "../data";
 import { Payloads } from "../schemas";
-import { Session } from "../error";
-import { SessionResult } from "../types";
+import { AuthError } from "../error";
+import { AuthenticationResult } from "../types";
 import { ResultBuilder } from "../../../utils";
 
 /**
@@ -23,8 +23,8 @@ export function verifyRefreshTkn(
   req: Request,
   refreshToken: string
 ):
-  | SessionResult.Success<Payloads.RefreshToken.Payload, "SESSION_TOKEN_VERIFY">
-  | SessionResult.Fail {
+  | AuthenticationResult.Success<Payloads.RefreshToken.Payload>
+  | AuthenticationResult.Fail {
   const { requestLogger } = req;
 
   let payload;
@@ -33,8 +33,8 @@ export function verifyRefreshTkn(
   } catch (err) {
     requestLogger.log("error", "Invalid or expired refresh token.", err);
     return ResultBuilder.fail(
-      Session.normalizeError({
-        name: "SESSION_TOKEN_EXPIRED_OR_INVALID_ERROR",
+      AuthError.Authentication.normalizeError({
+        name: "AUTHENTICATION_SESSION_TOKEN_EXPIRED_OR_INVALID_ERROR",
         message: "Invalid or expired refresh token.",
         err,
       })
@@ -45,10 +45,13 @@ export function verifyRefreshTkn(
   if (!payloadParse.success) {
     requestLogger.log("error", "Malformed refresh token.");
     return ResultBuilder.fail({
-      name: "SESSION_TOKEN_MALFORMED_ERROR",
+      name: "AUTHENTICATION_SESSION_TOKEN_MALFORMED_ERROR",
       message: "Malformed refresh token.",
     });
   }
 
-  return ResultBuilder.success(payloadParse.data, "SESSION_TOKEN_VERIFY");
+  return ResultBuilder.success(
+    payloadParse.data,
+    "AUTHENTICATION_SESSION_TOKEN_VERIFY"
+  );
 }

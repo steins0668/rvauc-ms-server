@@ -3,6 +3,7 @@ export * from "./attendance-statuses";
 export * from "./colleges";
 export * from "./compliance-records";
 export * from "./departments";
+export * from "./password-reset-tokens";
 export * from "./professors";
 export * from "./roles";
 export * from "./session-tokens";

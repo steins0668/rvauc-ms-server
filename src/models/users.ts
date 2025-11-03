@@ -3,6 +3,7 @@ import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
 import { professors } from "./professors";
 import { roles } from "./roles";
 import { students } from "./students";
+import { passwordResetTokens } from "./password-reset-tokens";
 
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -22,6 +23,10 @@ export const usersRelations = relations(users, ({ one }) => ({
   student: one(students, {
     fields: [users.id],
     references: [students.id],
+  }),
+  passwordResetToken: one(passwordResetTokens, {
+    fields: [users.id],
+    references: [passwordResetTokens.userId],
   }),
   professor: one(professors, {
     fields: [users.id],

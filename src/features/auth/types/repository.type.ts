@@ -1,7 +1,7 @@
 import { ResultSet } from "@libsql/client/.";
 import {
+  SQLiteDeleteBase,
   SQLiteInsertBuilder,
-  SQLiteTable,
   SQLiteUpdateBuilder,
 } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx } from "../../../db/create-context";
@@ -10,6 +10,26 @@ import * as Tables from "./auth-tables.type";
 import { ViewModels } from ".";
 
 type AnyFunc = (...args: any[]) => any;
+
+export namespace DeleteArgs {
+  type BaseDeleteArgs<
+    TDeleteBuilder extends object,
+    TFilterConverter extends AnyFunc,
+    TResult = ResultSet
+  > = {
+    dbOrTx?: DbOrTx | undefined;
+    fn: (
+      deleteBase: TDeleteBuilder,
+      filterConverter: TFilterConverter
+    ) => Promise<TResult>;
+  };
+
+  export type PasswordResetToken<T> = BaseDeleteArgs<
+    SQLiteDeleteBase<Tables.PasswordResetToken, "async", ResultSet>,
+    Repositories.PasswordResetToken["buildWhereClause"],
+    T
+  >;
+}
 
 export namespace InsertArgs {
   type BaseInsertArgs<
@@ -23,6 +43,12 @@ export namespace InsertArgs {
       filterConverter: TFilterConverter
     ) => Promise<TResult>;
   };
+
+  export type PasswordResetToken<T> = BaseInsertArgs<
+    SQLiteInsertBuilder<Tables.PasswordResetToken, "async", ResultSet>,
+    Repositories.PasswordResetToken["buildWhereClause"],
+    T
+  >;
 
   export type Professor<T> = BaseInsertArgs<
     SQLiteInsertBuilder<Tables.Professors, "async", ResultSet>,
@@ -68,9 +94,21 @@ export namespace UpdateArgs {
     ) => Promise<TResult>;
   };
 
+  export type PasswordResetToken<T> = BaseUpdateArgs<
+    SQLiteUpdateBuilder<Tables.PasswordResetToken, "async", ResultSet>,
+    Repositories.PasswordResetToken["buildWhereClause"],
+    T
+  >;
+
   export type SessionToken<T> = BaseUpdateArgs<
     SQLiteUpdateBuilder<Tables.SessionTokens, "async", ResultSet>,
     Repositories.SessionToken["buildWhereClause"],
+    T
+  >;
+
+  export type User<T> = BaseUpdateArgs<
+    SQLiteUpdateBuilder<Tables.Users, "async", ResultSet>,
+    Repositories.User["buildWhereClause"],
     T
   >;
 }
@@ -87,6 +125,11 @@ export namespace QueryArgs {
       filterConverter: TFilterConverter
     ) => Promise<TResult>;
   };
+  export type PasswordResetToken<T> = BaseQueryArgs<
+    DbContext["query"]["passwordResetTokens"],
+    Repositories.PasswordResetToken["buildWhereClause"],
+    T
+  >;
 
   export type Professor<T> = BaseQueryArgs<
     DbContext["query"]["professors"],
@@ -121,6 +164,9 @@ export namespace QueryFilters {
   type BaseQueryFilter<TModel> = {
     filterType?: "and" | "or" | undefined;
   } & PartialWithUndefined<TModel>;
+
+  export type PasswordResetToken =
+    BaseQueryFilter<ViewModels.PasswordResetToken>;
   /**
    * @description A type for the filter used for Db queries on the `students` table.
    * Contains the following fields:

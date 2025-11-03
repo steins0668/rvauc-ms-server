@@ -1,7 +1,7 @@
 import { BaseResult } from "../../../../types";
 import { ResultBuilder } from "../../../../utils";
 import { ENUMS } from "../../data";
-import { Session } from "../../error";
+import { AuthError } from "../../error";
 import { Payloads } from "../../schemas";
 import { UserDataService } from "../../services";
 import { ViewModels } from "../../types";
@@ -41,7 +41,7 @@ export async function createTokens(args: {
   isPersistentAuth?: boolean | undefined;
 }): Promise<
   | BaseResult.Success<Tokens, "TOKEN_CREATION">
-  | BaseResult.Fail<Session.ErrorClass>
+  | BaseResult.Fail<AuthError.Authentication.ErrorClass>
 > {
   const { userDataService, verifiedUser, sessionNumber, isPersistentAuth } =
     args;
@@ -70,8 +70,8 @@ export async function createTokens(args: {
     );
   } catch (err) {
     return ResultBuilder.fail(
-      Session.normalizeError({
-        name: "SESSION_TOKEN_CREATION_ERROR",
+      AuthError.Authentication.normalizeError({
+        name: "AUTHENTICATION_SESSION_TOKEN_CREATION_ERROR",
         message: "Failed creating tokens.",
         err,
       })

@@ -8,6 +8,34 @@
       "when": 1760454055876,
       "tag": "0000_hard_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1761989048912,
+      "tag": "0001_free_liz_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1761989182941,
+      "tag": "0002_overjoyed_starbolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1761996738543,
+      "tag": "0003_tiny_black_bolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1762095609107,
+      "tag": "0004_easy_zeigeist",
+      "breakpoints": true
     }
   ]
 }

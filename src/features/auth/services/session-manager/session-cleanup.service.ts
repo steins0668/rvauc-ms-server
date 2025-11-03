@@ -1,6 +1,6 @@
 import { HashUtil, ResultBuilder } from "../../../../utils";
-import { Session } from "../../error";
-import { SessionResult } from "../../types";
+import { AuthError } from "../../error";
+import { AuthenticationResult } from "../../types";
 import { Repositories } from "../repositories";
 
 export class SessionCleanupService {
@@ -23,8 +23,7 @@ export class SessionCleanupService {
   public async endSession(
     sessionNumber: string
   ): Promise<
-    | SessionResult.Success<number | undefined, "SESSION_END">
-    | SessionResult.Fail
+    AuthenticationResult.Success<number | undefined> | AuthenticationResult.Fail
   > {
     try {
       const deleteResult = await this._userSessionRepository.delete({
@@ -34,10 +33,10 @@ export class SessionCleanupService {
 
       const deletedId = deleteResult[0];
 
-      return ResultBuilder.success(deletedId, "SESSION_END");
+      return ResultBuilder.success(deletedId, "AUTHENTICATION_SESSION_END");
     } catch (err) {
-      const error: Session.ErrorClass = {
-        name: "SESSION_CLEANUP_ERROR",
+      const error: AuthError.Authentication.ErrorClass = {
+        name: "AUTHENTICATION_SESSION_CLEANUP_ERROR",
         message: "Failed deleting session. Please try again later.",
         cause: err,
       };
@@ -54,17 +53,20 @@ export class SessionCleanupService {
    * the deleted session ids or `null` if the delete operation fails.
    */
   public async endIdleSessions(): Promise<
-    SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
+    AuthenticationResult.Success<number[]> | AuthenticationResult.Fail
   > {
     try {
       const deletedSessionIds = await this._userSessionRepository.delete({
         scope: "idle_session",
       });
 
-      return ResultBuilder.success(deletedSessionIds, "SESSION_END");
+      return ResultBuilder.success(
+        deletedSessionIds,
+        "AUTHENTICATION_SESSION_END"
+      );
     } catch (err) {
-      const error: Session.ErrorClass = {
-        name: "SESSION_CLEANUP_ERROR",
+      const error: AuthError.Authentication.ErrorClass = {
+        name: "AUTHENTICATION_SESSION_CLEANUP_ERROR",
         message: "Failed deleting idle sessions.",
         cause: err,
       };
@@ -82,17 +84,20 @@ export class SessionCleanupService {
    * the deleted session ids or `null` if the delete operation fails.
    */
   public async endExpiredSessions(): Promise<
-    SessionResult.Success<number[], "SESSION_END"> | SessionResult.Fail
+    AuthenticationResult.Success<number[]> | AuthenticationResult.Fail
   > {
     try {
       const deletedSessionIds = await this._userSessionRepository.delete({
         scope: "expired_persistent",
       });
 
-      return ResultBuilder.success(deletedSessionIds, "SESSION_END");
+      return ResultBuilder.success(
+        deletedSessionIds,
+        "AUTHENTICATION_SESSION_END"
+      );
     } catch (err) {
-      const error: Session.ErrorClass = {
-        name: "SESSION_CLEANUP_ERROR",
+      const error: AuthError.Authentication.ErrorClass = {
+        name: "AUTHENTICATION_SESSION_CLEANUP_ERROR",
         message: "Failed deleting idle sessions.",
         cause: err,
       };
