@@ -1,8 +1,8 @@
 import { Request } from "express";
 import bcrypt from "bcrypt";
-import { ResultBuilder } from "../../../../utils";
-import { SignInSchema } from "../../schemas";
-import { AuthenticationResult, ViewModels } from "../../types";
+import { ResultBuilder } from "../../../../../../utils";
+import { Schemas } from "../../schemas";
+import { AuthenticationResult, ViewModels } from "../../../../types";
 import { getSignInMethod } from "./get-sign-in-method";
 
 /**
@@ -20,7 +20,7 @@ import { getSignInMethod } from "./get-sign-in-method";
  * the verified `User` or `null` if validation or verification fails..
  */
 export async function verifyUser(
-  req: Request<{}, {}, SignInSchema>
+  req: Request<{}, {}, Schemas.SignIn.Schema>
 ): Promise<
   AuthenticationResult.Success<ViewModels.User> | AuthenticationResult.Fail
 > {

@@ -1,9 +1,9 @@
-import { TxContext } from "../../../../db/create-context";
-import { DbAccess } from "../../../../error";
-import { HashUtil, ResultBuilder } from "../../../../utils";
-import { AuthError } from "../../error";
-import { AuthenticationResult } from "../../types";
-import { Repositories } from "../repositories";
+import { TxContext } from "../../../../../../db/create-context";
+import { DbAccess } from "../../../../../../error";
+import { HashUtil, ResultBuilder } from "../../../../../../utils";
+import { AuthError } from "../../../../error";
+import { Repositories } from "../../../../services";
+import { AuthenticationResult } from "../../../../types";
 
 export class SessionTokenRotator {
   private readonly _sessionTokenRepository: Repositories.SessionToken;

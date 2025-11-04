@@ -1,4 +1,4 @@
-import { Registration } from "../../sub-features/registration";
+import { Registration } from "../../../registration";
 
 export function getSignInMethod(
   identifier: string

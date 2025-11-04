@@ -1,8 +1,8 @@
-import { DbAccess } from "../../../../error";
-import { ResultBuilder } from "../../../../utils";
-import { Payloads } from "../../schemas";
-import { UserDataService } from "../../services";
-import { ViewModels } from "../../types";
+import { DbAccess } from "../../../../../../error";
+import { ResultBuilder } from "../../../../../../utils";
+import { UserDataService } from "../../../../services";
+import { ViewModels } from "../../../../types";
+import { Schemas } from "../../schemas";
 
 export const payloadResolver = {
   professor: async (dataService: UserDataService, user: ViewModels.User) => {
@@ -35,7 +35,7 @@ export const payloadResolver = {
         college: college.name,
         ...professor,
       },
-    } as Payloads.AccessToken.Professor;
+    } as Schemas.Payloads.AccessToken.Professor;
 
     return ResultBuilder.success(payload);
   },
@@ -70,7 +70,7 @@ export const payloadResolver = {
         department: department.name,
         ...student,
       },
-    } as Payloads.AccessToken.Student;
+    } as Schemas.Payloads.AccessToken.Student;
 
     return ResultBuilder.success(payload);
   },

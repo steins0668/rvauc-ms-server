@@ -1,10 +1,10 @@
-import { BaseResult } from "../../../../types";
-import { ResultBuilder } from "../../../../utils";
-import { ENUMS } from "../../data";
-import { AuthError } from "../../error";
-import { Payloads } from "../../schemas";
-import { UserDataService } from "../../services";
-import { ViewModels } from "../../types";
+import { BaseResult } from "../../../../../../types";
+import { ResultBuilder } from "../../../../../../utils";
+import { ENUMS } from "../../../../data";
+import { AuthError } from "../../../../error";
+import { UserDataService } from "../../../../services";
+import { ViewModels } from "../../../../types";
+import { Schemas } from "../../schemas";
 import { createJwt } from "./create-jwt.util";
 import { payloadResolver } from "./payload-resolver.util";
 
@@ -108,7 +108,7 @@ function createRefreshToken(args: {
 }) {
   const { sessionNumber, userId, isPersistentAuth } = args;
 
-  const payload: Payloads.RefreshToken.Payload = {
+  const payload: Schemas.Payloads.RefreshToken.Payload = {
     sessionNumber,
     userId,
     isPersistentAuth,

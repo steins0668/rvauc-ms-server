@@ -1,10 +1,9 @@
 import { Router } from "express";
 import { validateRequest } from "../../middlewares";
-import * as controllers from "./controllers";
-import { attachSessionManager, attachUserDataService } from "./middlewares";
-import { signInSchema } from "./schemas";
+import { attachUserDataService } from "./middlewares";
 import { PasswordManagement } from "./sub-features/password-management";
 import { Registration } from "./sub-features/registration";
+import { SessionManagement } from "./sub-features/session-management";
 
 export const AuthRoutes = Router();
 
@@ -17,17 +16,17 @@ AuthRoutes.post(
   Registration.Controllers.handleRegister
 );
 
-AuthRoutes.use(attachSessionManager);
+AuthRoutes.use(SessionManagement.Middlewares.attachSessionManager);
 
 AuthRoutes.post(
   "/sign-in",
-  validateRequest(signInSchema),
-  controllers.handleSignIn
+  validateRequest(SessionManagement.Schemas.SignIn.schema),
+  SessionManagement.Controllers.handleSignIn
 );
 
-AuthRoutes.post("/sign-out", controllers.handleSignOut);
+AuthRoutes.post("/sign-out", SessionManagement.Controllers.handleSignOut);
 
-AuthRoutes.post("/refresh", controllers.handleRefresh);
+AuthRoutes.post("/refresh", SessionManagement.Controllers.handleRefresh);
 
 //  * Password Management
 AuthRoutes.use(PasswordManagement.Middlewares.attachPasswordManagementService);

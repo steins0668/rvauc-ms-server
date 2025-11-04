@@ -1,9 +1,9 @@
-import { HashUtil, ResultBuilder } from "../../../../utils";
-import { AuthError } from "../../error";
-import { AuthenticationResult } from "../../types";
-import { Repositories } from "../repositories";
+import { HashUtil, ResultBuilder } from "../../../../../../utils";
+import { AuthError } from "../../../../error";
+import { Repositories } from "../../../../services";
+import { AuthenticationResult } from "../../../../types";
 
-export class SessionCleanupService {
+export class SessionCleaner {
   private readonly _userSessionRepository: Repositories.UserSession;
 
   constructor(userSessionTokenRepository: Repositories.UserSession) {

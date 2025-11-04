@@ -1,10 +1,10 @@
 import { Request } from "express";
 import jwt from "jsonwebtoken";
-import { getTknSecrets } from "../data";
-import { Payloads } from "../schemas";
-import { AuthError } from "../error";
-import { AuthenticationResult } from "../types";
-import { ResultBuilder } from "../../../utils";
+import { ResultBuilder } from "../../../../../utils";
+import { AuthError } from "../../../error";
+import { AuthenticationResult } from "../../../types";
+import { Data } from "../data";
+import { Schemas } from "../schemas";
 
 /**
  * @public
@@ -23,13 +23,13 @@ export function verifyRefreshTkn(
   req: Request,
   refreshToken: string
 ):
-  | AuthenticationResult.Success<Payloads.RefreshToken.Payload>
+  | AuthenticationResult.Success<Schemas.Payloads.RefreshToken.Payload>
   | AuthenticationResult.Fail {
   const { requestLogger } = req;
 
   let payload;
   try {
-    payload = jwt.verify(refreshToken, getTknSecrets().refreshSecret);
+    payload = jwt.verify(refreshToken, Data.getTknSecrets().refreshSecret);
   } catch (err) {
     requestLogger.log("error", "Invalid or expired refresh token.", err);
     return ResultBuilder.fail(
@@ -41,7 +41,7 @@ export function verifyRefreshTkn(
     );
   }
 
-  const payloadParse = Payloads.RefreshToken.payload.safeParse(payload);
+  const payloadParse = Schemas.Payloads.RefreshToken.payload.safeParse(payload);
   if (!payloadParse.success) {
     requestLogger.log("error", "Malformed refresh token.");
     return ResultBuilder.fail({

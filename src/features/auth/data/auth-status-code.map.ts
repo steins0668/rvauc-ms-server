@@ -2,11 +2,6 @@ import { Exhaustive } from "../../../types";
 import * as AuthError from "../error";
 
 export namespace AuthStatusCode {
-  export const AuthConfigError: Exhaustive<AuthError.AuthConfig.ErrorName> = {
-    AUTH_CONFIG_COOKIE_CONFIG_ERROR: 500,
-    AUTH_CONFIG_ENV_TKN_SECRET_ERROR: 500,
-  } as const;
-
   export const AuthenticationError: Exhaustive<AuthError.Authentication.ErrorName> =
     {
       AUTHENTICATION_IDENTITY_USER_NOT_FOUND_ERROR: 401,

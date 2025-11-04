@@ -1,11 +1,11 @@
 import type { Request, Response } from "express";
-import { BaseResult } from "../../../types";
-import { ResultBuilder } from "../../../utils";
-import { type CookieConfig, ENUMS, TOKEN_CONFIG_RECORD } from "../data";
-import { AuthError } from "../error";
-import { AuthenticationResult, ViewModels } from "../types";
-import { createTokens } from "../utils";
-import { verifyRefreshTkn } from "../utils/verify-refresh-tkn";
+import { BaseResult } from "../../../../../types";
+import { ResultBuilder } from "../../../../../utils";
+import { AuthError } from "../../../error";
+import { AuthenticationResult, ViewModels } from "../../../types";
+import { CustomError } from "../error";
+import { Data } from "../data";
+import { Utils } from "../utils";
 
 export async function handleRefresh(req: Request, res: Response) {
   const {
@@ -25,7 +25,7 @@ export async function handleRefresh(req: Request, res: Response) {
     const { error } = cookieConfig;
 
     res
-      .status(AuthError.AuthConfig.getErrStatusCode(error))
+      .status(CustomError.Config.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed getting refresh token config.", error);
@@ -37,7 +37,7 @@ export async function handleRefresh(req: Request, res: Response) {
   const oldRefreshTkn = cookies[refreshTknCookie] as string;
 
   //  * verify payload
-  const payloadVerification = verifyRefreshTkn(req, oldRefreshTkn);
+  const payloadVerification = Utils.verifyRefreshTkn(req, oldRefreshTkn);
   if (!payloadVerification.success) {
     //  !failed payload verification
     const { error } = payloadVerification;
@@ -66,7 +66,7 @@ export async function handleRefresh(req: Request, res: Response) {
   const { sessionNumber, isPersistentAuth } = payloadVerification.result;
 
   //  * create new tokens
-  const tknCreation = await createTokens({
+  const tknCreation = await Utils.createTokens({
     userDataService,
     verifiedUser: userQuery.result,
     sessionNumber,
@@ -123,9 +123,9 @@ export async function handleRefresh(req: Request, res: Response) {
 }
 
 function getRefreshConfig():
-  | BaseResult.Success<CookieConfig>
-  | BaseResult.Fail<AuthError.AuthConfig.ErrorClass> {
-  const { cookieConfig: refreshCookie } = TOKEN_CONFIG_RECORD.refresh;
+  | BaseResult.Success<Data.Token.CookieConfig>
+  | BaseResult.Fail<CustomError.Config.ErrorClass> {
+  const { cookieConfig: refreshCookie } = Data.Token.configuration.refresh;
 
   if (!refreshCookie)
     //  cookie config not set

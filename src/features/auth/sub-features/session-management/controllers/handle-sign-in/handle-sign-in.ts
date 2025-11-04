@@ -1,12 +1,13 @@
 import type { Request, Response } from "express";
-import { AuthError } from "../../error";
-import { SignInSchema } from "../../schemas";
-import { createTokens, getRefreshConfig } from "../../utils";
+import { AuthError } from "../../../../error";
+import { CustomError } from "../../error";
+import { Schemas } from "../../schemas";
+import { Utils } from "../../utils";
 import { verifyUser } from "./verify-user";
 import { getSignInMethod } from "./get-sign-in-method";
 
 export async function handleSignIn(
-  req: Request<{}, {}, SignInSchema>,
+  req: Request<{}, {}, Schemas.SignIn.Schema>,
   res: Response
 ) {
   const {
@@ -40,7 +41,7 @@ export async function handleSignIn(
   const sessionNumber = sessionManager.generateSessionNumber(user.id);
 
   //  *create tokens
-  const tokenResult = await createTokens({
+  const tokenResult = await Utils.createTokens({
     userDataService,
     verifiedUser: user,
     sessionNumber,
@@ -83,18 +84,17 @@ export async function handleSignIn(
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed starting session.", error);
-
     return;
   }
 
-  const cookieResult = getRefreshConfig();
+  const cookieResult = Utils.getRefreshConfig();
 
   if (!cookieResult.success) {
     //  !failed getting refresh token config
     const { error } = cookieResult;
 
     res
-      .status(AuthError.AuthConfig.getErrStatusCode(error))
+      .status(CustomError.Config.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed getting refresh token config.", error);
