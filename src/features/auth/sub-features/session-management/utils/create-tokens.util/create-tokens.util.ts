@@ -1,7 +1,6 @@
 import { BaseResult } from "../../../../../../types";
 import { ResultBuilder } from "../../../../../../utils";
 import { Core } from "../../../../core";
-import { UserDataService } from "../../../../services";
 import { ViewModels } from "../../../../types";
 import { Schemas } from "../../schemas";
 import { createJwt } from "./create-jwt.util";
@@ -34,7 +33,7 @@ type Tokens = {
  * and `refreshToken`.
  */
 export async function createTokens(args: {
-  userDataService: UserDataService;
+  userDataService: Core.Services.UserData.Service;
   verifiedUser: ViewModels.User;
   sessionNumber: string;
   isPersistentAuth?: boolean | undefined;
@@ -79,7 +78,7 @@ export async function createTokens(args: {
 }
 
 async function createAccessToken(args: {
-  userDataService: UserDataService;
+  userDataService: Core.Services.UserData.Service;
   verifiedUser: ViewModels.User;
   role: Role;
 }) {

@@ -5,7 +5,7 @@ import {
   SQLiteUpdateBuilder,
 } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx } from "../../../db/create-context";
-import { Repositories } from "../services";
+import { Repositories } from "../core/services";
 import * as Tables from "./auth-tables.type";
 import { ViewModels } from ".";
 

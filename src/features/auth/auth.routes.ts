@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { validateRequest } from "../../middlewares";
-import { Middlewares } from "./middlewares";
+import { Core } from "./core";
 import { PasswordManagement } from "./sub-features/password-management";
 import { Registration } from "./sub-features/registration";
 import { SessionManagement } from "./sub-features/session-management";
 
 export const AuthRoutes = Router();
 
-AuthRoutes.use(Middlewares.attachUserDataService);
+AuthRoutes.use(Core.Middlewares.attachUserDataService);
 
 //  * Registration
 AuthRoutes.post(

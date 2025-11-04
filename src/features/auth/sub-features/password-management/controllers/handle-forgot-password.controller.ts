@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import crypto from "crypto";
 import { ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
-import { UserDataService } from "../../../services";
 import { Schemas } from "../schemas";
 import { Utils } from "../utils";
 
@@ -119,7 +118,7 @@ export async function handleForgotPassword(
 //#region Utils
 async function verifyUser(args: {
   email: string;
-  userDataService: UserDataService;
+  userDataService: Core.Services.UserData.Service;
 }) {
   const query = await args.userDataService.queryUsers({
     fn: async (query, converter) => {

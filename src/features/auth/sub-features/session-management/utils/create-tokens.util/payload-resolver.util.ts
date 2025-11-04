@@ -1,11 +1,14 @@
 import { DbAccess } from "../../../../../../error";
 import { ResultBuilder } from "../../../../../../utils";
-import { UserDataService } from "../../../../services";
+import { Core } from "../../../../core";
 import { ViewModels } from "../../../../types";
 import { Schemas } from "../../schemas";
 
 export const payloadResolver = {
-  professor: async (dataService: UserDataService, user: ViewModels.User) => {
+  professor: async (
+    dataService: Core.Services.UserData.Service,
+    user: ViewModels.User
+  ) => {
     const query = await dataService.queryProfessors({
       fn: async (query, converter) => {
         const result = await query.findFirst({
@@ -39,7 +42,10 @@ export const payloadResolver = {
 
     return ResultBuilder.success(payload);
   },
-  student: async (dataService: UserDataService, user: ViewModels.User) => {
+  student: async (
+    dataService: Core.Services.UserData.Service,
+    user: ViewModels.User
+  ) => {
     const query = await dataService.queryStudents({
       fn: async (query, converter) => {
         const result = await query.findFirst({

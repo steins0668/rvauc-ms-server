@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { createUserDataService, UserDataService } from "./services";
+import { Core } from ".";
 
 export namespace Middlewares {
   export async function attachUserDataService(
@@ -7,7 +7,7 @@ export namespace Middlewares {
     res: Response,
     next: NextFunction
   ) {
-    req.userDataService = await createUserDataService();
+    req.userDataService = await Core.Services.UserData.createService();
     next();
   }
 }
@@ -15,7 +15,7 @@ export namespace Middlewares {
 declare global {
   namespace Express {
     interface Request {
-      userDataService: UserDataService;
+      userDataService: Core.Services.UserData.Service;
     }
   }
 }
