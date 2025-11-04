@@ -2,9 +2,9 @@ import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../db/create-context";
 import { users } from "../../../models";
 import { Repository } from "../../../services";
-import { InsertModels, RepositoryTypes, Tables } from "../types";
+import { Types } from "../types";
 
-export class UserRepository extends Repository<Tables.Users> {
+export class UserRepository extends Repository<Types.Tables.Users> {
   public constructor(context: DbContext) {
     super(context, users);
   }
@@ -19,7 +19,7 @@ export class UserRepository extends Repository<Tables.Users> {
    */
   public async insertOne(args: {
     dbOrTx?: DbContext | TxContext | undefined;
-    user: InsertModels.User;
+    user: Types.InsertModels.User;
   }): Promise<number | undefined> {
     // const inserted = await this._insertOne({ dbOrTx, value: user });
     const { dbOrTx, user } = args;
@@ -36,17 +36,17 @@ export class UserRepository extends Repository<Tables.Users> {
     return inserted?.id;
   }
 
-  public async execInsert<T>(args: RepositoryTypes.InsertArgs.User<T>) {
+  public async execInsert<T>(args: Types.Repository.InsertArgs.User<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(users);
     return await args.fn(insert, this.buildWhereClause);
   }
 
-  public async execQuery<T>(args: RepositoryTypes.QueryArgs.User<T>) {
+  public async execQuery<T>(args: Types.Repository.QueryArgs.User<T>) {
     const query = (args.dbOrTx ?? this._dbContext).query.users;
     return await args.fn(query, this.buildWhereClause);
   }
 
-  public async execUpdate<T>(args: RepositoryTypes.UpdateArgs.User<T>) {
+  public async execUpdate<T>(args: Types.Repository.UpdateArgs.User<T>) {
     const update = (args.dbOrTx ?? this._dbContext).update(users);
     return await args.fn(update, this.buildWhereClause);
   }
@@ -63,7 +63,7 @@ export class UserRepository extends Repository<Tables.Users> {
    * @returns The composed `WHERE` SQL statement, or `undefined` if no conditions are set.
    */
   protected buildWhereClause(
-    filter?: RepositoryTypes.QueryFilters.User
+    filter?: Types.Repository.QueryFilters.User
   ): SQL | undefined {
     const conditions = [];
 

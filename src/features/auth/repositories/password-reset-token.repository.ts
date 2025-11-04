@@ -2,15 +2,15 @@ import { and, eq, lte, or } from "drizzle-orm";
 import { DbContext } from "../../../db/create-context";
 import { passwordResetTokens } from "../../../models";
 import { Repository } from "../../../services";
-import { RepositoryTypes, Tables } from "../types";
+import { Types } from "../types";
 
-export class PasswordResetTokenRepository extends Repository<Tables.PasswordResetToken> {
+export class PasswordResetTokenRepository extends Repository<Types.Tables.PasswordResetToken> {
   public constructor(context: DbContext) {
     super(context, passwordResetTokens);
   }
 
   public async execDelete<T>(
-    args: RepositoryTypes.DeleteArgs.PasswordResetToken<T>
+    args: Types.Repository.DeleteArgs.PasswordResetToken<T>
   ) {
     const deleteBase = (args.dbOrTx ?? this._dbContext).delete(
       passwordResetTokens
@@ -19,28 +19,28 @@ export class PasswordResetTokenRepository extends Repository<Tables.PasswordRese
   }
 
   public async execInsert<T>(
-    args: RepositoryTypes.InsertArgs.PasswordResetToken<T>
+    args: Types.Repository.InsertArgs.PasswordResetToken<T>
   ) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(passwordResetTokens);
     return await args.fn(insert, this.buildWhereClause);
   }
 
   public async execQuery<T>(
-    args: RepositoryTypes.QueryArgs.PasswordResetToken<T>
+    args: Types.Repository.QueryArgs.PasswordResetToken<T>
   ) {
     const query = (args.dbOrTx ?? this._dbContext).query.passwordResetTokens;
     return await args.fn(query, this.buildWhereClause);
   }
 
   public async execUpdate<T>(
-    args: RepositoryTypes.UpdateArgs.PasswordResetToken<T>
+    args: Types.Repository.UpdateArgs.PasswordResetToken<T>
   ) {
     const update = (args.dbOrTx ?? this._dbContext).update(passwordResetTokens);
     return await args.fn(update, this.buildWhereClause);
   }
 
   protected buildWhereClause(
-    filter?: RepositoryTypes.QueryFilters.PasswordResetToken
+    filter?: Types.Repository.QueryFilters.PasswordResetToken
   ) {
     const conditions = [];
 

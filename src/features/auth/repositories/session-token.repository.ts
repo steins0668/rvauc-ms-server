@@ -2,30 +2,34 @@ import { and, eq, or, SQL } from "drizzle-orm";
 import { DbContext } from "../../../db/create-context";
 import { sessionTokens } from "../../../models";
 import { Repository } from "../../../services";
-import { Tables, RepositoryTypes } from "../types";
+import { Types } from "../types";
 
-export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
+export class SessionTokenRepository extends Repository<Types.Tables.SessionTokens> {
   public constructor(context: DbContext) {
     super(context, sessionTokens);
   }
 
-  public async execInsert<T>(args: RepositoryTypes.InsertArgs.SessionToken<T>) {
+  public async execInsert<T>(
+    args: Types.Repository.InsertArgs.SessionToken<T>
+  ) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(sessionTokens);
     return await args.fn(insert, this.buildWhereClause);
   }
 
-  public async execQuery<T>(args: RepositoryTypes.QueryArgs.SessionToken<T>) {
+  public async execQuery<T>(args: Types.Repository.QueryArgs.SessionToken<T>) {
     const query = (args.dbOrTx ?? this._dbContext).query.sessionTokens;
     return await args.fn(query, this.buildWhereClause);
   }
 
-  public async execUpdate<T>(args: RepositoryTypes.UpdateArgs.SessionToken<T>) {
+  public async execUpdate<T>(
+    args: Types.Repository.UpdateArgs.SessionToken<T>
+  ) {
     const update = (args.dbOrTx ?? this._dbContext).update(sessionTokens);
     return await args.fn(update, this.buildWhereClause);
   }
 
   private buildWhereClause(
-    filter: RepositoryTypes.QueryFilters.SessionToken
+    filter: Types.Repository.QueryFilters.SessionToken
   ): SQL | undefined {
     const conditions = [];
 

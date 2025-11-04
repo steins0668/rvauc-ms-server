@@ -2,9 +2,9 @@ import { and, eq, or, SQL } from "drizzle-orm";
 import type { DbContext, TxContext } from "../../../db/create-context";
 import { students } from "../../../models";
 import { Repository } from "../../../services";
-import { InsertModels, RepositoryTypes, Tables } from "../types";
+import { Types } from "../types";
 
-export class StudentRepository extends Repository<Tables.Student> {
+export class StudentRepository extends Repository<Types.Tables.Student> {
   public constructor(context: DbContext) {
     super(context, students);
   }
@@ -19,7 +19,7 @@ export class StudentRepository extends Repository<Tables.Student> {
    */
   public async insertOne(args: {
     dbOrTx?: DbContext | TxContext | undefined;
-    student: InsertModels.Student;
+    student: Types.InsertModels.Student;
   }): Promise<number | undefined> {
     const { dbOrTx, student } = args;
     const inserted = await this.execInsert({
@@ -35,12 +35,12 @@ export class StudentRepository extends Repository<Tables.Student> {
     return inserted?.id;
   }
 
-  public async execInsert<T>(args: RepositoryTypes.InsertArgs.Student<T>) {
+  public async execInsert<T>(args: Types.Repository.InsertArgs.Student<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(students);
     return await args.fn(insert, this.buildWhereClause);
   }
 
-  public async execQuery<T>(args: RepositoryTypes.QueryArgs.Student<T>) {
+  public async execQuery<T>(args: Types.Repository.QueryArgs.Student<T>) {
     const query = (args.dbOrTx ?? this._dbContext).query.students;
     return await args.fn(query, this.buildWhereClause);
   }
@@ -62,7 +62,7 @@ export class StudentRepository extends Repository<Tables.Student> {
    * conditions are set.
    */
   protected buildWhereClause(
-    filter?: RepositoryTypes.QueryFilters.Student
+    filter?: Types.Repository.QueryFilters.Student
   ): SQL | undefined {
     const conditions = [];
 

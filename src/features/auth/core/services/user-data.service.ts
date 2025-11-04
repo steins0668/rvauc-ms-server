@@ -5,7 +5,7 @@ import type { BaseResult } from "../../../../types";
 import { ResultBuilder } from "../../../../utils";
 import { Core } from "..";
 import { Repositories } from "../../repositories";
-import type { QueryArgs, UpdateArgs } from "../../types";
+import { Types } from "../../types";
 import { Registration } from "../../sub-features/registration";
 
 export namespace UserData {
@@ -50,7 +50,9 @@ export namespace UserData {
       return role?.name;
     }
 
-    public async queryProfessors<T>(args: QueryArgs.Professor<T>) {
+    public async queryProfessors<T>(
+      args: Types.Repository.QueryArgs.Professor<T>
+    ) {
       try {
         const result = await this._professorRepository.execQuery(args);
 
@@ -74,7 +76,7 @@ export namespace UserData {
       }
     }
 
-    public async queryStudents<T>(args: QueryArgs.Student<T>) {
+    public async queryStudents<T>(args: Types.Repository.QueryArgs.Student<T>) {
       try {
         const result = await this._studentRepository.execQuery(args);
 
@@ -98,7 +100,7 @@ export namespace UserData {
       }
     }
 
-    public async queryUsers<T>(args: QueryArgs.User<T>) {
+    public async queryUsers<T>(args: Types.Repository.QueryArgs.User<T>) {
       try {
         const result = await this._userRepository.execQuery(args);
 
@@ -122,7 +124,7 @@ export namespace UserData {
       }
     }
 
-    public async updateUsers<T>(args: UpdateArgs.User<T>) {
+    public async updateUsers<T>(args: Types.Repository.UpdateArgs.User<T>) {
       try {
         const update = await this._userRepository.execUpdate(args);
         return ResultBuilder.success(update);
