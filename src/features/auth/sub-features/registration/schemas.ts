@@ -1,5 +1,5 @@
 import z from "zod";
-import { ENUMS } from "../../data";
+import { Core } from "../../core";
 import { Data } from "./data";
 
 const { Username, Password, StudentNumber } = Data.Regex.Auth;
@@ -57,7 +57,7 @@ export namespace Schemas {
       [
         z.object({
           ...base.shape,
-          roleId: z.literal(ENUMS.ROLES.professor),
+          roleId: z.literal(Core.Data.Enums.Roles.professor),
           collegeId: z.number({
             error: (iss) =>
               iss.input === undefined
@@ -73,7 +73,7 @@ export namespace Schemas {
         }),
         z.object({
           ...base.shape,
-          roleId: z.literal(ENUMS.ROLES.student),
+          roleId: z.literal(Core.Data.Enums.Roles.student),
           //  todo: handle constraints for current valid ids
           departmentId: z.number({
             error: (iss) =>

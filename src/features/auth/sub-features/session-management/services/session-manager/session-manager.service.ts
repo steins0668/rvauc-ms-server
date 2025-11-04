@@ -1,6 +1,6 @@
 import { createContext } from "../../../../../../db/create-context";
+import { Core } from "../../../../core";
 import { Repositories } from "../../../../services";
-import { AuthenticationResult } from "../../../../types";
 import { SessionCleaner } from "./session-cleaner";
 import { SessionStarter } from "./session-starter";
 import { SessionTokenRotator } from "./session-token-rotator";
@@ -56,7 +56,8 @@ export namespace SessionManager {
       refreshToken: string;
       expiresAt?: Date | null;
     }): Promise<
-      AuthenticationResult.Success<string> | AuthenticationResult.Fail
+      | Core.Types.AuthenticationResult.Success<string>
+      | Core.Types.AuthenticationResult.Fail
     > {
       return await this._starter.newSession(sessionData);
     }
@@ -76,7 +77,8 @@ export namespace SessionManager {
       oldToken: string;
       newToken: string;
     }): Promise<
-      AuthenticationResult.Success<number> | AuthenticationResult.Fail
+      | Core.Types.AuthenticationResult.Success<number>
+      | Core.Types.AuthenticationResult.Fail
     > {
       return await this._rotator.rotate(sessionData);
     }
@@ -92,8 +94,8 @@ export namespace SessionManager {
     public async endSession(
       sessionNumber: string
     ): Promise<
-      | AuthenticationResult.Success<number | undefined>
-      | AuthenticationResult.Fail
+      | Core.Types.AuthenticationResult.Success<number | undefined>
+      | Core.Types.AuthenticationResult.Fail
     > {
       return await this._cleanup.endSession(sessionNumber);
     }
@@ -107,7 +109,8 @@ export namespace SessionManager {
      * the error class is returned.
      */
     public async endIdleSessions(): Promise<
-      AuthenticationResult.Success<number[]> | AuthenticationResult.Fail
+      | Core.Types.AuthenticationResult.Success<number[]>
+      | Core.Types.AuthenticationResult.Fail
     > {
       return await this._cleanup.endIdleSessions();
     }
@@ -120,7 +123,8 @@ export namespace SessionManager {
      * containing the error class is returned.
      */
     public async endExpiredSessions(): Promise<
-      AuthenticationResult.Success<number[]> | AuthenticationResult.Fail
+      | Core.Types.AuthenticationResult.Success<number[]>
+      | Core.Types.AuthenticationResult.Fail
     > {
       return await this._cleanup.endExpiredSessions();
     }

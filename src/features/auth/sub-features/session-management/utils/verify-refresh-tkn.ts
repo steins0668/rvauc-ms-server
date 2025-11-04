@@ -1,8 +1,7 @@
 import { Request } from "express";
 import jwt from "jsonwebtoken";
 import { ResultBuilder } from "../../../../../utils";
-import { AuthError } from "../../../error";
-import { AuthenticationResult } from "../../../types";
+import { Core } from "../../../core";
 import { Data } from "../data";
 import { Schemas } from "../schemas";
 
@@ -23,8 +22,8 @@ export function verifyRefreshTkn(
   req: Request,
   refreshToken: string
 ):
-  | AuthenticationResult.Success<Schemas.Payloads.RefreshToken.Payload>
-  | AuthenticationResult.Fail {
+  | Core.Types.AuthenticationResult.Success<Schemas.Payloads.RefreshToken.Payload>
+  | Core.Types.AuthenticationResult.Fail {
   const { requestLogger } = req;
 
   let payload;
@@ -33,7 +32,7 @@ export function verifyRefreshTkn(
   } catch (err) {
     requestLogger.log("error", "Invalid or expired refresh token.", err);
     return ResultBuilder.fail(
-      AuthError.Authentication.normalizeError({
+      Core.Errors.Authentication.normalizeError({
         name: "AUTHENTICATION_SESSION_TOKEN_EXPIRED_OR_INVALID_ERROR",
         message: "Invalid or expired refresh token.",
         err,

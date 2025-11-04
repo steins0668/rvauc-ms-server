@@ -1,7 +1,6 @@
 import { HashUtil, ResultBuilder } from "../../../../../../utils";
-import { AuthError } from "../../../../error";
+import { Core } from "../../../../core";
 import { Repositories } from "../../../../services";
-import { AuthenticationResult } from "../../../../types";
 
 export class SessionCleaner {
   private readonly _userSessionRepository: Repositories.UserSession;
@@ -23,7 +22,8 @@ export class SessionCleaner {
   public async endSession(
     sessionNumber: string
   ): Promise<
-    AuthenticationResult.Success<number | undefined> | AuthenticationResult.Fail
+    | Core.Types.AuthenticationResult.Success<number | undefined>
+    | Core.Types.AuthenticationResult.Fail
   > {
     try {
       const deleteResult = await this._userSessionRepository.delete({
@@ -35,7 +35,7 @@ export class SessionCleaner {
 
       return ResultBuilder.success(deletedId, "AUTHENTICATION_SESSION_END");
     } catch (err) {
-      const error: AuthError.Authentication.ErrorClass = {
+      const error: Core.Errors.Authentication.ErrorClass = {
         name: "AUTHENTICATION_SESSION_CLEANUP_ERROR",
         message: "Failed deleting session. Please try again later.",
         cause: err,
@@ -53,7 +53,8 @@ export class SessionCleaner {
    * the deleted session ids or `null` if the delete operation fails.
    */
   public async endIdleSessions(): Promise<
-    AuthenticationResult.Success<number[]> | AuthenticationResult.Fail
+    | Core.Types.AuthenticationResult.Success<number[]>
+    | Core.Types.AuthenticationResult.Fail
   > {
     try {
       const deletedSessionIds = await this._userSessionRepository.delete({
@@ -65,7 +66,7 @@ export class SessionCleaner {
         "AUTHENTICATION_SESSION_END"
       );
     } catch (err) {
-      const error: AuthError.Authentication.ErrorClass = {
+      const error: Core.Errors.Authentication.ErrorClass = {
         name: "AUTHENTICATION_SESSION_CLEANUP_ERROR",
         message: "Failed deleting idle sessions.",
         cause: err,
@@ -84,7 +85,8 @@ export class SessionCleaner {
    * the deleted session ids or `null` if the delete operation fails.
    */
   public async endExpiredSessions(): Promise<
-    AuthenticationResult.Success<number[]> | AuthenticationResult.Fail
+    | Core.Types.AuthenticationResult.Success<number[]>
+    | Core.Types.AuthenticationResult.Fail
   > {
     try {
       const deletedSessionIds = await this._userSessionRepository.delete({
@@ -96,7 +98,7 @@ export class SessionCleaner {
         "AUTHENTICATION_SESSION_END"
       );
     } catch (err) {
-      const error: AuthError.Authentication.ErrorClass = {
+      const error: Core.Errors.Authentication.ErrorClass = {
         name: "AUTHENTICATION_SESSION_CLEANUP_ERROR",
         message: "Failed deleting idle sessions.",
         cause: err,

@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { AuthError } from "../../../../error";
+import { Core } from "../../../../core";
 import { CustomError } from "../../error";
 import { Schemas } from "../../schemas";
 import { Utils } from "../../utils";
@@ -25,7 +25,7 @@ export async function handleSignIn(
     const { error } = verificationResult;
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: error.message });
 
     const safeId = getSafeId(authDetails.identifier);
@@ -55,7 +55,7 @@ export async function handleSignIn(
     const { error } = tokenResult;
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed creating tokens.", error);
@@ -80,7 +80,7 @@ export async function handleSignIn(
     const { error } = sessionResult;
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed starting session.", error);

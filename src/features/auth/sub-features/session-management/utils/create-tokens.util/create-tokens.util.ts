@@ -1,14 +1,13 @@
 import { BaseResult } from "../../../../../../types";
 import { ResultBuilder } from "../../../../../../utils";
-import { ENUMS } from "../../../../data";
-import { AuthError } from "../../../../error";
+import { Core } from "../../../../core";
 import { UserDataService } from "../../../../services";
 import { ViewModels } from "../../../../types";
 import { Schemas } from "../../schemas";
 import { createJwt } from "./create-jwt.util";
 import { payloadResolver } from "./payload-resolver.util";
 
-type Role = keyof typeof ENUMS.ROLES;
+type Role = keyof typeof Core.Data.Enums.Roles;
 
 type Tokens = {
   accessToken: string;
@@ -41,13 +40,13 @@ export async function createTokens(args: {
   isPersistentAuth?: boolean | undefined;
 }): Promise<
   | BaseResult.Success<Tokens, "TOKEN_CREATION">
-  | BaseResult.Fail<AuthError.Authentication.ErrorClass>
+  | BaseResult.Fail<Core.Errors.Authentication.ErrorClass>
 > {
   const { userDataService, verifiedUser, sessionNumber, isPersistentAuth } =
     args;
 
   try {
-    const role = ENUMS.ROLES[verifiedUser.roleId] as Role;
+    const role = Core.Data.Enums.Roles[verifiedUser.roleId] as Role;
     const createAccessTkn = await createAccessToken({
       userDataService,
       verifiedUser,
@@ -70,7 +69,7 @@ export async function createTokens(args: {
     );
   } catch (err) {
     return ResultBuilder.fail(
-      AuthError.Authentication.normalizeError({
+      Core.Errors.Authentication.normalizeError({
         name: "AUTHENTICATION_SESSION_TOKEN_CREATION_ERROR",
         message: "Failed creating tokens.",
         err,

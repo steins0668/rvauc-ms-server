@@ -1,8 +1,9 @@
 import { Request } from "express";
 import bcrypt from "bcrypt";
 import { ResultBuilder } from "../../../../../../utils";
+import { Core } from "../../../../core";
 import { Schemas } from "../../schemas";
-import { AuthenticationResult, ViewModels } from "../../../../types";
+import { ViewModels } from "../../../../types";
 import { getSignInMethod } from "./get-sign-in-method";
 
 /**
@@ -22,7 +23,8 @@ import { getSignInMethod } from "./get-sign-in-method";
 export async function verifyUser(
   req: Request<{}, {}, Schemas.SignIn.Schema>
 ): Promise<
-  AuthenticationResult.Success<ViewModels.User> | AuthenticationResult.Fail
+  | Core.Types.AuthenticationResult.Success<ViewModels.User>
+  | Core.Types.AuthenticationResult.Fail
 > {
   const { body: authDetails, requestLogger } = req;
 

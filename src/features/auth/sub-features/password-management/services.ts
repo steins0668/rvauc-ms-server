@@ -2,9 +2,9 @@ import { createContext, DbOrTx } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { BaseResult } from "../../../../types";
 import { HashUtil, ResultBuilder } from "../../../../utils";
-import { AuthError } from "../../error";
+import { Core } from "../../core";
 import { Repositories } from "../../services";
-import { AuthenticationResult, RepositoryTypes, ViewModels } from "../../types";
+import { RepositoryTypes, ViewModels } from "../../types";
 
 export namespace Services {
   export namespace PasswordManagement {
@@ -35,12 +35,12 @@ export namespace Services {
         userId: number;
         password: string;
       }): Promise<
-        | AuthenticationResult.Success<ViewModels.User>
-        | AuthenticationResult.Fail
+        | Core.Types.AuthenticationResult.Success<ViewModels.User>
+        | Core.Types.AuthenticationResult.Fail
       > {
         const failResult = (err?: unknown) =>
           ResultBuilder.fail(
-            AuthError.Authentication.normalizeError({
+            Core.Errors.Authentication.normalizeError({
               name: "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR",
               message: "Failed updating password",
               err,
@@ -80,7 +80,7 @@ export namespace Services {
 
         if (!update.success)
           return ResultBuilder.fail(
-            AuthError.Authentication.normalizeError({
+            Core.Errors.Authentication.normalizeError({
               name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_UPDATE_ERROR",
               message: "Failed invalidating token.",
               err: update.error,
@@ -99,8 +99,8 @@ export namespace Services {
       public async verifyResetToken(
         tokenHash: string
       ): Promise<
-        | AuthenticationResult.Success<ViewModels.PasswordResetToken>
-        | AuthenticationResult.Fail
+        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetToken>
+        | Core.Types.AuthenticationResult.Fail
       > {
         const query = await this.findTokenWhereStrict({
           filter: { tokenHash, isUsed: false },
@@ -108,7 +108,7 @@ export namespace Services {
 
         if (!query.success)
           return ResultBuilder.fail(
-            AuthError.Authentication.normalizeError({
+            Core.Errors.Authentication.normalizeError({
               name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
               message: "Failed querying tokens.",
               err: query.error,
@@ -121,7 +121,7 @@ export namespace Services {
 
         if (isExpired)
           return ResultBuilder.fail(
-            new AuthError.Authentication.ErrorClass({
+            new Core.Errors.Authentication.ErrorClass({
               name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_EXPIRED_ERROR",
               message: "Token is already expired",
             })
@@ -137,7 +137,7 @@ export namespace Services {
 
         if (!query.success)
           return ResultBuilder.fail(
-            AuthError.Authentication.normalizeError({
+            Core.Errors.Authentication.normalizeError({
               name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
               message: "Failed querying reset tokens.",
               err: query.error,
@@ -158,7 +158,7 @@ export namespace Services {
             if (!deletion.success)
               //  ! propagate db delete error
               return ResultBuilder.fail(
-                AuthError.Authentication.normalizeError({
+                Core.Errors.Authentication.normalizeError({
                   name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR",
                   message: "Failed to remove unused expired token.",
                   err: deletion.error,
@@ -173,8 +173,8 @@ export namespace Services {
         userId: number,
         tokenHash: string
       ): Promise<
-        | AuthenticationResult.Success<ViewModels.PasswordResetToken>
-        | AuthenticationResult.Fail
+        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetToken>
+        | Core.Types.AuthenticationResult.Fail
       > {
         const now = new Date();
         const expiry = new Date();
@@ -197,7 +197,7 @@ export namespace Services {
 
         if (insertion.success && insertion.result === undefined)
           return ResultBuilder.fail(
-            new AuthError.Authentication.ErrorClass({
+            new Core.Errors.Authentication.ErrorClass({
               name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR",
               message: "Failed to store password reset token",
             })
@@ -208,7 +208,7 @@ export namespace Services {
               insertion.result as ViewModels.PasswordResetToken
             )
           : ResultBuilder.fail(
-              AuthError.Authentication.normalizeError({
+              Core.Errors.Authentication.normalizeError({
                 name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR",
                 message: "Failed to store password reset token.",
                 err: insertion.error,

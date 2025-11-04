@@ -1,9 +1,8 @@
 import { TxContext } from "../../../../../../db/create-context";
 import { DbAccess } from "../../../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../../../utils";
-import { AuthError } from "../../../../error";
+import { Core } from "../../../../core";
 import { Repositories } from "../../../../services";
-import { AuthenticationResult } from "../../../../types";
 
 export class SessionTokenRotator {
   private readonly _sessionTokenRepository: Repositories.SessionToken;
@@ -22,7 +21,8 @@ export class SessionTokenRotator {
     oldToken: string;
     newToken: string;
   }): Promise<
-    AuthenticationResult.Success<number> | AuthenticationResult.Fail
+    | Core.Types.AuthenticationResult.Success<number>
+    | Core.Types.AuthenticationResult.Fail
   > {
     const { sessionNumber, oldToken, newToken } = args;
 
@@ -55,7 +55,7 @@ export class SessionTokenRotator {
         "AUTHENTICATION_SESSION_TOKEN_ROTATION"
       );
     } catch (err) {
-      const error = AuthError.Authentication.normalizeError({
+      const error = Core.Errors.Authentication.normalizeError({
         name: "AUTHENTICATION_SESSION_TOKEN_ROTATION_ERROR",
         message: "Failed rotating tokens. Please try again later.",
         err,
@@ -151,7 +151,7 @@ export class SessionTokenRotator {
 
     //  todo: add fallback behavior to this (delete/logout all sessions)
     if (usedToken !== undefined)
-      throw new AuthError.Authentication.ErrorClass({
+      throw new Core.Errors.Authentication.ErrorClass({
         name: "AUTHENTICATION_SESSION_TOKEN_REUSE_ERROR",
         message: "Token is already used.",
       });

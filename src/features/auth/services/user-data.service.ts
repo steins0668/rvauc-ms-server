@@ -3,7 +3,7 @@ import { createContext, TxContext } from "../../../db/create-context";
 import { DbAccess } from "../../../error";
 import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
-import { ENUMS } from "../data";
+import { Core } from "../core";
 import type { QueryArgs, UpdateArgs } from "../types";
 import { Registration } from "../sub-features/registration";
 import { Repositories } from "./repositories";
@@ -180,7 +180,7 @@ export class UserDataService {
             user: form,
           });
 
-          const roleName = ENUMS.ROLES[form.roleId] as Role;
+          const roleName = Core.Data.Enums.Roles[form.roleId] as Role;
           if (id === undefined) return getInsertResult(roleName, id); //  ! failed inserting into users table
 
           //  * additionally insert into other tables as needed.
@@ -229,7 +229,7 @@ export class UserDataService {
         },
       });
 
-      const roleName = ENUMS.ROLES[form.roleId] as Role;
+      const roleName = Core.Data.Enums.Roles[form.roleId] as Role;
       if (user) return getResult(true, roleName); //  ! duplicate in users table.
 
       //  * additional checks in extended tables as needed.
@@ -318,7 +318,7 @@ export class UserDataService {
 }
 
 //#region Types
-type Role = keyof typeof ENUMS.ROLES;
+type Role = keyof typeof Core.Data.Enums.Roles;
 type RoleId = Registration.Schemas.Register.RoleBased["roleId"];
 type RegisterSchema<R extends RoleId> = Extract<
   Registration.Schemas.Register.RoleBased,

@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { execTransaction } from "../../../../../db/create-context";
 import { HashUtil, ResultBuilder } from "../../../../../utils";
-import { AuthError } from "../../../error";
-import { AuthenticationResult, ViewModels } from "../../../types";
+import { Core } from "../../../core";
+import { ViewModels } from "../../../types";
 import { Schemas } from "../schemas";
 
 export async function handleResetPassword(
@@ -42,7 +42,7 @@ export async function handleResetPassword(
         : error.message; //  ? either could not find token or token is expired.
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
 
     logger.log("debug", error.message, error);
@@ -61,7 +61,7 @@ export async function handleResetPassword(
     const message = "Something went wrong. Please try again later.";
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
 
     logger.log("debug", error.message, error);
@@ -108,7 +108,7 @@ async function execUpdate(args: {
     });
   } catch (err) {
     return ResultBuilder.fail(
-      AuthError.Authentication.normalizeError({
+      Core.Errors.Authentication.normalizeError({
         name: "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR",
         message: "Transaction failed.",
         err,

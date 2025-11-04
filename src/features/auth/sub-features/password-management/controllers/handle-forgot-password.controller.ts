@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
 import { ResultBuilder } from "../../../../../utils";
-import { AuthError } from "../../../error";
+import { Core } from "../../../core";
 import { UserDataService } from "../../../services";
-import { AuthenticationResult } from "../../../types";
 import { Schemas } from "../schemas";
 import { Utils } from "../utils";
 
@@ -21,7 +20,7 @@ export async function handleForgotPassword(
     const { error } = verification;
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: error.message });
 
     const safeId = body.email.replace(/^(.{2}).*(@.*)$/, "$1***$2"); //  mask emails
@@ -44,7 +43,7 @@ export async function handleForgotPassword(
     const message = "Something went wrong. Please try again later.";
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
 
     logger.log("error", error.message, error);
@@ -78,7 +77,7 @@ export async function handleForgotPassword(
     const message = "Failed generating reset token. Please try again later.";
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
 
     logger.log("error", error.message, error);
@@ -104,7 +103,7 @@ export async function handleForgotPassword(
 
     const message = "Failed sending reset url. Please try again later.";
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
 
     logger.log("error", error.message, error);
@@ -134,7 +133,7 @@ async function verifyUser(args: {
   if (query.success) return query;
 
   return ResultBuilder.fail(
-    AuthError.Authentication.normalizeError({
+    Core.Errors.Authentication.normalizeError({
       name: "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR",
       message: "Could not find user.",
       err: query.error,
@@ -146,7 +145,10 @@ async function sendEmail(args: {
   req: Request<{}, {}, Schemas.ForgotPassword>;
   resetToken: string;
   email: string;
-}): Promise<AuthenticationResult.Success<null> | AuthenticationResult.Fail> {
+}): Promise<
+  | Core.Types.AuthenticationResult.Success<null>
+  | Core.Types.AuthenticationResult.Fail
+> {
   try {
     const { req, resetToken, email } = args;
     const { protocol } = req;
@@ -162,7 +164,7 @@ async function sendEmail(args: {
     return ResultBuilder.success(null);
   } catch (err) {
     return ResultBuilder.fail(
-      AuthError.Authentication.normalizeError({
+      Core.Errors.Authentication.normalizeError({
         name: "AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR",
         message: "Failed sending reset url.",
         err,

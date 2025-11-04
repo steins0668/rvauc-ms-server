@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
 import { BaseResult } from "../../../../../types";
 import { ResultBuilder } from "../../../../../utils";
-import { AuthError } from "../../../error";
-import { AuthenticationResult, ViewModels } from "../../../types";
+import { Core } from "../../../core";
+import { ViewModels } from "../../../types";
 import { CustomError } from "../error";
 import { Data } from "../data";
 import { Utils } from "../utils";
@@ -43,7 +43,7 @@ export async function handleRefresh(req: Request, res: Response) {
     const { error } = payloadVerification;
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: error.message });
 
     logger.log("error", "Failed verifying refresh token.", error);
@@ -78,7 +78,7 @@ export async function handleRefresh(req: Request, res: Response) {
     const { error } = tknCreation;
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed creating tokens.", error);
@@ -101,7 +101,7 @@ export async function handleRefresh(req: Request, res: Response) {
     const { error } = tknRotation;
 
     res
-      .status(AuthError.Authentication.getErrStatusCode(error))
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed rotating tokens.", error);
@@ -141,7 +141,8 @@ async function resolveUser(
   req: Request,
   id: number
 ): Promise<
-  AuthenticationResult.Success<ViewModels.User> | AuthenticationResult.Fail
+  | Core.Types.AuthenticationResult.Success<ViewModels.User>
+  | Core.Types.AuthenticationResult.Fail
 > {
   const { userDataService } = req;
 
@@ -159,7 +160,7 @@ async function resolveUser(
 
   //  !user query fails or user query result is undefined
   return ResultBuilder.fail(
-    AuthError.Authentication.normalizeError({
+    Core.Errors.Authentication.normalizeError({
       name: "AUTHENTICATION_SESSION_TOKEN_MALFORMED_ERROR",
       message: "Failed retrieving user details.",
       err: !userQuery.success ? userQuery.error : undefined,
