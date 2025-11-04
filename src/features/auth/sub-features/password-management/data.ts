@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 export namespace Data {
   type MailTrapTransport = {
     user: string;
