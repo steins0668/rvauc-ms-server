@@ -1,8 +1,7 @@
 import z from "zod";
 import { Core } from "../../core";
-import { Data } from "./data";
 
-const { Username, Password, StudentNumber } = Data.Regex.Auth;
+const { Username, Password, StudentNumber } = Core.Data.Regex.Auth;
 
 export namespace Schemas {
   export namespace Register {
