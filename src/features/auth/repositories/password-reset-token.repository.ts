@@ -1,8 +1,8 @@
 import { and, eq, lte, or } from "drizzle-orm";
-import { DbContext } from "../../../../db/create-context";
-import { passwordResetTokens } from "../../../../models";
-import { Repository } from "../../../../services";
-import { RepositoryTypes, Tables } from "../../types";
+import { DbContext } from "../../../db/create-context";
+import { passwordResetTokens } from "../../../models";
+import { Repository } from "../../../services";
+import { RepositoryTypes, Tables } from "../types";
 
 export class PasswordResetTokenRepository extends Repository<Tables.PasswordResetToken> {
   public constructor(context: DbContext) {

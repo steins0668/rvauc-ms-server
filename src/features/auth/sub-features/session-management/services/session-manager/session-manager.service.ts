@@ -1,6 +1,6 @@
 import { createContext } from "../../../../../../db/create-context";
 import { Core } from "../../../../core";
-import { Repositories } from "../../../../services";
+import { Repositories } from "../../../../repositories";
 import { SessionCleaner } from "./session-cleaner";
 import { SessionStarter } from "./session-starter";
 import { SessionTokenRotator } from "./session-token-rotator";

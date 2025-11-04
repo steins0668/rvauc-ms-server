@@ -3,7 +3,7 @@ import { TxContext } from "../../../../../../db/create-context";
 import { DbAccess } from "../../../../../../error";
 import { HashUtil, ResultBuilder } from "../../../../../../utils";
 import { Core } from "../../../../core";
-import { Repositories } from "../../../../services";
+import { Repositories } from "../../../../repositories";
 
 /**
  * @class

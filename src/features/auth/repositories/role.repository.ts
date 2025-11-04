@@ -1,8 +1,8 @@
 import { and, eq, or, SQL } from "drizzle-orm";
-import type { DbContext } from "../../../../db/create-context";
-import { roles } from "../../../../models";
-import { Repository } from "../../../../services";
-import { InsertModels, RepositoryTypes, Tables, ViewModels } from "../../types";
+import type { DbContext } from "../../../db/create-context";
+import { roles } from "../../../models";
+import { Repository } from "../../../services";
+import { InsertModels, RepositoryTypes, Tables, ViewModels } from "../types";
 
 type NewRole = InsertModels.Role;
 type RoleViewModel = ViewModels.Role;

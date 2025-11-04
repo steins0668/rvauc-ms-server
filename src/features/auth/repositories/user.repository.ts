@@ -1,8 +1,8 @@
 import { and, eq, or, SQL } from "drizzle-orm";
-import type { DbContext, TxContext } from "../../../../db/create-context";
-import { users } from "../../../../models";
-import { Repository } from "../../../../services";
-import { InsertModels, RepositoryTypes, Tables } from "../../types";
+import type { DbContext, TxContext } from "../../../db/create-context";
+import { users } from "../../../models";
+import { Repository } from "../../../services";
+import { InsertModels, RepositoryTypes, Tables } from "../types";
 
 export class UserRepository extends Repository<Tables.Users> {
   public constructor(context: DbContext) {

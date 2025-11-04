@@ -4,9 +4,9 @@ import { DbAccess } from "../../../error";
 import type { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { Core } from "../core";
+import { Repositories } from "../repositories";
 import type { QueryArgs, UpdateArgs } from "../types";
 import { Registration } from "../sub-features/registration";
-import { Repositories } from "./repositories";
 
 export async function createUserDataService() {
   const dbContext = await createContext();

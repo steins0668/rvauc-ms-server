@@ -3,7 +3,7 @@ import { DbAccess } from "../../../../error";
 import { BaseResult } from "../../../../types";
 import { HashUtil, ResultBuilder } from "../../../../utils";
 import { Core } from "../../core";
-import { Repositories } from "../../services";
+import { Repositories } from "../../repositories";
 import { RepositoryTypes, ViewModels } from "../../types";
 
 export namespace Services {

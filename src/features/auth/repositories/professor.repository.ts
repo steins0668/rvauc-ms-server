@@ -1,32 +1,34 @@
 import { and, eq, or, SQL } from "drizzle-orm";
-import type { DbContext, TxContext } from "../../../../db/create-context";
-import { students } from "../../../../models";
-import { Repository } from "../../../../services";
-import { InsertModels, RepositoryTypes, Tables } from "../../types";
+import type { DbContext, TxContext } from "../../../db/create-context";
+import { professors } from "../../../models";
+import { Repository } from "../../../services";
+import { InsertModels, RepositoryTypes, Tables } from "../types";
 
-export class StudentRepository extends Repository<Tables.Student> {
+export class ProfessorRepository extends Repository<Tables.Professors> {
   public constructor(context: DbContext) {
-    super(context, students);
+    super(context, professors);
   }
 
   /**
    * @public
    * @async
-   * @description Asynchronously inserts a row into the `students` table.
+   * @function insertOne
+   * @description Asynchronously inserts a row into the `professors` table.
    *
-   * @param student - The new row to be inserted.
+   * @param professor - The new row to be inserted.
    * @returns - The id if the insert operation is successful, `undefined` otherwise.
    */
   public async insertOne(args: {
     dbOrTx?: DbContext | TxContext | undefined;
-    student: InsertModels.Student;
+    professor: InsertModels.Professor;
   }): Promise<number | undefined> {
-    const { dbOrTx, student } = args;
+    const { dbOrTx, professor } = args;
+    // const inserted = await this._insertOne({ dbOrTx, value: professor });
     const inserted = await this.execInsert({
       dbOrTx,
-      fn: async (insert) => {
+      fn: async (insert, converter) => {
         return await insert
-          .values(student)
+          .values(professor)
           .onConflictDoNothing()
           .returning()
           .then((result) => result[0]);
@@ -35,13 +37,13 @@ export class StudentRepository extends Repository<Tables.Student> {
     return inserted?.id;
   }
 
-  public async execInsert<T>(args: RepositoryTypes.InsertArgs.Student<T>) {
-    const insert = (args.dbOrTx ?? this._dbContext).insert(students);
+  public async execInsert<T>(args: RepositoryTypes.InsertArgs.Professor<T>) {
+    const insert = (args.dbOrTx ?? this._dbContext).insert(professors);
     return await args.fn(insert, this.buildWhereClause);
   }
 
-  public async execQuery<T>(args: RepositoryTypes.QueryArgs.Student<T>) {
-    const query = (args.dbOrTx ?? this._dbContext).query.students;
+  public async execQuery<T>(args: RepositoryTypes.QueryArgs.Professor<T>) {
+    const query = (args.dbOrTx ?? this._dbContext).query.professors;
     return await args.fn(query, this.buildWhereClause);
   }
 
@@ -62,25 +64,19 @@ export class StudentRepository extends Repository<Tables.Student> {
    * conditions are set.
    */
   protected buildWhereClause(
-    filter?: RepositoryTypes.QueryFilters.Student
+    filter?: RepositoryTypes.QueryFilters.Professor
   ): SQL | undefined {
     const conditions = [];
 
     if (filter) {
-      const { filterType, id, departmentId, studentNumber, yearLevel, block } =
-        filter;
-      if (id !== undefined) conditions.push(eq(students.id, id));
+      const { filterType, id, collegeId, facultyRank } = filter;
+      if (id !== undefined) conditions.push(eq(professors.id, id));
 
-      if (departmentId !== undefined)
-        conditions.push(eq(students.departmentId, departmentId));
+      if (collegeId !== undefined)
+        conditions.push(eq(professors.collegeId, collegeId));
 
-      if (studentNumber && studentNumber.trim())
-        conditions.push(eq(students.studentNumber, studentNumber));
-
-      if (yearLevel !== undefined)
-        conditions.push(eq(students.yearLevel, yearLevel));
-
-      if (block && block.trim()) conditions.push(eq(students.block, block));
+      if (facultyRank && facultyRank.trim())
+        conditions.push(eq(professors.facultyRank, facultyRank));
 
       if (conditions.length > 0) {
         const whereClause =

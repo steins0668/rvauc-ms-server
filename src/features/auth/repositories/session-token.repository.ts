@@ -1,8 +1,8 @@
 import { and, eq, or, SQL } from "drizzle-orm";
-import { DbContext } from "../../../../db/create-context";
-import { sessionTokens } from "../../../../models";
-import { Repository } from "../../../../services";
-import { Tables, RepositoryTypes } from "../../types";
+import { DbContext } from "../../../db/create-context";
+import { sessionTokens } from "../../../models";
+import { Repository } from "../../../services";
+import { Tables, RepositoryTypes } from "../types";
 
 export class SessionTokenRepository extends Repository<Tables.SessionTokens> {
   public constructor(context: DbContext) {

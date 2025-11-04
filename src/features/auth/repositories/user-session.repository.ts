@@ -1,8 +1,8 @@
 import { and, eq, isNull, lte } from "drizzle-orm";
-import { DbContext, TxContext } from "../../../../db/create-context";
-import { userSessions } from "../../../../models";
-import { Repository } from "../../../../services";
-import { InsertModels, ViewModels, Tables } from "../../types";
+import { DbContext, TxContext } from "../../../db/create-context";
+import { userSessions } from "../../../models";
+import { Repository } from "../../../services";
+import { InsertModels, ViewModels, Tables } from "../types";
 
 type BySessionId = {
   queryBy: "session_id";

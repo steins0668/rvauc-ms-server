@@ -1,6 +1,6 @@
 import { HashUtil, ResultBuilder } from "../../../../../../utils";
 import { Core } from "../../../../core";
-import { Repositories } from "../../../../services";
+import { Repositories } from "../../../../repositories";
 
 export class SessionCleaner {
   private readonly _userSessionRepository: Repositories.UserSession;
