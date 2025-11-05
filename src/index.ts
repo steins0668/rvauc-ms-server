@@ -2,7 +2,7 @@ import express from "express";
 import cors, { type CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import { AuthRoutes } from "./features/auth";
+import { Auth } from "./features/auth";
 import {
   attachRequestLogger,
   requestProfiler,
@@ -32,7 +32,7 @@ app.use(cookieParser());
 app.use(attachRequestLogger); //  * request logging
 app.use(requestProfiler); //  * request profiling
 
-app.use("/auth", AuthRoutes);
+app.use("/auth", Auth.Routes);
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {
