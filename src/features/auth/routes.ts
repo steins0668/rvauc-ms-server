@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { validateRequest } from "../../middlewares";
+import { validateCookies, validateRequest } from "../../middlewares";
 import { Core } from "./core";
 import { PasswordManagement } from "./sub-features/password-management";
 import { Registration } from "./sub-features/registration";
@@ -26,7 +26,14 @@ Routes.post(
 
 Routes.post("/sign-out", SessionManagement.Controllers.handleSignOut);
 
-Routes.post("/refresh", SessionManagement.Controllers.handleRefresh);
+const configureRefresh = SessionManagement.Utils.getRefreshConfig();
+if (!configureRefresh.success) throw configureRefresh.error;
+
+Routes.post(
+  "/refresh",
+  validateCookies(configureRefresh.result.cookieName),
+  SessionManagement.Controllers.handleRefresh
+);
 
 //  * Password Management
 Routes.use(PasswordManagement.Middlewares.attachPasswordManagementService);
