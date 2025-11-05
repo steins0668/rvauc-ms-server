@@ -1,5 +1,5 @@
 import z from "zod";
-import { REGEX } from "../../data";
+import { Core } from "../../core";
 
 export namespace Schemas {
   export type ForgotPassword = z.infer<typeof forgotPassword>;
@@ -21,18 +21,14 @@ export namespace Schemas {
             ? "Password is required."
             : "Invalid Password",
       })
-      .regex(REGEX.AUTH.PASSWORD, {
+      .regex(Core.Data.Regex.Auth.Password, {
         error: "Invalid password.",
       }),
-    confirmPassword: z
-      .string({
-        error: (iss) =>
-          iss.input === undefined
-            ? "Confirm Password is required."
-            : "Invalid Password",
-      })
-      .regex(REGEX.AUTH.PASSWORD, {
-        error: "Invalid confirm password.",
-      }),
+    confirmPassword: z.string({
+      error: (iss) =>
+        iss.input === undefined
+          ? "Confirm Password is required."
+          : "Invalid Password",
+    }),
   });
 }
