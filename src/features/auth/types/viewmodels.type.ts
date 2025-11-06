@@ -1,8 +1,7 @@
 import { Schema } from "../../../models";
 
 export namespace ViewModels {
-  export type PasswordResetToken =
-    typeof Schema.passwordResetTokens.$inferSelect;
+  export type PasswordResetCode = typeof Schema.passwordResetCodes.$inferSelect;
   export type Professor = typeof Schema.professors.$inferSelect;
   export type Role = typeof Schema.roles.$inferSelect;
   export type SessionToken = typeof Schema.sessionTokens.$inferSelect;

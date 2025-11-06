@@ -25,9 +25,9 @@ export namespace Repository {
       ) => Promise<TResult>;
     };
 
-    export type PasswordResetToken<T> = BaseDeleteArgs<
-      SQLiteDeleteBase<Tables.PasswordResetToken, "async", ResultSet>,
-      Repositories.PasswordResetToken["buildWhereClause"],
+    export type PasswordResetCode<T> = BaseDeleteArgs<
+      SQLiteDeleteBase<Tables.PasswordResetCode, "async", ResultSet>,
+      Repositories.PasswordResetCode["buildWhereClause"],
       T
     >;
   }
@@ -45,9 +45,9 @@ export namespace Repository {
       ) => Promise<TResult>;
     };
 
-    export type PasswordResetToken<T> = BaseInsertArgs<
-      SQLiteInsertBuilder<Tables.PasswordResetToken, "async", ResultSet>,
-      Repositories.PasswordResetToken["buildWhereClause"],
+    export type PasswordResetCode<T> = BaseInsertArgs<
+      SQLiteInsertBuilder<Tables.PasswordResetCode, "async", ResultSet>,
+      Repositories.PasswordResetCode["buildWhereClause"],
       T
     >;
 
@@ -95,9 +95,9 @@ export namespace Repository {
       ) => Promise<TResult>;
     };
 
-    export type PasswordResetToken<T> = BaseUpdateArgs<
-      SQLiteUpdateBuilder<Tables.PasswordResetToken, "async", ResultSet>,
-      Repositories.PasswordResetToken["buildWhereClause"],
+    export type PasswordResetCode<T> = BaseUpdateArgs<
+      SQLiteUpdateBuilder<Tables.PasswordResetCode, "async", ResultSet>,
+      Repositories.PasswordResetCode["buildWhereClause"],
       T
     >;
 
@@ -126,9 +126,9 @@ export namespace Repository {
         filterConverter: TFilterConverter
       ) => Promise<TResult>;
     };
-    export type PasswordResetToken<T> = BaseQueryArgs<
-      DbContext["query"]["passwordResetTokens"],
-      Repositories.PasswordResetToken["buildWhereClause"],
+    export type PasswordResetCode<T> = BaseQueryArgs<
+      DbContext["query"]["passwordResetCodes"],
+      Repositories.PasswordResetCode["buildWhereClause"],
       T
     >;
 
@@ -166,8 +166,8 @@ export namespace Repository {
       filterType?: "and" | "or" | undefined;
     } & PartialWithUndefined<TModel>;
 
-    export type PasswordResetToken =
-      BaseQueryFilter<ViewModels.PasswordResetToken>;
+    export type PasswordResetCode =
+      BaseQueryFilter<ViewModels.PasswordResetCode>;
     /**
      * @description A type for the filter used for Db queries on the `students` table.
      * Contains the following fields:

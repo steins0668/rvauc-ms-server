@@ -36,6 +36,13 @@
       "when": 1762095609107,
       "tag": "0004_easy_zeigeist",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1762419611119,
+      "tag": "0005_supreme_wolf_cub",
+      "breakpoints": true
     }
   ]
 }

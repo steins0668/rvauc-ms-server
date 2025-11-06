@@ -1,4 +1,4 @@
-export * from "./password-reset-token.repository";
+export * from "./password-reset-code.repository";
 export * from "./professor.repository";
 export * from "./role.repository";
 export * from "./session-token.repository";

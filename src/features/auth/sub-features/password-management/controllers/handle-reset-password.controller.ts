@@ -6,11 +6,11 @@ import { ViewModels } from "../../../types";
 import { Schemas } from "../schemas";
 
 export async function handleResetPassword(
-  req: Request<{ token: string }, {}, Schemas.ResetPassword>,
+  req: Request<{}, {}, Schemas.ResetPassword>,
   res: Response
 ) {
   const { body, requestLogger: logger } = req;
-  const { password, confirmPassword } = body;
+  const { code, password, confirmPassword } = body;
 
   logger.log("debug", "Resetting password...");
 
@@ -28,18 +28,19 @@ export async function handleResetPassword(
     return;
   }
 
-  //    *   find non-expired reset token with token (encrypt first) from req params
-  logger.log("debug", "Finding reset token in db...");
-  const tokenHash = HashUtil.byCrypto(req.params.token);
-  const tokenVerification =
-    await req.passwordManagementService.verifyResetToken(tokenHash);
+  //    *   find non-expired reset code with code (encrypt first) from req params
+  logger.log("debug", "Finding reset code in db...");
+  const codeHash = HashUtil.byCrypto(code);
+  const codeVerification = await req.passwordManagementService.verifyResetCode(
+    codeHash
+  );
 
-  if (!tokenVerification.success) {
-    const { error } = tokenVerification;
+  if (!codeVerification.success) {
+    const { error } = codeVerification;
     const message =
-      error.name === "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR"
+      error.name === "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR"
         ? "Something went wrong. Please try again later"
-        : error.message; //  ? either could not find token or token is expired.
+        : error.message; //  ? either could not find code or code is expired.
 
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -49,10 +50,10 @@ export async function handleResetPassword(
     return;
   }
 
-  //    *   update user password and set reset token is_used to true
+  //    *   update user password and set reset code is_used to true
   const updateOperation = await execUpdate({
     req,
-    token: tokenVerification.result,
+    code: codeVerification.result,
     password,
   });
 
@@ -76,8 +77,8 @@ export async function handleResetPassword(
 //#region Util
 
 async function execUpdate(args: {
-  req: Request<{ token: string }, {}, Schemas.ResetPassword>;
-  token: ViewModels.PasswordResetToken;
+  req: Request<{}, {}, Schemas.ResetPassword>;
+  code: ViewModels.PasswordResetCode;
   password: string;
 }) {
   const { passwordManagementService } = args.req;
@@ -88,8 +89,8 @@ async function execUpdate(args: {
       args.req.requestLogger.log("debug", "Updating password...");
       const userUpdate = await passwordManagementService.updatePassword({
         dbOrTx: tx,
-        tokenId: args.token.id,
-        userId: args.token.userId,
+        codeId: args.code.id,
+        userId: args.code.userId,
         password: args.password,
       });
 
@@ -97,12 +98,12 @@ async function execUpdate(args: {
 
       //    ! update token
       args.req.requestLogger.log("debug", "Updating reset token.");
-      const tokenUpdate = await passwordManagementService.invalidateToken({
+      const codeUpdate = await passwordManagementService.invalidateCode({
         dbOrTx: tx,
-        tokenId: args.token.id,
+        codeId: args.code.id,
       });
 
-      if (!tokenUpdate.success) return tokenUpdate; //  ! propagate error
+      if (!codeUpdate.success) return codeUpdate; //  ! propagate error
 
       return ResultBuilder.success(null); //  * no need for result data
     });

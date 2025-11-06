@@ -1,7 +1,8 @@
+import bcrypt from "bcrypt";
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { BaseResult } from "../../../../types";
-import { HashUtil, ResultBuilder } from "../../../../utils";
+import { ResultBuilder } from "../../../../utils";
 import { Core } from "../../core";
 import { Repositories } from "../../repositories";
 import { Repository, ViewModels } from "../../types";
@@ -10,28 +11,28 @@ export namespace Services {
   export namespace PasswordManagement {
     export async function createService() {
       const dbContext = await createContext();
-      const passwordResetTokenRepo = new Repositories.PasswordResetToken(
+      const passwordResetCodeRepo = new Repositories.PasswordResetCode(
         dbContext
       );
       const userRepo = new Repositories.User(dbContext);
-      return new Service(passwordResetTokenRepo, userRepo);
+      return new Service(passwordResetCodeRepo, userRepo);
     }
 
     export class Service {
-      private readonly _passwordResetTokenRepo: Repositories.PasswordResetToken;
+      private readonly _passwordResetCodeRepo: Repositories.PasswordResetCode;
       private readonly _userRepo: Repositories.User;
 
       constructor(
-        passwordResetTokenRepo: Repositories.PasswordResetToken,
+        passwordResetCodeRepo: Repositories.PasswordResetCode,
         userRepo: Repositories.User
       ) {
-        this._passwordResetTokenRepo = passwordResetTokenRepo;
+        this._passwordResetCodeRepo = passwordResetCodeRepo;
         this._userRepo = userRepo;
       }
 
       public async updatePassword(args: {
         dbOrTx?: DbOrTx | undefined;
-        tokenId: number;
+        codeId: number;
         userId: number;
         password: string;
       }): Promise<
@@ -51,7 +52,7 @@ export namespace Services {
           const updated = await this._userRepo.execUpdate({
             dbOrTx: args.dbOrTx,
             fn: async (update, converter) => {
-              const passwordHash = HashUtil.byCrypto(args.password);
+              const passwordHash = await bcrypt.hash(args.password, 10);
               return await update
                 .set({ passwordHash })
                 .where(converter({ id: args.userId }))
@@ -68,21 +69,21 @@ export namespace Services {
         }
       }
 
-      public async invalidateToken(args: {
+      public async invalidateCode(args: {
         dbOrTx?: DbOrTx | undefined;
-        tokenId: number;
+        codeId: number;
       }) {
-        const update = await this.updateTokenWhere({
+        const update = await this.updateCodeWhere({
           dbOrTx: args.dbOrTx,
           values: { isUsed: true, expiresAt: new Date().toISOString() },
-          filter: { id: args.tokenId, isUsed: false },
+          filter: { id: args.codeId, isUsed: false },
         });
 
         if (!update.success)
           return ResultBuilder.fail(
             Core.Errors.Authentication.normalizeError({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_UPDATE_ERROR",
-              message: "Failed invalidating token.",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_UPDATE_ERROR",
+              message: "Failed invalidating code.",
               err: update.error,
             })
           );
@@ -91,27 +92,35 @@ export namespace Services {
       }
 
       /**
-       * @description queries the db for an unused token with the given hash.
-       * ! note that there is only ever one unused token.
+       * @description queries the db for an unused code with the given hash.
+       * ! note that there is only ever one unused code.
        * @param req
        * @returns
        */
-      public async verifyResetToken(
-        tokenHash: string
+      public async verifyResetCode(
+        codeHash: string
       ): Promise<
-        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetToken>
+        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetCode>
         | Core.Types.AuthenticationResult.Fail
       > {
-        const query = await this.findTokenWhereStrict({
-          filter: { tokenHash, isUsed: false },
+        const query = await this.findCodeWhereStrict({
+          filter: { codeHash },
         });
 
         if (!query.success)
           return ResultBuilder.fail(
             Core.Errors.Authentication.normalizeError({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
-              message: "Failed querying tokens.",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR",
+              message: "Failed querying codes.",
               err: query.error,
+            })
+          );
+
+        if (query.result.isUsed)
+          return ResultBuilder.fail(
+            new Core.Errors.Authentication.ErrorClass({
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_ALREADY_USED_ERROR",
+              message: "Code is already used.",
             })
           );
 
@@ -122,24 +131,24 @@ export namespace Services {
         if (isExpired)
           return ResultBuilder.fail(
             new Core.Errors.Authentication.ErrorClass({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_EXPIRED_ERROR",
-              message: "Token is already expired",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_EXPIRED_ERROR",
+              message: "Code is already expired.",
             })
           );
 
         return ResultBuilder.success(query.result);
       }
 
-      public async verifyNoActiveToken(userId: number) {
-        const query = await this.findTokenWhere({
+      public async verifyNoActiveCode(userId: number) {
+        const query = await this.findCodeWhere({
           filter: { userId, isUsed: false },
         });
 
         if (!query.success)
           return ResultBuilder.fail(
             Core.Errors.Authentication.normalizeError({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
-              message: "Failed querying reset tokens.",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR",
+              message: "Failed querying reset codes.",
               err: query.error,
             })
           ); //  ! something went wrong with the query. propagate failure(query error)
@@ -151,7 +160,7 @@ export namespace Services {
           const isExpired = expiry <= now;
 
           if (isExpired) {
-            const deletion = await this.deleteTokenWhere({
+            const deletion = await this.deleteCodeWhere({
               filter: { id: result.id },
             });
 
@@ -159,33 +168,33 @@ export namespace Services {
               //  ! propagate db delete error
               return ResultBuilder.fail(
                 Core.Errors.Authentication.normalizeError({
-                  name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR",
-                  message: "Failed to remove unused expired token.",
+                  name: "AUTHENTICATION_PASSWORD_RESET_CODE_DELETE_ERROR",
+                  message: "Failed to remove unused expired code.",
                   err: deletion.error,
                 })
               );
           }
-          return ResultBuilder.success(isExpired); //  * expired token means no active tokens.
-        } else return ResultBuilder.success(true); //  * no active tokens. return true
+          return ResultBuilder.success(isExpired); //  * expired code means no active code.
+        } else return ResultBuilder.success(true); //  * no active codes. return true
       }
 
-      public async storeNewToken(
+      public async storeNewCode(
         userId: number,
-        tokenHash: string
+        codeHash: string
       ): Promise<
-        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetToken>
+        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetCode>
         | Core.Types.AuthenticationResult.Fail
       > {
         const now = new Date();
         const expiry = new Date();
         expiry.setMinutes(now.getMinutes() + 10);
 
-        const insertion = await this.insertResetToken({
+        const insertion = await this.insertResetCode({
           fn: async (insert) => {
             return await insert
               .values({
                 userId,
-                tokenHash,
+                codeHash,
                 createdAt: now.toISOString(),
                 expiresAt: expiry.toISOString(),
               })
@@ -198,66 +207,66 @@ export namespace Services {
         if (insertion.success && insertion.result === undefined)
           return ResultBuilder.fail(
             new Core.Errors.Authentication.ErrorClass({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR",
-              message: "Failed to store password reset token",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_CREATION_ERROR",
+              message: "Failed to store password reset code",
             })
           );
 
         return insertion.success
           ? ResultBuilder.success(
-              insertion.result as ViewModels.PasswordResetToken
+              insertion.result as ViewModels.PasswordResetCode
             )
           : ResultBuilder.fail(
               Core.Errors.Authentication.normalizeError({
-                name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR",
-                message: "Failed to store password reset token.",
+                name: "AUTHENTICATION_PASSWORD_RESET_CODE_CREATION_ERROR",
+                message: "Failed to store password reset code.",
                 err: insertion.error,
               })
             );
       }
 
       //#region Wrappers
-      public async insertResetToken<T>(
-        args: Repository.InsertArgs.PasswordResetToken<T>
+      public async insertResetCode<T>(
+        args: Repository.InsertArgs.PasswordResetCode<T>
       ) {
         try {
-          const result = await this._passwordResetTokenRepo.execInsert(args);
+          const result = await this._passwordResetCodeRepo.execInsert(args);
           return ResultBuilder.success(result);
         } catch (err) {
           return ResultBuilder.fail(
             DbAccess.normalizeError({
               name: "DB_ACCESS_INSERT_ERROR",
-              message: "Failed inserting reset token.",
+              message: "Failed inserting reset code.",
               err,
             })
           );
         }
       }
 
-      public async findTokenWhereStrict(args: {
+      public async findCodeWhereStrict(args: {
         dbOrTx?: DbOrTx;
-        filter: Repository.QueryFilters.PasswordResetToken;
+        filter: Repository.QueryFilters.PasswordResetCode;
       }) {
-        const query = await this.findTokenWhere(args);
+        const query = await this.findCodeWhere(args);
 
         if (query.success && query.result === undefined)
           return ResultBuilder.fail(
             new DbAccess.ErrorClass({
               name: "DB_ACCESS_QUERY_ERROR",
-              message: "Failed finding reset token.",
+              message: "Failed finding reset code.",
             })
           );
 
         return query as
-          | BaseResult.Success<ViewModels.PasswordResetToken>
+          | BaseResult.Success<ViewModels.PasswordResetCode>
           | BaseResult.Fail<DbAccess.ErrorClass>;
       }
 
-      public async findTokenWhere(args: {
+      public async findCodeWhere(args: {
         dbOrTx?: DbOrTx;
-        filter: Repository.QueryFilters.PasswordResetToken;
+        filter: Repository.QueryFilters.PasswordResetCode;
       }) {
-        return await this.queryResetToken({
+        return await this.queryResetCode({
           dbOrTx: args.dbOrTx,
           fn: async (query, converter) => {
             return await query.findFirst({ where: converter(args.filter) });
@@ -265,18 +274,18 @@ export namespace Services {
         });
       }
 
-      public async queryResetToken<T>(
-        args: Repository.QueryArgs.PasswordResetToken<T>
+      public async queryResetCode<T>(
+        args: Repository.QueryArgs.PasswordResetCode<T>
       ) {
         try {
-          const queried = await this._passwordResetTokenRepo.execQuery(args);
+          const queried = await this._passwordResetCodeRepo.execQuery(args);
 
           return ResultBuilder.success(queried);
         } catch (err) {
           return ResultBuilder.fail(
             DbAccess.normalizeError({
               name: "DB_ACCESS_QUERY_ERROR",
-              message: "Failed querying password_reset_tokens table.",
+              message: "Failed querying password_reset_codes table.",
               err,
             })
           );
@@ -284,19 +293,19 @@ export namespace Services {
       }
 
       /**
-       * @description Wrapper for `updateResetToken` to remove implementation
+       * @description Wrapper for `updateResetCode` to remove implementation
        * boilerplate by directly passing a value and filter for the where clause.
        * @param dbOrTx
        * @param values
        * @param filter
        * @returns
        */
-      public async updateTokenWhere(args: {
+      public async updateCodeWhere(args: {
         dbOrTx?: DbOrTx | undefined;
-        values: Partial<ViewModels.PasswordResetToken>;
-        filter: Repository.QueryFilters.PasswordResetToken;
+        values: Partial<ViewModels.PasswordResetCode>;
+        filter: Repository.QueryFilters.PasswordResetCode;
       }) {
-        return await this.updateResetToken({
+        return await this.updateResetCode({
           dbOrTx: args.dbOrTx,
           fn: async (update, converter) => {
             return await update
@@ -312,17 +321,17 @@ export namespace Services {
        * @param args
        * @returns
        */
-      public async updateResetToken<T>(
-        args: Repository.UpdateArgs.PasswordResetToken<T>
+      public async updateResetCode<T>(
+        args: Repository.UpdateArgs.PasswordResetCode<T>
       ) {
         try {
-          const update = await this._passwordResetTokenRepo.execUpdate(args);
+          const update = await this._passwordResetCodeRepo.execUpdate(args);
           return ResultBuilder.success(update);
         } catch (err) {
           return ResultBuilder.fail(
             DbAccess.normalizeError({
               name: "DB_ACCESS_UPDATE_ERROR",
-              message: "Failed updating reset token",
+              message: "Failed updating reset code",
               err,
             })
           );
@@ -330,17 +339,17 @@ export namespace Services {
       }
 
       /**
-       * @description Wrapper for `deleteResetToken` to remove implementation
+       * @description Wrapper for `deleteResetCode` to remove implementation
        * boilerplate by directly passing a filter for the where clause.
        * @param dbOrTx
        * @param filter
        * @returns
        */
-      public async deleteTokenWhere(args: {
+      public async deleteCodeWhere(args: {
         dbOrTx?: DbOrTx;
-        filter: Repository.QueryFilters.PasswordResetToken;
+        filter: Repository.QueryFilters.PasswordResetCode;
       }) {
-        return await this.deleteResetToken({
+        return await this.deleteResetCode({
           dbOrTx: args.dbOrTx,
           fn: async (deleteBase, converter) => {
             return await deleteBase.where(converter(args.filter));
@@ -353,18 +362,18 @@ export namespace Services {
        * @param args
        * @returns
        */
-      public async deleteResetToken<T>(
-        args: Repository.DeleteArgs.PasswordResetToken<T>
+      public async deleteResetCode<T>(
+        args: Repository.DeleteArgs.PasswordResetCode<T>
       ) {
         try {
-          const deletion = await this._passwordResetTokenRepo.execDelete(args);
+          const deletion = await this._passwordResetCodeRepo.execDelete(args);
 
           return ResultBuilder.success(deletion);
         } catch (err) {
           return ResultBuilder.fail(
             DbAccess.normalizeError({
               name: "DB_ACCESS_DELETE_ERROR",
-              message: `Failed deleting reset token/s.`,
+              message: `Failed deleting reset code/s.`,
               err,
             })
           );

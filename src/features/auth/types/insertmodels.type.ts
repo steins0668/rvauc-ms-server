@@ -1,8 +1,7 @@
 import { Schema } from "../../../models";
 
 export namespace InsertModels {
-  export type PasswordResetToken =
-    typeof Schema.passwordResetTokens.$inferInsert;
+  export type PasswordResetCode = typeof Schema.passwordResetCodes.$inferInsert;
   export type Professor = typeof Schema.professors.$inferInsert;
   export type Role = typeof Schema.roles.$inferInsert;
   export type SessionToken = typeof Schema.sessionTokens.$inferInsert;
