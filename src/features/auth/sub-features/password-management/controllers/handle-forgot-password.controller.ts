@@ -61,9 +61,11 @@ export async function handleForgotPassword(
     return;
   }
 
-  //  * generate random reset code
+  //  * generate random reset code (6 digit)
   logger.log("debug", "Generating reset code...");
-  const code = crypto.randomBytes(32).toString("hex");
+  const code = (crypto.randomBytes(4).readUint32BE(0) % 1000000)
+    .toString()
+    .padStart(6, "0");
   const codeHash = crypto.createHash("sha256").update(code).digest("hex");
   const codeCreation = await req.passwordManagementService.storeNewCode(
     user.id,
@@ -84,8 +86,8 @@ export async function handleForgotPassword(
     return;
   }
 
-  //  * send reset url to email
-  logger.log("debug", "Sending reset url...");
+  //  * send reset code to email
+  logger.log("debug", "Sending reset code...");
   const emailTransport = await sendEmail({
     req,
     resetCode: code,
@@ -100,7 +102,7 @@ export async function handleForgotPassword(
 
     const { error } = emailTransport;
 
-    const message = "Failed sending reset url. Please try again later.";
+    const message = "Failed sending reset code. Please try again later.";
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
@@ -112,7 +114,7 @@ export async function handleForgotPassword(
 
   res.status(200).json({
     success: true,
-    message: "Reset password url sent. Please check your email.",
+    message: "Reset password code sent. Please check your email.",
   });
 }
 //#region Utils
@@ -149,12 +151,9 @@ async function sendEmail(args: {
   | Core.Types.AuthenticationResult.Fail
 > {
   try {
-    const { req, resetCode, email } = args;
-    const { protocol } = req;
-    const host = req.get("host"); //  ! better to use CLIENT_URL here in prod
-    const resetUrl = `${protocol}://${host}/auth/reset-password/${resetCode}`;
+    const { resetCode, email } = args;
     const subject = "Password change request received.";
-    const text = `We have received a password reset request. Please use the link below to reset your password\n\n${resetUrl}\n\nThis link will be valid for 10 minutes only.`;
+    const text = `We have received a password reset request. Please use the code below to reset your password\n\n${resetCode}\n\nThis code will be valid for 10 minutes only.`;
     await Utils.EmailTransports.sendEmail({
       to: email,
       subject,
@@ -165,7 +164,7 @@ async function sendEmail(args: {
     return ResultBuilder.fail(
       Core.Errors.Authentication.normalizeError({
         name: "AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR",
-        message: "Failed sending reset url.",
+        message: "Failed sending reset code.",
         err,
       })
     );
