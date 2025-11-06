@@ -81,7 +81,7 @@ export namespace Services {
         if (!update.success)
           return ResultBuilder.fail(
             Core.Errors.Authentication.normalizeError({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_UPDATE_ERROR",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_UPDATE_ERROR",
               message: "Failed invalidating code.",
               err: update.error,
             })
@@ -109,7 +109,7 @@ export namespace Services {
         if (!query.success)
           return ResultBuilder.fail(
             Core.Errors.Authentication.normalizeError({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR",
               message: "Failed querying codes.",
               err: query.error,
             })
@@ -122,7 +122,7 @@ export namespace Services {
         if (isExpired)
           return ResultBuilder.fail(
             new Core.Errors.Authentication.ErrorClass({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_EXPIRED_ERROR",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_EXPIRED_ERROR",
               message: "Code is already expired",
             })
           );
@@ -138,7 +138,7 @@ export namespace Services {
         if (!query.success)
           return ResultBuilder.fail(
             Core.Errors.Authentication.normalizeError({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR",
               message: "Failed querying reset codes.",
               err: query.error,
             })
@@ -159,7 +159,7 @@ export namespace Services {
               //  ! propagate db delete error
               return ResultBuilder.fail(
                 Core.Errors.Authentication.normalizeError({
-                  name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_DELETE_ERROR",
+                  name: "AUTHENTICATION_PASSWORD_RESET_CODE_DELETE_ERROR",
                   message: "Failed to remove unused expired code.",
                   err: deletion.error,
                 })
@@ -198,7 +198,7 @@ export namespace Services {
         if (insertion.success && insertion.result === undefined)
           return ResultBuilder.fail(
             new Core.Errors.Authentication.ErrorClass({
-              name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR",
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_CREATION_ERROR",
               message: "Failed to store password reset code",
             })
           );
@@ -209,7 +209,7 @@ export namespace Services {
             )
           : ResultBuilder.fail(
               Core.Errors.Authentication.normalizeError({
-                name: "AUTHENTICATION_PASSWORD_RESET_TOKEN_CREATION_ERROR",
+                name: "AUTHENTICATION_PASSWORD_RESET_CODE_CREATION_ERROR",
                 message: "Failed to store password reset code.",
                 err: insertion.error,
               })

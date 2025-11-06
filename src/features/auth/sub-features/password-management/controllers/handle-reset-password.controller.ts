@@ -38,7 +38,7 @@ export async function handleResetPassword(
   if (!codeVerification.success) {
     const { error } = codeVerification;
     const message =
-      error.name === "AUTHENTICATION_PASSWORD_RESET_TOKEN_QUERY_ERROR"
+      error.name === "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR"
         ? "Something went wrong. Please try again later"
         : error.message; //  ? either could not find code or code is expired.
 
