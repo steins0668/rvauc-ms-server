@@ -82,4 +82,18 @@ export namespace Schemas {
       isPersistentAuth: z.boolean().optional(),
     });
   }
+
+  export type VerifyCode = z.infer<typeof verifyCode>;
+
+  export const verifyCode = z.strictObject({
+    email: z.email({
+      error: (iss) =>
+        iss.input === undefined ? "Email is required." : "Invalid email.",
+    }),
+    code: z.string({
+      error: (iss) =>
+        iss.input === undefined ? "Code is required." : "Invalid code.",
+    }),
+    isPersistentAuth: z.boolean().optional(),
+  });
 }

@@ -43,6 +43,20 @@
       "when": 1762419611119,
       "tag": "0005_supreme_wolf_cub",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1762443174886,
+      "tag": "0006_silly_dazzler",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1762445222825,
+      "tag": "0007_old_mantis",
+      "breakpoints": true
     }
   ]
 }

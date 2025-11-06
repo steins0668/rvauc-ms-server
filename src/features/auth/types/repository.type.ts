@@ -30,6 +30,12 @@ export namespace Repository {
       Repositories.PasswordResetCode["buildWhereClause"],
       T
     >;
+
+    export type SignInRequest<T> = BaseDeleteArgs<
+      SQLiteDeleteBase<Tables.SignInRequest, "async", ResultSet>,
+      Repositories.SignInRequest["buildWhereClause"],
+      T
+    >;
   }
 
   export namespace InsertArgs {
@@ -66,6 +72,12 @@ export namespace Repository {
     export type SessionToken<T> = BaseInsertArgs<
       SQLiteInsertBuilder<Tables.SessionTokens, "async", ResultSet>,
       Repositories.SessionToken["buildWhereClause"],
+      T
+    >;
+
+    export type SignInRequest<T> = BaseInsertArgs<
+      SQLiteInsertBuilder<Tables.SignInRequest, "async", ResultSet>,
+      Repositories.SignInRequest["buildWhereClause"],
       T
     >;
 
@@ -107,6 +119,12 @@ export namespace Repository {
       T
     >;
 
+    export type SignInRequest<T> = BaseUpdateArgs<
+      SQLiteUpdateBuilder<Tables.SignInRequest, "async", ResultSet>,
+      Repositories.SignInRequest["buildWhereClause"],
+      T
+    >;
+
     export type User<T> = BaseUpdateArgs<
       SQLiteUpdateBuilder<Tables.Users, "async", ResultSet>,
       Repositories.User["buildWhereClause"],
@@ -141,6 +159,12 @@ export namespace Repository {
     export type SessionToken<T> = BaseQueryArgs<
       DbContext["query"]["sessionTokens"],
       Repositories.SessionToken["buildWhereClause"],
+      T
+    >;
+
+    export type SignInRequest<T> = BaseQueryArgs<
+      DbContext["query"]["signInRequests"],
+      Repositories.SignInRequest["buildWhereClause"],
       T
     >;
 
@@ -195,6 +219,8 @@ export namespace Repository {
      * - `block`: Matches the student's block.
      */
     export type Student = BaseQueryFilter<ViewModels.Student>;
+
+    export type SignInRequest = BaseQueryFilter<ViewModels.SignInRequest>;
 
     /**
      * @description A type for the filter used for Db queries on the {@link users} table.

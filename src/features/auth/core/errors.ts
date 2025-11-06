@@ -10,15 +10,21 @@ export namespace Errors {
       | "AUTHENTICATION_PASSWORD_RESET_PASSWORD_MISMATCH_ERROR" // for password and confirm password mismatch
       | "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR" // for failure of updating password
       | "AUTHENTICATION_PASSWORD_RESET_CODE_ALREADY_USED_ERROR" // code is already used
-      | "AUTHENTICATION_PASSWORD_RESET_CODE_CREATION_ERROR" // for password reset token failing to create or store
-      | "AUTHENTICATION_PASSWORD_RESET_CODE_DELETE_ERROR" //  for failing password reset token deletion
-      | "AUTHENTICATION_PASSWORD_RESET_CODE_EXPIRED_ERROR" //  for attempting to use expired tokens
-      | "AUTHENTICATION_PASSWORD_RESET_CODE_NOT_FOUND_ERROR" //  for missing token
-      | "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR" //  for failure finding reset token
-      | "AUTHENTICATION_PASSWORD_RESET_CODE_UPDATE_ERROR" //  for failure updating reset token
+      | "AUTHENTICATION_PASSWORD_RESET_CODE_CREATION_ERROR" // for password reset code failing to create or store
+      | "AUTHENTICATION_PASSWORD_RESET_CODE_DELETE_ERROR" //  for failing password reset code deletion
+      | "AUTHENTICATION_PASSWORD_RESET_CODE_EXPIRED_ERROR" //  for attempting to use expired code
+      | "AUTHENTICATION_PASSWORD_RESET_CODE_NOT_FOUND_ERROR" //  for missing code
+      | "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR" //  for failure finding reset code
+      | "AUTHENTICATION_PASSWORD_RESET_CODE_UPDATE_ERROR" //  for failure updating reset code
       | "AUTHENTICATION_PASSWORD_RESET_CODE_EXISTING_CODE_ERROR" //  for duplicate forgot password requests
-      | "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR" //  for incorrect login credentials
+      | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_ALREADY_USED_ERROR" // sign-in request code already used
+      | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_CREATION_ERROR" // for sign-in request failing to create or store
+      | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_EXPIRED_OR_INVALID_ERROR" // for attempting to use expired code
+      | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR" // for failure finding sign-in request
+      | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_UPDATE_ERROR" // for failure updating sign-in request
+      | "AUTHENTICATION_SIGN_IN_REQUEST_EMAIL_ERROR" // failed sending sign in request code to email
       | "AUTHENTICATION_SIGN_IN_SYSTEM_ERROR" //  internal errors (e.g. db)
+      | "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR" //  for incorrect login credentials
       | "AUTHENTICATION_SESSION_START_ERROR" //  failed starting session
       | "AUTHENTICATION_SESSION_TOKEN_CREATION_ERROR" //  failed creating token
       | "AUTHENTICATION_SESSION_TOKEN_EXPIRED_OR_INVALID_ERROR" //   token is invalid or expired
@@ -44,8 +50,14 @@ export namespace Errors {
       AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR: 500,
       AUTHENTICATION_PASSWORD_RESET_CODE_UPDATE_ERROR: 500,
       AUTHENTICATION_PASSWORD_RESET_CODE_EXISTING_CODE_ERROR: 403,
-      AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR: 401, //  unauthorized
+      AUTHENTICATION_SIGN_IN_REQUEST_CODE_ALREADY_USED_ERROR: 403,
+      AUTHENTICATION_SIGN_IN_REQUEST_CODE_CREATION_ERROR: 500,
+      AUTHENTICATION_SIGN_IN_REQUEST_CODE_EXPIRED_OR_INVALID_ERROR: 401,
+      AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR: 500,
+      AUTHENTICATION_SIGN_IN_REQUEST_CODE_UPDATE_ERROR: 500,
+      AUTHENTICATION_SIGN_IN_REQUEST_EMAIL_ERROR: 500,
       AUTHENTICATION_SIGN_IN_SYSTEM_ERROR: 500, //  internal server error
+      AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR: 401, //  unauthorized
       AUTHENTICATION_SESSION_CLEANUP_ERROR: 500,
       AUTHENTICATION_SESSION_START_ERROR: 500,
       AUTHENTICATION_SESSION_TOKEN_CREATION_ERROR: 500,

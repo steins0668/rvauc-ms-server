@@ -3,7 +3,6 @@ import crypto from "crypto";
 import { ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
-import { Utils } from "../utils";
 
 export async function handleForgotPassword(
   req: Request<{}, {}, Schemas.ForgotPassword>,
@@ -154,7 +153,7 @@ async function sendEmail(args: {
     const { resetCode, email } = args;
     const subject = "Password change request received.";
     const text = `We have received a password reset request. Please use the code below to reset your password\n\n${resetCode}\n\nThis code will be valid for 10 minutes only.`;
-    await Utils.EmailTransports.sendEmail({
+    await Core.Utils.EmailTransports.sendEmail({
       to: email,
       subject,
       text,

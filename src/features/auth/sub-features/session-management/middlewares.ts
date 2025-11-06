@@ -16,6 +16,15 @@ export namespace Middlewares {
     next();
   }
 
+  export async function attachSignInRequestService(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    req.signInRequestService = await Services.SignInRequest.createService();
+    next();
+  }
+
   export function validateJwt(req: Request, res: Response, next: NextFunction) {
     const { headers, requestLogger } = req;
 
@@ -90,6 +99,7 @@ declare global {
   namespace Express {
     interface Request {
       sessionManager: Services.SessionManager.Service;
+      signInRequestService: Services.SignInRequest.Service;
       authenticationPayload: Schemas.Payloads.AccessToken.RoleBased;
     }
   }

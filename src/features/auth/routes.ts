@@ -20,8 +20,16 @@ Routes.use(SessionManagement.Middlewares.attachSessionManager);
 
 Routes.post(
   "/sign-in",
+  SessionManagement.Middlewares.attachSignInRequestService,
   validateRequest(SessionManagement.Schemas.SignIn.schema),
-  SessionManagement.Controllers.handleSignIn
+  SessionManagement.Controllers.handleRequestSignInCode
+);
+
+Routes.post(
+  "/verify-sign-in-code",
+  SessionManagement.Middlewares.attachSignInRequestService,
+  validateRequest(SessionManagement.Schemas.verifyCode),
+  SessionManagement.Controllers.handleVerifySignInCode
 );
 
 Routes.post(
