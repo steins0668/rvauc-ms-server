@@ -45,6 +45,19 @@ export namespace Schemas {
         sessionNumber: z.string(),
         isPersistentAuth: z.boolean().optional(),
       });
+
+      export type Schema = z.infer<typeof schema>;
+
+      export const schema = z.strictObject({
+        refreshToken: z
+          .string({
+            error: (iss) => {
+              if (iss.code === "invalid_type")
+                return "Refresh token must be a string";
+            },
+          })
+          .optional(),
+      });
     }
   }
 

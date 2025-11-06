@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { validateCookies, validateRequest } from "../../middlewares";
+import { validateRequest } from "../../middlewares";
 import { Core } from "./core";
 import { PasswordManagement } from "./sub-features/password-management";
 import { Registration } from "./sub-features/registration";
@@ -24,14 +24,15 @@ Routes.post(
   SessionManagement.Controllers.handleSignIn
 );
 
-Routes.post("/sign-out", SessionManagement.Controllers.handleSignOut);
-
-const configureRefresh = SessionManagement.Utils.getRefreshConfig();
-if (!configureRefresh.success) throw configureRefresh.error;
+Routes.post(
+  "/sign-out",
+  validateRequest(SessionManagement.Schemas.Payloads.RefreshToken.schema),
+  SessionManagement.Controllers.handleSignOut
+);
 
 Routes.post(
   "/refresh",
-  validateCookies(configureRefresh.result.cookieName),
+  validateRequest(SessionManagement.Schemas.Payloads.RefreshToken.schema),
   SessionManagement.Controllers.handleRefresh
 );
 
