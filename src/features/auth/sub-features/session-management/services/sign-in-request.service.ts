@@ -133,7 +133,7 @@ export namespace SignInRequest {
 
       return ResultBuilder.success(update.result);
     }
-
+    //#region Wrappers
     public async insertRequest<T>(
       args: Repository.InsertArgs.SignInRequest<T>
     ) {
@@ -284,5 +284,6 @@ export namespace SignInRequest {
         );
       }
     }
+    //#endregion
   }
 }
