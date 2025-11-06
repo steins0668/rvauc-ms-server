@@ -46,7 +46,13 @@ Routes.post(
 );
 
 Routes.post(
-  "/reset-password/:token",
+  "/verify-code",
+  validateRequest(PasswordManagement.Schemas.verifyCode),
+  PasswordManagement.Controllers.handleVerifyCode
+);
+
+Routes.post(
+  "/reset-password",
   validateRequest(PasswordManagement.Schemas.resetPassword),
   PasswordManagement.Controllers.handleResetPassword
 );

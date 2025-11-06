@@ -6,11 +6,11 @@ import { ViewModels } from "../../../types";
 import { Schemas } from "../schemas";
 
 export async function handleResetPassword(
-  req: Request<{ code: string }, {}, Schemas.ResetPassword>,
+  req: Request<{}, {}, Schemas.ResetPassword>,
   res: Response
 ) {
   const { body, requestLogger: logger } = req;
-  const { password, confirmPassword } = body;
+  const { code, password, confirmPassword } = body;
 
   logger.log("debug", "Resetting password...");
 
@@ -30,7 +30,7 @@ export async function handleResetPassword(
 
   //    *   find non-expired reset code with code (encrypt first) from req params
   logger.log("debug", "Finding reset code in db...");
-  const codeHash = HashUtil.byCrypto(req.params.code);
+  const codeHash = HashUtil.byCrypto(code);
   const codeVerification = await req.passwordManagementService.verifyResetCode(
     codeHash
   );
@@ -77,7 +77,7 @@ export async function handleResetPassword(
 //#region Util
 
 async function execUpdate(args: {
-  req: Request<{ code: string }, {}, Schemas.ResetPassword>;
+  req: Request<{}, {}, Schemas.ResetPassword>;
   code: ViewModels.PasswordResetCode;
   password: string;
 }) {

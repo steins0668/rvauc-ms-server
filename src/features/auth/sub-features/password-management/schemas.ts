@@ -11,9 +11,26 @@ export namespace Schemas {
     }),
   });
 
+  export type VerifyCode = z.infer<typeof verifyCode>;
+
+  export const verifyCode = z.strictObject({
+    email: z.email({
+      error: (iss) =>
+        iss.input === undefined ? "Email is required." : "Invalid email.",
+    }),
+    code: z.string({
+      error: (iss) =>
+        iss.input === undefined ? "Code is required." : "Invalid code.",
+    }),
+  });
+
   export type ResetPassword = z.infer<typeof resetPassword>;
 
   export const resetPassword = z.strictObject({
+    code: z.string({
+      error: (iss) =>
+        iss.input === undefined ? "Code is required." : "Invalid code.",
+    }),
     password: z
       .string({
         error: (iss) =>
