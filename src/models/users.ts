@@ -20,6 +20,10 @@ export const users = sqliteTable("users", {
 });
 
 export const usersRelations = relations(users, ({ one }) => ({
+  role: one(roles, {
+    fields: [users.roleId],
+    references: [roles.id],
+  }),
   student: one(students, {
     fields: [users.id],
     references: [students.id],

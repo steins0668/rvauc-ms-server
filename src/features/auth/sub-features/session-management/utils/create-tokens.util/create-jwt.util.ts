@@ -5,9 +5,7 @@ import { Types } from "../../types";
 
 type AccessOptions = {
   tokenType: Extract<Types.AuthToken, "access">;
-  payload:
-    | Schemas.Payloads.AccessToken.Professor
-    | Schemas.Payloads.AccessToken.Student;
+  payload: Schemas.Payloads.AccessToken.RoleBased;
 };
 
 type RefreshOptions = {

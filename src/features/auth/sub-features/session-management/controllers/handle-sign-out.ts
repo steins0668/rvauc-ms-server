@@ -2,8 +2,12 @@ import type { Request, Response } from "express";
 import { Data } from "../data";
 import { CustomError } from "../error";
 import { Utils } from "../utils";
+import { Schemas } from "../schemas";
 
-export async function handleSignOut(req: Request, res: Response) {
+export async function handleSignOut(
+  req: Request<{}, {}, Schemas.Payloads.RefreshToken.Schema>,
+  res: Response
+) {
   const { requestLogger: logger, cookies, sessionManager } = req;
 
   const internalErrMsg =
@@ -36,7 +40,9 @@ export async function handleSignOut(req: Request, res: Response) {
   };
 
   //  * get refresh tkn
-  const refreshTkn = cookies?.[refresh] as string | undefined;
+  const cookieToken = cookies?.[refresh] as string | undefined;
+  const bodyToken = req.body.refreshToken;
+  const refreshTkn = cookieToken ?? bodyToken;
   //  ! refresh tkn not found. just clear cookie
   if (refreshTkn === undefined) return clearCookie(cookieConfig.result);
 

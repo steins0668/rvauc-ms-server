@@ -27,18 +27,14 @@ export const payloadResolver = {
 
     if (!query.success) return query;
 
-    const { college, ...professor } = query.result;
+    const { college, facultyRank } = query.result;
 
     const payload = {
-      userInfo: {
-        ...user,
-        role: "professor",
-      },
-      professorInfo: {
-        college: college.name,
-        ...professor,
-      },
-    } as Schemas.Payloads.AccessToken.Professor;
+      ...user,
+      role: "professor",
+      college: college.name,
+      facultyRank,
+    } as Schemas.Payloads.AccessToken.RoleBased;
 
     return ResultBuilder.success(payload);
   },
@@ -68,15 +64,11 @@ export const payloadResolver = {
     const { department, ...student } = query.result;
 
     const payload = {
-      userInfo: {
-        ...user,
-        role: "student",
-      },
-      studentInfo: {
-        department: department.name,
-        ...student,
-      },
-    } as Schemas.Payloads.AccessToken.Student;
+      ...user,
+      role: "student",
+      department: department.name,
+      ...student,
+    } as Schemas.Payloads.AccessToken.RoleBased;
 
     return ResultBuilder.success(payload);
   },

@@ -6,7 +6,7 @@ import { Schemas } from "../../schemas";
 import { createJwt } from "./create-jwt.util";
 import { payloadResolver } from "./payload-resolver.util";
 
-type Role = keyof typeof Core.Data.Enums.Roles;
+type Role = keyof typeof Core.Data.Records.roles;
 
 type Tokens = {
   accessToken: string;
@@ -45,7 +45,9 @@ export async function createTokens(args: {
     args;
 
   try {
-    const role = Core.Data.Enums.Roles[verifiedUser.roleId] as Role;
+    const role = Object.values(Core.Data.Records.roles).find(
+      (role) => role.id === verifiedUser.roleId
+    )!.name as Role; //  ! throws in case of undefined.
     const createAccessTkn = await createAccessToken({
       userDataService,
       verifiedUser,

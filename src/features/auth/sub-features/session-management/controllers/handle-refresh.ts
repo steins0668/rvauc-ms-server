@@ -6,8 +6,12 @@ import { ViewModels } from "../../../types";
 import { CustomError } from "../error";
 import { Data } from "../data";
 import { Utils } from "../utils";
+import { Schemas } from "../schemas";
 
-export async function handleRefresh(req: Request, res: Response) {
+export async function handleRefresh(
+  req: Request<{}, {}, Schemas.Payloads.RefreshToken.Schema>,
+  res: Response
+) {
   const {
     requestLogger: logger,
     cookies,
@@ -34,7 +38,17 @@ export async function handleRefresh(req: Request, res: Response) {
   }
 
   const { cookieName: refreshTknCookie } = cookieConfig.result;
-  const oldRefreshTkn = cookies[refreshTknCookie] as string;
+  const cookieToken = cookies[refreshTknCookie] as string | undefined;
+  const bodyToken = req.body.refreshToken;
+  const oldRefreshTkn = cookieToken ?? bodyToken;
+
+  if (!oldRefreshTkn) {
+    const message = "Refresh token is missing.";
+    res.status(401).json({ success: false, message });
+
+    req.requestLogger.log("debug", message);
+    return;
+  }
 
   //  * verify payload
   const payloadVerification = Utils.verifyRefreshTkn(req, oldRefreshTkn);
@@ -112,8 +126,6 @@ export async function handleRefresh(req: Request, res: Response) {
   const { cookieName, persistentCookie, sessionCookie } = cookieConfig.result;
 
   //  * create cookie and json for access token
-  const {} = refreshTknCookie;
-
   res.cookie(
     cookieName,
     refreshToken,

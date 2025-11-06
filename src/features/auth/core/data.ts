@@ -1,9 +1,15 @@
 export namespace Data {
-  export namespace Enums {
-    export enum Roles {
-      student = 0,
-      professor,
-    }
+  export namespace Records {
+    export const roles = {
+      student: {
+        id: 0,
+        name: "student",
+      },
+      professor: {
+        id: 1,
+        name: "professor",
+      },
+    } as const;
   }
 
   export namespace Regex {
