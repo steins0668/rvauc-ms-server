@@ -6,6 +6,7 @@ export * from "./departments";
 export * from "./password-reset-codes";
 export * from "./professors";
 export * from "./roles";
+export * from "./sign-in-requests";
 export * from "./session-tokens";
 export * from "./students";
 export * from "./uniform-types";
