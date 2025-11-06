@@ -67,7 +67,7 @@ export namespace SignInRequest {
       | Core.Types.AuthenticationResult.Success<ViewModels.SignInRequest>
       | Core.Types.AuthenticationResult.Fail
     > {
-      const query = await this.findRequestWhereStrict({
+      const query = await this.findRequestWhere({
         filter: { codeHash },
       });
 
@@ -79,6 +79,15 @@ export namespace SignInRequest {
             err: query.error,
           })
         );
+
+      if (!query.result) {
+        return ResultBuilder.fail(
+          new Core.Errors.Authentication.ErrorClass({
+            name: "AUTHENTICATION_SIGN_IN_REQUEST_CODE_EXPIRED_OR_INVALID_ERROR",
+            message: "Sign-in request code is invalid or expired.",
+          })
+        );
+      }
 
       if (query.result.isUsed)
         return ResultBuilder.fail(
@@ -95,7 +104,7 @@ export namespace SignInRequest {
       if (isExpired)
         return ResultBuilder.fail(
           new Core.Errors.Authentication.ErrorClass({
-            name: "AUTHENTICATION_SIGN_IN_REQUEST_CODE_EXPIRED_ERROR",
+            name: "AUTHENTICATION_SIGN_IN_REQUEST_CODE_EXPIRED_OR_INVALID_ERROR",
             message: "Sign-in request code is already expired.",
           })
         );
