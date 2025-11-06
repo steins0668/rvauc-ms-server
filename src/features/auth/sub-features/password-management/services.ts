@@ -104,7 +104,7 @@ export namespace Services {
         | Core.Types.AuthenticationResult.Fail
       > {
         const query = await this.findCodeWhereStrict({
-          filter: { codeHash, isUsed: false },
+          filter: { codeHash },
         });
 
         if (!query.success)
@@ -116,6 +116,14 @@ export namespace Services {
             })
           );
 
+        if (query.result.isUsed)
+          return ResultBuilder.fail(
+            new Core.Errors.Authentication.ErrorClass({
+              name: "AUTHENTICATION_PASSWORD_RESET_CODE_ALREADY_USED_ERROR",
+              message: "Code is already used.",
+            })
+          );
+
         const now = new Date().getTime();
         const expiry = new Date(query.result.expiresAt).getTime();
         const isExpired = now > expiry;
@@ -124,7 +132,7 @@ export namespace Services {
           return ResultBuilder.fail(
             new Core.Errors.Authentication.ErrorClass({
               name: "AUTHENTICATION_PASSWORD_RESET_CODE_EXPIRED_ERROR",
-              message: "Code is already expired",
+              message: "Code is already expired.",
             })
           );
 
