@@ -17,7 +17,8 @@ export namespace Errors {
       | "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR" //  for failure finding reset token
       | "AUTHENTICATION_PASSWORD_RESET_CODE_UPDATE_ERROR" //  for failure updating reset token
       | "AUTHENTICATION_PASSWORD_RESET_CODE_EXISTING_CODE_ERROR" //  for duplicate forgot password requests
-      | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_CREATION_ERROR" // for password reset token failing to create or store
+      | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_CREATION_ERROR" // for sign-in request failing to create or store
+      | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR" // for failure finding sign-in request
       | "AUTHENTICATION_SIGN_IN_REQUEST_EMAIL_ERROR" // failed sending sign in request code to email
       | "AUTHENTICATION_SIGN_IN_SYSTEM_ERROR" //  internal errors (e.g. db)
       | "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR" //  for incorrect login credentials
@@ -47,6 +48,7 @@ export namespace Errors {
       AUTHENTICATION_PASSWORD_RESET_CODE_UPDATE_ERROR: 500,
       AUTHENTICATION_PASSWORD_RESET_CODE_EXISTING_CODE_ERROR: 403,
       AUTHENTICATION_SIGN_IN_REQUEST_CODE_CREATION_ERROR: 500,
+      AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR: 500,
       AUTHENTICATION_SIGN_IN_REQUEST_EMAIL_ERROR: 500,
       AUTHENTICATION_SIGN_IN_SYSTEM_ERROR: 500, //  internal server error
       AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR: 401, //  unauthorized
