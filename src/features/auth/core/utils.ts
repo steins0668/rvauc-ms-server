@@ -3,7 +3,7 @@ import { Data } from "./data";
 
 export namespace Utils {
   export namespace EmailTransports {
-    const mailTrapConfig = Data.getMailTrap();
+    const mailTrapConfig = Data.Env.getMailTrap();
 
     const transporter = nodemailer.createTransport({
       host: mailTrapConfig.host,
