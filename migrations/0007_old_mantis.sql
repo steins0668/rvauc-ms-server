@@ -1,0 +1,1 @@
+DROP INDEX `sign_in_requests_active_code_uidx`;

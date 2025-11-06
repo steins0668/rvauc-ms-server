@@ -15,6 +15,7 @@ export async function handleSignIn(
     requestLogger: logger,
     sessionManager,
     userDataService,
+    signInRequestService,
   } = req;
 
   //  *validate and verify user credentials
