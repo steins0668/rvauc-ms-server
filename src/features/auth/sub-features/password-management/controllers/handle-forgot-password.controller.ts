@@ -31,14 +31,14 @@ export async function handleForgotPassword(
 
   const user = verification.result;
 
-  //  * verify if no active reset token exists
-  logger.log("debug", "Verifying if no active reset tokens exist.");
-  const activeTokenVerification =
+  //  * verify if no active reset code exists
+  logger.log("debug", "Verifying if no active reset codes exist.");
+  const activeCodeVerification =
     await req.passwordManagementService.verifyNoActiveCode(user.id);
 
-  if (!activeTokenVerification.success) {
+  if (!activeCodeVerification.success) {
     //  ! failed querying the database
-    const { error } = activeTokenVerification;
+    const { error } = activeCodeVerification;
     const message = "Something went wrong. Please try again later.";
 
     res
@@ -48,10 +48,10 @@ export async function handleForgotPassword(
     logger.log("error", error.message, error);
 
     return;
-  } else if (!activeTokenVerification.result) {
-    //  ! active reset token exists
+  } else if (!activeCodeVerification.result) {
+    //  ! active reset code exists
     res
-      .status(403) // ! Forbidden. Active token still exists.
+      .status(403) // ! Forbidden. Active code still exists.
       .json({
         success: false,
         message:
@@ -61,19 +61,19 @@ export async function handleForgotPassword(
     return;
   }
 
-  //  * generate random reset token
-  logger.log("debug", "Generating reset token...");
-  const token = crypto.randomBytes(32).toString("hex");
-  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-  const tokenCreation = await req.passwordManagementService.storeNewCode(
+  //  * generate random reset code
+  logger.log("debug", "Generating reset code...");
+  const code = crypto.randomBytes(32).toString("hex");
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+  const codeCreation = await req.passwordManagementService.storeNewCode(
     user.id,
-    tokenHash
+    codeHash
   );
 
-  if (!tokenCreation.success) {
-    //  ! failed creating token
-    const { error } = tokenCreation;
-    const message = "Failed generating reset token. Please try again later.";
+  if (!codeCreation.success) {
+    //  ! failed creating code
+    const { error } = codeCreation;
+    const message = "Failed generating reset code. Please try again later.";
 
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -88,14 +88,14 @@ export async function handleForgotPassword(
   logger.log("debug", "Sending reset url...");
   const emailTransport = await sendEmail({
     req,
-    resetToken: token,
+    resetCode: code,
     email: user.email,
   });
 
   if (!emailTransport.success) {
     //  ! failed sending email
-    //  * remove reset token from db
-    const { id } = tokenCreation.result;
+    //  * remove reset code from db
+    const { id } = codeCreation.result;
     await req.passwordManagementService.deleteCodeWhere({ filter: { id } });
 
     const { error } = emailTransport;
@@ -142,17 +142,17 @@ async function verifyUser(args: {
 
 async function sendEmail(args: {
   req: Request<{}, {}, Schemas.ForgotPassword>;
-  resetToken: string;
+  resetCode: string;
   email: string;
 }): Promise<
   | Core.Types.AuthenticationResult.Success<null>
   | Core.Types.AuthenticationResult.Fail
 > {
   try {
-    const { req, resetToken, email } = args;
+    const { req, resetCode, email } = args;
     const { protocol } = req;
     const host = req.get("host"); //  ! better to use CLIENT_URL here in prod
-    const resetUrl = `${protocol}://${host}/auth/reset-password/${resetToken}`;
+    const resetUrl = `${protocol}://${host}/auth/reset-password/${resetCode}`;
     const subject = "Password change request received.";
     const text = `We have received a password reset request. Please use the link below to reset your password\n\n${resetUrl}\n\nThis link will be valid for 10 minutes only.`;
     await Utils.EmailTransports.sendEmail({

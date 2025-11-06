@@ -14,7 +14,7 @@ export const passwordResetCodes = sqliteTable(
     userId: integer("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    tokenHash: text("code_hash").unique().notNull(),
+    codeHash: text("code_hash").unique().notNull(),
     createdAt: text("created_at").notNull(),
     expiresAt: text("expires_at").notNull(),
     isUsed: integer("is_used", { mode: "boolean" }).notNull().default(false),

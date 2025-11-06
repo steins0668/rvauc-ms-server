@@ -45,13 +45,13 @@ export class PasswordResetCodeRepository extends Repository<Types.Tables.Passwor
     const conditions = [];
 
     if (filter) {
-      const { id, userId, tokenHash, expiresAt, isUsed } = filter;
+      const { id, userId, codeHash, expiresAt, isUsed } = filter;
 
       if (id !== undefined) conditions.push(eq(passwordResetCodes.id, id));
       if (userId !== undefined)
         conditions.push(eq(passwordResetCodes.userId, userId));
-      if (tokenHash && tokenHash.trim())
-        conditions.push(eq(passwordResetCodes.tokenHash, tokenHash));
+      if (codeHash && codeHash.trim())
+        conditions.push(eq(passwordResetCodes.codeHash, codeHash));
       if (expiresAt && expiresAt.trim())
         conditions.push(lte(passwordResetCodes.expiresAt, expiresAt));
       if (isUsed !== undefined)
