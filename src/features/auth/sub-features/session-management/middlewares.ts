@@ -54,6 +54,7 @@ export namespace Middlewares {
       req.authenticationPayload = payload;
 
       requestLogger.log("debug", "Access token validated.");
+      next();
     } catch (err) {
       const error = Errors.Authentication.normalizeError({
         name: "AUTHENTICATION_SESSION_TOKEN_EXPIRED_OR_INVALID_ERROR",
