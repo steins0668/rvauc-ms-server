@@ -103,6 +103,28 @@ export namespace SignInRequest {
       return ResultBuilder.success(query.result);
     }
 
+    public async invalidateRequest(args: {
+      dbOrTx?: DbOrTx | undefined;
+      requestId: number;
+    }) {
+      const update = await this.updateRequestWhere({
+        dbOrTx: args.dbOrTx,
+        values: { isUsed: true, expiresAt: new Date().toISOString() },
+        filter: { id: args.requestId, isUsed: false },
+      });
+
+      if (!update.success)
+        return ResultBuilder.fail(
+          Core.Errors.Authentication.normalizeError({
+            name: "AUTHENTICATION_SIGN_IN_REQUEST_CODE_UPDATE_ERROR",
+            message: "Failed invalidating request code.",
+            err: update.error,
+          })
+        );
+
+      return ResultBuilder.success(update.result);
+    }
+
     public async insertRequest<T>(
       args: Repository.InsertArgs.SignInRequest<T>
     ) {
