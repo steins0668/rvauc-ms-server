@@ -2,6 +2,7 @@ import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { DbAccess } from "../../../../../error";
 import { BaseResult } from "../../../../../types";
 import { ResultBuilder } from "../../../../../utils";
+import { Core } from "../../../core";
 import { Repositories } from "../../../repositories";
 import { Repository, ViewModels } from "../../../types";
 
@@ -17,6 +18,89 @@ export namespace SignInRequest {
 
     constructor(signInRequestRepo: Repositories.SignInRequest) {
       this._signInRequestRepo = signInRequestRepo;
+    }
+
+    public async storeNewRequest(userId: number, codeHash: string) {
+      const now = new Date();
+      const expiry = new Date();
+      expiry.setMinutes(now.getMinutes() + 10);
+
+      const insertion = await this.insertRequest({
+        fn: async (insert) => {
+          return await insert
+            .values({
+              userId,
+              codeHash,
+              createdAt: now.toISOString(),
+              expiresAt: expiry.toISOString(),
+            })
+            .onConflictDoNothing()
+            .returning()
+            .then((result) => result[0]);
+        },
+      });
+
+      if (insertion.success && insertion.result === undefined)
+        return ResultBuilder.fail(
+          new Core.Errors.Authentication.ErrorClass({
+            name: "AUTHENTICATION_SIGN_IN_REQUEST_CODE_CREATION_ERROR",
+            message: "Failed to store sign-in request code",
+          })
+        );
+
+      return insertion.success
+        ? ResultBuilder.success(
+            insertion.result as ViewModels.PasswordResetCode
+          )
+        : ResultBuilder.fail(
+            Core.Errors.Authentication.normalizeError({
+              name: "AUTHENTICATION_SIGN_IN_REQUEST_CODE_CREATION_ERROR",
+              message: "Failed to store sign-in request code.",
+              err: insertion.error,
+            })
+          );
+    }
+
+    public async verifyRequestCode(
+      codeHash: string
+    ): Promise<
+      | Core.Types.AuthenticationResult.Success<ViewModels.SignInRequest>
+      | Core.Types.AuthenticationResult.Fail
+    > {
+      const query = await this.findRequestWhereStrict({
+        filter: { codeHash },
+      });
+
+      if (!query.success)
+        return ResultBuilder.fail(
+          Core.Errors.Authentication.normalizeError({
+            name: "AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR",
+            message: "Failed querying sign-in requests.",
+            err: query.error,
+          })
+        );
+
+      if (query.result.isUsed)
+        return ResultBuilder.fail(
+          new Core.Errors.Authentication.ErrorClass({
+            name: "AUTHENTICATION_SIGN_IN_REQUEST_CODE_ALREADY_USED_ERROR",
+            message: "Sign-in request code is already used.",
+          })
+        );
+
+      const now = new Date().getTime();
+      const expiry = new Date(query.result.expiresAt).getTime();
+      const isExpired = now > expiry;
+
+      if (isExpired)
+        return ResultBuilder.fail(
+          new Core.Errors.Authentication.ErrorClass({
+            name: "AUTHENTICATION_SIGN_IN_REQUEST_CODE_EXPIRED_ERROR",
+            message: "Sign-in request code is already expired.",
+          })
+        );
+
+      return ResultBuilder.success(query.result);
     }
 
     public async insertRequest<T>(
