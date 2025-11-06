@@ -2,7 +2,6 @@ import { Request } from "express";
 import jwt from "jsonwebtoken";
 import { ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
-import { Data } from "../data";
 import { Schemas } from "../schemas";
 
 /**
@@ -28,7 +27,10 @@ export function verifyRefreshTkn(
 
   let payload;
   try {
-    payload = jwt.verify(refreshToken, Data.getTknSecrets().refreshSecret);
+    payload = jwt.verify(
+      refreshToken,
+      Core.Data.Env.getTknSecrets().refreshSecret
+    );
   } catch (err) {
     requestLogger.log("error", "Invalid or expired refresh token.", err);
     return ResultBuilder.fail(

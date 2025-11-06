@@ -1,11 +1,11 @@
 import jwt from "jsonwebtoken";
-import { Data } from "../../data";
+import { Core } from "../../../../core";
 import { Schemas } from "../../schemas";
 import { Types } from "../../types";
 
 type AccessOptions = {
   tokenType: Extract<Types.AuthToken, "access">;
-  payload: Schemas.Payloads.AccessToken.RoleBased;
+  payload: Core.Schemas.Payloads.AccessToken.RoleBased;
 };
 
 type RefreshOptions = {
@@ -30,7 +30,7 @@ type JwtOptions = AccessOptions | RefreshOptions;
  * ! depending on the token type.
  */
 export function createJwt({ tokenType, payload }: JwtOptions): string {
-  const { secret, signOptions } = Data.Token.configuration[tokenType];
+  const { secret, signOptions } = Core.Data.Token.configuration[tokenType];
 
   const token: string = jwt.sign(payload, secret, signOptions);
 

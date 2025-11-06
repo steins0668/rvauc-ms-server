@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { HashUtil, ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
-import { CustomError } from "../error";
 import { Schemas } from "../schemas";
 import { Utils } from "../utils";
 
@@ -127,14 +126,14 @@ export async function handleVerifySignInCode(
     return;
   }
 
-  const cookieResult = Utils.getRefreshConfig();
+  const cookieResult = Core.Utils.Config.getRefreshConfig();
 
   if (!cookieResult.success) {
     //  !failed getting refresh token config
     const { error } = cookieResult;
 
     res
-      .status(CustomError.Config.getErrStatusCode(error))
+      .status(Core.Errors.Config.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed getting refresh token config.", error);

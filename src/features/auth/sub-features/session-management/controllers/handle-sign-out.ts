@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
-import { Data } from "../data";
-import { CustomError } from "../error";
+import { Core } from "../../../core";
 import { Utils } from "../utils";
 import { Schemas } from "../schemas";
 
@@ -14,13 +13,13 @@ export async function handleSignOut(
     "An error occured while signing out session. Please try again later.";
 
   //  * get config for refresh token cookie
-  const cookieConfig = Utils.getRefreshConfig();
+  const cookieConfig = Core.Utils.Config.getRefreshConfig();
   if (!cookieConfig.success) {
     //  !failed getting refresh token config
     const { error } = cookieConfig;
 
     res
-      .status(CustomError.Config.getErrStatusCode(error))
+      .status(Core.Errors.Config.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed getting refresh token config.", error);
@@ -31,7 +30,7 @@ export async function handleSignOut(
   const { cookieName: refresh } = cookieConfig.result;
 
   //  * helper function for clearing cookie
-  const clearCookie = (cookieConfig: Data.Token.CookieConfig) => {
+  const clearCookie = (cookieConfig: Core.Data.Token.CookieConfig) => {
     const { cookieName: refresh, clearCookie } = cookieConfig;
     res
       .clearCookie(refresh, clearCookie)

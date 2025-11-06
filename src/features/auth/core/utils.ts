@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
+import { BaseResult } from "../../../types";
+import { ResultBuilder } from "../../../utils";
 import { Data } from "./data";
+import { Errors } from "./errors";
 
 export namespace Utils {
   export namespace EmailTransports {
@@ -23,6 +26,23 @@ export namespace Utils {
         from: "RVAUC-MS support<rvauc_ms_support@gmail.com",
         ...args,
       });
+    }
+  }
+
+  export namespace Config {
+    export function getRefreshConfig():
+      | BaseResult.Success<Data.Token.CookieConfig>
+      | BaseResult.Fail<Errors.Config.ErrorClass> {
+      const { cookieConfig: refreshCookie } = Data.Token.configuration.refresh;
+
+      if (!refreshCookie)
+        //  cookie config not set
+        return ResultBuilder.fail({
+          name: "AUTH_CONFIG_COOKIE_CONFIG_ERROR",
+          message: "Refresh token cookie is not configured properly.",
+        });
+
+      return ResultBuilder.success(refreshCookie);
     }
   }
 }

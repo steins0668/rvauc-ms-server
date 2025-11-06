@@ -2,7 +2,6 @@ import { DbAccess } from "../../../../../../error";
 import { ResultBuilder } from "../../../../../../utils";
 import { Core } from "../../../../core";
 import { ViewModels } from "../../../../types";
-import { Schemas } from "../../schemas";
 
 export const payloadResolver = {
   professor: async (
@@ -34,7 +33,7 @@ export const payloadResolver = {
       role: "professor",
       college: college.name,
       facultyRank,
-    } as Schemas.Payloads.AccessToken.RoleBased;
+    } as Core.Schemas.Payloads.AccessToken.RoleBased;
 
     return ResultBuilder.success(payload);
   },
@@ -68,7 +67,7 @@ export const payloadResolver = {
       role: "student",
       department: department.name,
       ...student,
-    } as Schemas.Payloads.AccessToken.RoleBased;
+    } as Core.Schemas.Payloads.AccessToken.RoleBased;
 
     return ResultBuilder.success(payload);
   },
