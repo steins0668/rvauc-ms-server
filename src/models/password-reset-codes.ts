@@ -35,4 +35,3 @@ export const passwordResetCodesRelations = relations(
     }),
   })
 );
-//  todo: add model, repository, service for password reset token
