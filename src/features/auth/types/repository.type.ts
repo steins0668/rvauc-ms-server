@@ -163,7 +163,7 @@ export namespace Repository {
     >;
 
     export type SignInRequest<T> = BaseQueryArgs<
-      DbContext["query"]["sessionTokens"],
+      DbContext["query"]["signInRequests"],
       Repositories.SignInRequest["buildWhereClause"],
       T
     >;
