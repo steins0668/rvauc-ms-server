@@ -31,8 +31,9 @@ export async function handleResetPassword(
   //    *   find non-expired reset token with token (encrypt first) from req params
   logger.log("debug", "Finding reset token in db...");
   const tokenHash = HashUtil.byCrypto(req.params.token);
-  const tokenVerification =
-    await req.passwordManagementService.verifyResetToken(tokenHash);
+  const tokenVerification = await req.passwordManagementService.verifyResetCode(
+    tokenHash
+  );
 
   if (!tokenVerification.success) {
     const { error } = tokenVerification;
@@ -77,7 +78,7 @@ export async function handleResetPassword(
 
 async function execUpdate(args: {
   req: Request<{ token: string }, {}, Schemas.ResetPassword>;
-  token: ViewModels.PasswordResetToken;
+  token: ViewModels.PasswordResetCode;
   password: string;
 }) {
   const { passwordManagementService } = args.req;
@@ -97,7 +98,7 @@ async function execUpdate(args: {
 
       //    ! update token
       args.req.requestLogger.log("debug", "Updating reset token.");
-      const tokenUpdate = await passwordManagementService.invalidateToken({
+      const tokenUpdate = await passwordManagementService.invalidateCode({
         dbOrTx: tx,
         tokenId: args.token.id,
       });

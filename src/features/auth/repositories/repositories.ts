@@ -4,4 +4,4 @@ export { SessionTokenRepository as SessionToken } from "./session-token.reposito
 export { StudentRepository as Student } from "./student.repository";
 export { UserRepository as User } from "./user.repository";
 export { UserSessionRepository as UserSession } from "./user-session.repository";
-export { PasswordResetTokenRepository as PasswordResetToken } from "./password-reset-token.repository";
+export { PasswordResetCodeRepository as PasswordResetCode } from "./password-reset-code.repository";

@@ -34,7 +34,7 @@ export async function handleForgotPassword(
   //  * verify if no active reset token exists
   logger.log("debug", "Verifying if no active reset tokens exist.");
   const activeTokenVerification =
-    await req.passwordManagementService.verifyNoActiveToken(user.id);
+    await req.passwordManagementService.verifyNoActiveCode(user.id);
 
   if (!activeTokenVerification.success) {
     //  ! failed querying the database
@@ -65,7 +65,7 @@ export async function handleForgotPassword(
   logger.log("debug", "Generating reset token...");
   const token = crypto.randomBytes(32).toString("hex");
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
-  const tokenCreation = await req.passwordManagementService.storeNewToken(
+  const tokenCreation = await req.passwordManagementService.storeNewCode(
     user.id,
     tokenHash
   );
@@ -96,7 +96,7 @@ export async function handleForgotPassword(
     //  ! failed sending email
     //  * remove reset token from db
     const { id } = tokenCreation.result;
-    await req.passwordManagementService.deleteTokenWhere({ filter: { id } });
+    await req.passwordManagementService.deleteCodeWhere({ filter: { id } });
 
     const { error } = emailTransport;
 

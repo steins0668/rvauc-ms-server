@@ -1,7 +1,7 @@
 import { Schema } from "../../../models";
 
 export namespace Tables {
-  export type PasswordResetToken = typeof Schema.passwordResetTokens;
+  export type PasswordResetCode = typeof Schema.passwordResetCodes;
   export type Professors = typeof Schema.professors;
   export type Roles = typeof Schema.roles;
   export type SessionTokens = typeof Schema.sessionTokens;

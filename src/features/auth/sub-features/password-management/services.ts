@@ -10,7 +10,7 @@ export namespace Services {
   export namespace PasswordManagement {
     export async function createService() {
       const dbContext = await createContext();
-      const passwordResetTokenRepo = new Repositories.PasswordResetToken(
+      const passwordResetTokenRepo = new Repositories.PasswordResetCode(
         dbContext
       );
       const userRepo = new Repositories.User(dbContext);
@@ -18,11 +18,11 @@ export namespace Services {
     }
 
     export class Service {
-      private readonly _passwordResetTokenRepo: Repositories.PasswordResetToken;
+      private readonly _passwordResetTokenRepo: Repositories.PasswordResetCode;
       private readonly _userRepo: Repositories.User;
 
       constructor(
-        passwordResetTokenRepo: Repositories.PasswordResetToken,
+        passwordResetTokenRepo: Repositories.PasswordResetCode,
         userRepo: Repositories.User
       ) {
         this._passwordResetTokenRepo = passwordResetTokenRepo;
@@ -68,11 +68,11 @@ export namespace Services {
         }
       }
 
-      public async invalidateToken(args: {
+      public async invalidateCode(args: {
         dbOrTx?: DbOrTx | undefined;
         tokenId: number;
       }) {
-        const update = await this.updateTokenWhere({
+        const update = await this.updateCodeWhere({
           dbOrTx: args.dbOrTx,
           values: { isUsed: true, expiresAt: new Date().toISOString() },
           filter: { id: args.tokenId, isUsed: false },
@@ -96,13 +96,13 @@ export namespace Services {
        * @param req
        * @returns
        */
-      public async verifyResetToken(
+      public async verifyResetCode(
         tokenHash: string
       ): Promise<
-        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetToken>
+        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetCode>
         | Core.Types.AuthenticationResult.Fail
       > {
-        const query = await this.findTokenWhereStrict({
+        const query = await this.findCodeWhereStrict({
           filter: { tokenHash, isUsed: false },
         });
 
@@ -130,8 +130,8 @@ export namespace Services {
         return ResultBuilder.success(query.result);
       }
 
-      public async verifyNoActiveToken(userId: number) {
-        const query = await this.findTokenWhere({
+      public async verifyNoActiveCode(userId: number) {
+        const query = await this.findCodeWhere({
           filter: { userId, isUsed: false },
         });
 
@@ -151,7 +151,7 @@ export namespace Services {
           const isExpired = expiry <= now;
 
           if (isExpired) {
-            const deletion = await this.deleteTokenWhere({
+            const deletion = await this.deleteCodeWhere({
               filter: { id: result.id },
             });
 
@@ -169,18 +169,18 @@ export namespace Services {
         } else return ResultBuilder.success(true); //  * no active tokens. return true
       }
 
-      public async storeNewToken(
+      public async storeNewCode(
         userId: number,
         tokenHash: string
       ): Promise<
-        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetToken>
+        | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetCode>
         | Core.Types.AuthenticationResult.Fail
       > {
         const now = new Date();
         const expiry = new Date();
         expiry.setMinutes(now.getMinutes() + 10);
 
-        const insertion = await this.insertResetToken({
+        const insertion = await this.insertResetCode({
           fn: async (insert) => {
             return await insert
               .values({
@@ -205,7 +205,7 @@ export namespace Services {
 
         return insertion.success
           ? ResultBuilder.success(
-              insertion.result as ViewModels.PasswordResetToken
+              insertion.result as ViewModels.PasswordResetCode
             )
           : ResultBuilder.fail(
               Core.Errors.Authentication.normalizeError({
@@ -217,8 +217,8 @@ export namespace Services {
       }
 
       //#region Wrappers
-      public async insertResetToken<T>(
-        args: Repository.InsertArgs.PasswordResetToken<T>
+      public async insertResetCode<T>(
+        args: Repository.InsertArgs.PasswordResetCode<T>
       ) {
         try {
           const result = await this._passwordResetTokenRepo.execInsert(args);
@@ -234,11 +234,11 @@ export namespace Services {
         }
       }
 
-      public async findTokenWhereStrict(args: {
+      public async findCodeWhereStrict(args: {
         dbOrTx?: DbOrTx;
-        filter: Repository.QueryFilters.PasswordResetToken;
+        filter: Repository.QueryFilters.PasswordResetCode;
       }) {
-        const query = await this.findTokenWhere(args);
+        const query = await this.findCodeWhere(args);
 
         if (query.success && query.result === undefined)
           return ResultBuilder.fail(
@@ -249,15 +249,15 @@ export namespace Services {
           );
 
         return query as
-          | BaseResult.Success<ViewModels.PasswordResetToken>
+          | BaseResult.Success<ViewModels.PasswordResetCode>
           | BaseResult.Fail<DbAccess.ErrorClass>;
       }
 
-      public async findTokenWhere(args: {
+      public async findCodeWhere(args: {
         dbOrTx?: DbOrTx;
-        filter: Repository.QueryFilters.PasswordResetToken;
+        filter: Repository.QueryFilters.PasswordResetCode;
       }) {
-        return await this.queryResetToken({
+        return await this.queryResetCode({
           dbOrTx: args.dbOrTx,
           fn: async (query, converter) => {
             return await query.findFirst({ where: converter(args.filter) });
@@ -265,8 +265,8 @@ export namespace Services {
         });
       }
 
-      public async queryResetToken<T>(
-        args: Repository.QueryArgs.PasswordResetToken<T>
+      public async queryResetCode<T>(
+        args: Repository.QueryArgs.PasswordResetCode<T>
       ) {
         try {
           const queried = await this._passwordResetTokenRepo.execQuery(args);
@@ -291,12 +291,12 @@ export namespace Services {
        * @param filter
        * @returns
        */
-      public async updateTokenWhere(args: {
+      public async updateCodeWhere(args: {
         dbOrTx?: DbOrTx | undefined;
-        values: Partial<ViewModels.PasswordResetToken>;
-        filter: Repository.QueryFilters.PasswordResetToken;
+        values: Partial<ViewModels.PasswordResetCode>;
+        filter: Repository.QueryFilters.PasswordResetCode;
       }) {
-        return await this.updateResetToken({
+        return await this.updateResetCode({
           dbOrTx: args.dbOrTx,
           fn: async (update, converter) => {
             return await update
@@ -312,8 +312,8 @@ export namespace Services {
        * @param args
        * @returns
        */
-      public async updateResetToken<T>(
-        args: Repository.UpdateArgs.PasswordResetToken<T>
+      public async updateResetCode<T>(
+        args: Repository.UpdateArgs.PasswordResetCode<T>
       ) {
         try {
           const update = await this._passwordResetTokenRepo.execUpdate(args);
@@ -336,11 +336,11 @@ export namespace Services {
        * @param filter
        * @returns
        */
-      public async deleteTokenWhere(args: {
+      public async deleteCodeWhere(args: {
         dbOrTx?: DbOrTx;
-        filter: Repository.QueryFilters.PasswordResetToken;
+        filter: Repository.QueryFilters.PasswordResetCode;
       }) {
-        return await this.deleteResetToken({
+        return await this.deleteResetCode({
           dbOrTx: args.dbOrTx,
           fn: async (deleteBase, converter) => {
             return await deleteBase.where(converter(args.filter));
@@ -353,8 +353,8 @@ export namespace Services {
        * @param args
        * @returns
        */
-      public async deleteResetToken<T>(
-        args: Repository.DeleteArgs.PasswordResetToken<T>
+      public async deleteResetCode<T>(
+        args: Repository.DeleteArgs.PasswordResetCode<T>
       ) {
         try {
           const deletion = await this._passwordResetTokenRepo.execDelete(args);
