@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 export namespace Data {
   export namespace Records {
     export const roles = {
