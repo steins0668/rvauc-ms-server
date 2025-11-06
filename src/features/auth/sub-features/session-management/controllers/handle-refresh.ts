@@ -3,8 +3,6 @@ import { BaseResult } from "../../../../../types";
 import { ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
 import { ViewModels } from "../../../types";
-import { CustomError } from "../error";
-import { Data } from "../data";
 import { Utils } from "../utils";
 import { Schemas } from "../schemas";
 
@@ -29,7 +27,7 @@ export async function handleRefresh(
     const { error } = cookieConfig;
 
     res
-      .status(CustomError.Config.getErrStatusCode(error))
+      .status(Core.Errors.Config.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed getting refresh token config.", error);
@@ -135,9 +133,9 @@ export async function handleRefresh(
 }
 
 function getRefreshConfig():
-  | BaseResult.Success<Data.Token.CookieConfig>
-  | BaseResult.Fail<CustomError.Config.ErrorClass> {
-  const { cookieConfig: refreshCookie } = Data.Token.configuration.refresh;
+  | BaseResult.Success<Core.Data.Token.CookieConfig>
+  | BaseResult.Fail<Core.Errors.Config.ErrorClass> {
+  const { cookieConfig: refreshCookie } = Core.Data.Token.configuration.refresh;
 
   if (!refreshCookie)
     //  cookie config not set
