@@ -9,7 +9,13 @@ export async function handleVerifySignInCode(
   req: Request<{}, {}, Schemas.VerifyCode>,
   res: Response
 ) {
-  const { body, requestLogger: logger, userDataService, sessionManager } = req;
+  const {
+    body,
+    requestLogger: logger,
+    userDataService,
+    sessionManager,
+    signInRequestService,
+  } = req;
   const { email, code, isPersistentAuth } = body;
 
   //    * verify user
@@ -31,23 +37,19 @@ export async function handleVerifySignInCode(
     return;
   }
 
-  //    * find non-expired reset code with code (encrypt first) from body.
-  logger.log("debug", "Verifying reset code...");
+  //  * find non-expired request code with code (encrypt first) from body.
+  logger.log("debug", "Verifying request code...");
   const codeHash = HashUtil.byCrypto(code);
-  const codeVerification = await req.passwordManagementService.verifyResetCode(
+  const codeVerification = await signInRequestService.verifyRequestCode(
     codeHash
   );
-
-  //  *start session creation
-  const { result: user } = verification;
-  const sessionNumber = sessionManager.generateSessionNumber(user.id);
 
   if (!codeVerification.success) {
     //  ! code verification failed
     const { error } = codeVerification;
     const message =
-      error.name === "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR"
-        ? "Something went wrong. Please try again later"
+      error.name === "AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR"
+        ? "Something went wrong. Please try again later."
         : error.message; //  ? either could not find code or code is expired.
 
     res
@@ -57,6 +59,28 @@ export async function handleVerifySignInCode(
     logger.log("debug", error.message, error);
     return;
   }
+
+  //  * invalidate request verified request code.
+  const codeInvalidation = await signInRequestService.invalidateRequest({
+    requestId: codeVerification.result.id,
+  });
+
+  if (!codeInvalidation.success) {
+    const { error } = codeInvalidation;
+    const message = "Something went wrong. Please try again later.";
+
+    res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message });
+
+    logger.log("debug", error.message, error);
+    return;
+  }
+
+  //  *start session creation
+  const { result: user } = verification;
+  const sessionNumber = sessionManager.generateSessionNumber(user.id);
+
   //  *create tokens
   const tokenResult = await Utils.createTokens({
     userDataService,
