@@ -1,7 +1,8 @@
+import bcrypt from "bcrypt";
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { BaseResult } from "../../../../types";
-import { HashUtil, ResultBuilder } from "../../../../utils";
+import { ResultBuilder } from "../../../../utils";
 import { Core } from "../../core";
 import { Repositories } from "../../repositories";
 import { Repository, ViewModels } from "../../types";
@@ -51,7 +52,7 @@ export namespace Services {
           const updated = await this._userRepo.execUpdate({
             dbOrTx: args.dbOrTx,
             fn: async (update, converter) => {
-              const passwordHash = HashUtil.byCrypto(args.password);
+              const passwordHash = await bcrypt.hash(args.password, 10);
               return await update
                 .set({ passwordHash })
                 .where(converter({ id: args.userId }))
