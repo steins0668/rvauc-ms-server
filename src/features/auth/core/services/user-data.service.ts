@@ -163,7 +163,10 @@ export namespace UserData {
       | BaseResult.Success<number | undefined, Role>
       | BaseResult.Fail<DbAccess.ErrorClass>
     > {
-      const getInsertResult = (role: Role, insertedId: number | undefined) => {
+      const getInsertResult = (
+        role: Role | undefined,
+        insertedId: number | undefined
+      ) => {
         return insertedId !== undefined
           ? ResultBuilder.success(insertedId, role)
           : ResultBuilder.fail<DbAccess.ErrorClass>({
@@ -183,7 +186,9 @@ export namespace UserData {
               user: form,
             });
 
-            const roleName = Core.Data.Enums.Roles[form.roleId] as Role;
+            const roleName = Object.values(Core.Data.Records.roles).find(
+              (role) => role.id === form.roleId
+            )?.name;
             if (id === undefined) return getInsertResult(roleName, id); //  ! failed inserting into users table
 
             //  * additionally insert into other tables as needed.
@@ -228,11 +233,13 @@ export namespace UserData {
           fn: async (query, converter) => {
             const { email, username } = form;
             const where = converter({ email, username });
-            return await query.findFirst({ where });
+            return await query.findFirst({ where, with: { role: true } });
           },
         });
 
-        const roleName = Core.Data.Enums.Roles[form.roleId] as Role;
+        const roleName = Object.values(Core.Data.Records.roles).find(
+          (role) => role.id === form.roleId
+        )?.name;
         if (user) return getResult(true, roleName); //  ! duplicate in users table.
 
         //  * additional checks in extended tables as needed.
@@ -321,7 +328,7 @@ export namespace UserData {
   }
 
   //#region Types
-  type Role = keyof typeof Core.Data.Enums.Roles;
+  type Role = keyof typeof Core.Data.Records.roles;
   type RoleId = Registration.Schemas.Register.RoleBased["roleId"];
   type RegisterSchema<R extends RoleId> = Extract<
     Registration.Schemas.Register.RoleBased,

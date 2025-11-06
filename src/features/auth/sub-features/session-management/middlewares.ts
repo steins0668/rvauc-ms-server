@@ -49,7 +49,7 @@ export namespace Middlewares {
       const payload = jwt.verify(
         token,
         retrieveEnv.result
-      ) as Schemas.Payloads.AccessToken.User;
+      ) as Schemas.Payloads.AccessToken.RoleBased;
 
       req.authenticationPayload = payload;
 
@@ -89,7 +89,7 @@ declare global {
   namespace Express {
     interface Request {
       sessionManager: Services.SessionManager.Service;
-      authenticationPayload: Schemas.Payloads.AccessToken.User;
+      authenticationPayload: Schemas.Payloads.AccessToken.RoleBased;
     }
   }
 }
