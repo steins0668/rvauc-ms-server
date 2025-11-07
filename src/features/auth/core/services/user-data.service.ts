@@ -1,5 +1,9 @@
 import bcrypt from "bcrypt";
-import { createContext, TxContext } from "../../../../db/create-context";
+import {
+  createContext,
+  DbOrTx,
+  TxContext,
+} from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import type { BaseResult } from "../../../../types";
 import { ResultBuilder } from "../../../../utils";
@@ -74,6 +78,17 @@ export namespace UserData {
           })
         );
       }
+    }
+
+    public async findStudentWhere(args: {
+      dbOrTx?: DbOrTx;
+      filter: Types.Repository.QueryFilters.Student;
+    }) {
+      return await this.queryStudents({
+        dbOrTx: args.dbOrTx,
+        fn: async (query, converter) =>
+          await query.findFirst({ where: converter(args.filter) }),
+      });
     }
 
     public async queryStudents<T>(args: Types.Repository.QueryArgs.Student<T>) {

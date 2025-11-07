@@ -3,6 +3,7 @@ import cors, { type CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { Auth } from "./features/auth";
+import { UniformCompliance } from "./features/uniform-compliance";
 import {
   attachRequestLogger,
   requestProfiler,
@@ -33,6 +34,7 @@ app.use(attachRequestLogger); //  * request logging
 app.use(requestProfiler); //  * request profiling
 
 app.use("/auth", Auth.Routes);
+app.use("/uniform-compliance", UniformCompliance.Routes);
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {
