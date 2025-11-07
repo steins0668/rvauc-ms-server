@@ -36,7 +36,7 @@ app.use(requestProfiler); //  * request profiling
 
 app.use("/auth", Auth.Routes);
 app.use("/uniform-compliance", UniformCompliance.Routes);
-app.use("/violatin", Violation.Routes);
+app.use("/violation", Violation.Routes);
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {
