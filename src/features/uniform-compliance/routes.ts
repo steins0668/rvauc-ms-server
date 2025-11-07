@@ -2,6 +2,8 @@ import { Router } from "express";
 import { Auth } from "../auth";
 import { Middlewares } from "./middlewares";
 import { Controllers } from "./controllers";
+import { validateRequest } from "../../middlewares";
+import { Schemas } from "./schemas";
 
 export const Routes = Router();
 
@@ -12,4 +14,11 @@ Routes.get(
   "/view-records",
   Auth.Core.Middlewares.validateJwt,
   Controllers.handleViewRecords
+);
+
+Routes.get(
+  "/new-record",
+  Auth.Core.Middlewares.validateJwt,
+  validateRequest(Schemas.ComplianceData.newRecord),
+  Controllers.handleNewRecord
 );
