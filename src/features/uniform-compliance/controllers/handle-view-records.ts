@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import { ResultBuilder } from "../../../utils";
 import { Auth } from "../../auth";
+import { Errors } from "../errors";
 import { Services } from "../services";
 import { Types } from "../types";
-import { Errors } from "../errors";
 
 export async function handleViewRecords(req: Request, res: Response) {
   const {
@@ -31,7 +31,7 @@ export async function handleViewRecords(req: Request, res: Response) {
     return;
   }
 
-  res.status(200).json({ success: true, result: resolution });
+  res.status(200).json({ success: true, result: resolution.result });
 }
 
 async function resolveRecords(args: {
