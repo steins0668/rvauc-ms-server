@@ -20,7 +20,7 @@ export const complianceRecords = sqliteTable("compliance_records", {
   validFootwear: integer("valid_footwear", { mode: "boolean" }).notNull(),
   hasId: integer("has_id", { mode: "boolean" }).notNull(),
   validUpperwear: integer("valid_upperwear", { mode: "boolean" }).notNull(),
-  valid_bottoms: integer("valid_bottoms", { mode: "boolean" }).notNull(),
+  validBottoms: integer("valid_bottoms", { mode: "boolean" }).notNull(),
   termId: integer("term_id").notNull(),
   createdAt: text("created_at").notNull(),
 });

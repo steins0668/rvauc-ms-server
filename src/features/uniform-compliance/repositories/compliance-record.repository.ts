@@ -66,9 +66,9 @@ export class ComplianceRecordRepository extends Repository<Types.Db.Tables.Compl
           eq(complianceRecords.validUpperwear, filter.validUpperwear)
         );
 
-      if (filter.valid_bottoms !== undefined)
+      if (filter.validBottoms !== undefined)
         conditions.push(
-          eq(complianceRecords.valid_bottoms, filter.valid_bottoms)
+          eq(complianceRecords.validBottoms, filter.validBottoms)
         );
 
       if (conditions.length > 0)
