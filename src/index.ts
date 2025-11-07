@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { Auth } from "./features/auth";
 import { UniformCompliance } from "./features/uniform-compliance";
+import { Violation } from "./features/violation";
 import {
   attachRequestLogger,
   requestProfiler,
@@ -35,6 +36,7 @@ app.use(requestProfiler); //  * request profiling
 
 app.use("/auth", Auth.Routes);
 app.use("/uniform-compliance", UniformCompliance.Routes);
+app.use("/violation", Violation.Routes);
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {
