@@ -52,7 +52,7 @@ async function resolveRecords(args: {
     default:
       return ResultBuilder.fail(
         new Errors.ComplianceData.ErrorClass({
-          name: "COMPLIANCE_DATA_RECORD_QUERY_ERROR",
+          name: "COMPLIANCE_DATA_QUERY_RECORD_ERROR",
           message: "Role not implemented yet.",
         })
       );
@@ -92,7 +92,7 @@ const recordsResolver = {
       //  ! propagate error
       return ResultBuilder.fail(
         Errors.ComplianceData.normalizeError({
-          name: "COMPLIANCE_DATA_RECORD_QUERY_ERROR",
+          name: "COMPLIANCE_DATA_QUERY_RECORD_ERROR",
           message: "Failed to get records",
           err: query.error,
         })

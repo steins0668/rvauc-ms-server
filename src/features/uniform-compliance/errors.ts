@@ -4,12 +4,15 @@ import { isError, StatusCode } from "../../utils";
 
 export namespace Errors {
   export namespace ComplianceData {
-    export type ErrorName = "COMPLIANCE_DATA_RECORD_QUERY_ERROR";
+    export type ErrorName =
+      | "COMPLIANCE_DATA_QUERY_RECORD_ERROR"
+      | "COMPLIANCE_DATA_STORE_RECORD_ERROR";
 
     export class ErrorClass extends BaseError<ErrorName> {}
 
     export const statusCodeMap: Exhaustive<ErrorName> = {
-      COMPLIANCE_DATA_RECORD_QUERY_ERROR: 500,
+      COMPLIANCE_DATA_QUERY_RECORD_ERROR: 500,
+      COMPLIANCE_DATA_STORE_RECORD_ERROR: 500,
     };
 
     export function normalizeError<E extends ErrorName>({
