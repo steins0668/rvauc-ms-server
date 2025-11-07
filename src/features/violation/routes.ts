@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { Auth } from "../auth";
+import { validateRequest } from "../../middlewares";
 import { Middlewares } from "./middlewares";
 import { Controllers } from "./controllers";
-import { validateRequest } from "../../middlewares";
 import { Schemas } from "./schemas";
 
 export const Routes = Router();
