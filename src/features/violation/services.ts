@@ -1,4 +1,4 @@
-import { DbOrTx } from "../../db/create-context";
+import { createContext, DbOrTx } from "../../db/create-context";
 import { DbAccess } from "../../error";
 import { ResultBuilder } from "../../utils";
 import { Repositories } from "./repositories";
@@ -6,7 +6,11 @@ import { Types } from "./types";
 
 export namespace Services {
   export namespace ViolationData {
-    export async function createService() {}
+    export async function createService() {
+      const context = await createContext();
+      const violationRecordRepo = new Repositories.ViolationRecord(context);
+      return new Service(violationRecordRepo);
+    }
 
     export class Service {
       private readonly _violationRecordRepo: Repositories.ViolationRecord;
