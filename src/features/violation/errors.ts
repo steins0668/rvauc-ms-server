@@ -5,12 +5,14 @@ import { isError, StatusCode } from "../../utils";
 export namespace Errors {
   export namespace ViolationData {
     export type ErrorName =
+      | "VIOLATION_DATA_DTO_CONVERSION_ERROR"
       | "VIOLATION_DATA_QUERY_RECORD_ERROR"
       | "VIOLATION_DATA_STORE_RECORD_ERROR";
 
     export class ErrorClass extends BaseError<ErrorName> {}
 
     export const statusCodeMap: Exhaustive<ErrorName> = {
+      VIOLATION_DATA_DTO_CONVERSION_ERROR: 500,
       VIOLATION_DATA_QUERY_RECORD_ERROR: 500,
       VIOLATION_DATA_STORE_RECORD_ERROR: 500,
     };
