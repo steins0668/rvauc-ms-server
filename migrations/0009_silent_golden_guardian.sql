@@ -1,0 +1,1 @@
+ALTER TABLE `violation_records` ADD `compliance_record_id` integer REFERENCES compliance_records(id);

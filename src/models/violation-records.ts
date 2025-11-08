@@ -1,5 +1,6 @@
 import { integer, text, sqliteTable } from "drizzle-orm/sqlite-core";
 import { students } from "./students";
+import { complianceRecords } from "./compliance-records";
 import { violationStatuses } from "./violation-statuses";
 import { relations } from "drizzle-orm";
 
@@ -20,6 +21,10 @@ export const violationRecords = sqliteTable("violation_records", {
   number: text("number").unique().notNull(),
   date: text("date").notNull(),
   reason: text("reason").notNull(),
+  complianceRecordId: integer("compliance_record_id").references(
+    () => complianceRecords.id,
+    { onDelete: "restrict", onUpdate: "cascade" }
+  ),
 });
 
 export const violationRecordsRelations = relations(
@@ -32,6 +37,10 @@ export const violationRecordsRelations = relations(
     status: one(violationStatuses, {
       fields: [violationRecords.statusId],
       references: [violationStatuses.id],
+    }),
+    complianceRecord: one(complianceRecords, {
+      fields: [violationRecords.complianceRecordId],
+      references: [complianceRecords.id],
     }),
   })
 );
