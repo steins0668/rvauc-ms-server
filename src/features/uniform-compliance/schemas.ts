@@ -32,7 +32,7 @@ export namespace Schemas {
   export type RecordDTO = z.infer<typeof recordDTO>;
 
   export const recordDTO = z.strictObject({
-    date: z.date(),
+    date: z.string(),
     day: z.string(),
     time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
     status: z.enum(Data.Enums.ComplianceStatus),
