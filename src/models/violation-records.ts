@@ -38,5 +38,9 @@ export const violationRecordsRelations = relations(
       fields: [violationRecords.statusId],
       references: [violationStatuses.id],
     }),
+    complianceRecord: one(complianceRecords, {
+      fields: [violationRecords.complianceRecordId],
+      references: [complianceRecords.id],
+    }),
   })
 );
