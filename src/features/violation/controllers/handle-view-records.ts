@@ -190,6 +190,9 @@ function toDTORecord(
 
       return { id, date, day, time, status, reasons };
     });
+
+    Schemas.ViolationData.newRecord.parse(dto);
+
     return ResultBuilder.success(dto);
   } catch (err) {
     return ResultBuilder.fail(

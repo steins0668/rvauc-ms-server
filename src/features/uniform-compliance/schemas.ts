@@ -27,14 +27,14 @@ export namespace Schemas {
       validBottoms: z.boolean(),
       termId: z.number(),
     });
+
+    export type RecordDTO = z.infer<typeof recordDTO>;
+
+    export const recordDTO = z.strictObject({
+      date: z.string(),
+      day: z.string(),
+      time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+      status: z.enum(Data.Records.ComplianceStatus),
+    });
   }
-
-  export type RecordDTO = z.infer<typeof recordDTO>;
-
-  export const recordDTO = z.strictObject({
-    date: z.string(),
-    day: z.string(),
-    time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
-    status: z.enum(Data.Records.ComplianceStatus),
-  });
 }

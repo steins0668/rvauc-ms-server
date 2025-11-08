@@ -175,7 +175,7 @@ type RawRecords = FetchRecordsResult extends
 function toDTORecord(
   rawRecords: RawRecords
 ):
-  | Types.ComplianceResult.Success<Schemas.RecordDTO[]>
+  | Types.ComplianceResult.Success<Schemas.ComplianceData.RecordDTO[]>
   | Types.ComplianceResult.Fail {
   try {
     const dto = rawRecords.map((record) => {
@@ -195,6 +195,8 @@ function toDTORecord(
 
       return { date, day, time, status };
     });
+
+    Schemas.ComplianceData.recordDTO.parse(dto);
 
     return ResultBuilder.success(dto);
   } catch (err) {
