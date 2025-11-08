@@ -61,9 +61,6 @@ export namespace Repositories {
         if (filter.date !== undefined)
           conditions.push(eq(violationRecords.date, filter.date));
 
-        if (filter.reason !== undefined)
-          conditions.push(eq(violationRecords.reason, filter.reason));
-
         const { complianceRecordId } = filter;
         if (complianceRecordId !== undefined) {
           conditions.push(
