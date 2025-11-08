@@ -1,10 +1,10 @@
 export namespace Data {
-  export namespace Enums {
-    export enum ViolationReason {
-      IncorrectFootwear = "incorrect footwear",
-      NoId = "no id",
-      IncorrectUpperwear = "incorrect upperwear",
-      IncorrectBottoms = "incorrect bottoms",
-    }
+  export namespace Records {
+    export const ViolationReason = {
+      incorrectFootwear: "incorrect footwear",
+      noId: "no id",
+      incorrectUpperwear: "incorrect upperwear",
+      incorrectBottoms: "incorrect bottoms",
+    } as const;
   }
 }

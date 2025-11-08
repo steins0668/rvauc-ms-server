@@ -1,8 +1,8 @@
 export namespace Data {
-  export namespace Enums {
-    export enum ComplianceStatus {
-      Compliant = "compliant",
-      NonCompliant = "non-compliant",
-    }
+  export namespace Records {
+    export const ComplianceStatus = {
+      compliant: "compliant",
+      nonCompliant: "non-compliant",
+    } as const;
   }
 }

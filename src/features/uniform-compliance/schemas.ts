@@ -35,6 +35,6 @@ export namespace Schemas {
     date: z.string(),
     day: z.string(),
     time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
-    status: z.enum(Data.Enums.ComplianceStatus),
+    status: z.enum(Data.Records.ComplianceStatus),
   });
 }

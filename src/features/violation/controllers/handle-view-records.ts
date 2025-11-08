@@ -169,6 +169,9 @@ type RawRecords = FetchRecordsResult extends
   ? R
   : never;
 
+type ViolationReasonRecord = typeof Data.Records.ViolationReason;
+type Reasons = ViolationReasonRecord[keyof ViolationReasonRecord][];
+
 function toDTORecord(
   rawRecords: RawRecords
 ):
@@ -184,7 +187,7 @@ function toDTORecord(
       const minutes = rawDate.getMinutes().toString().padStart(2, "0");
       const time = hours + ":" + minutes; //  * hh:mm format
       const status = record.status.name;
-      const reasons = record.reasons as Data.Enums.ViolationReason[];
+      const reasons = record.reasons as Reasons;
 
       return { id, date, day, time, status, reasons };
     });

@@ -190,8 +190,8 @@ function toDTORecord(
 
       const hasViolation = Object.values(flags).some((value) => !value);
       const status = hasViolation
-        ? Data.Enums.ComplianceStatus.NonCompliant
-        : Data.Enums.ComplianceStatus.Compliant;
+        ? Data.Records.ComplianceStatus.nonCompliant
+        : Data.Records.ComplianceStatus.compliant;
 
       return { date, day, time, status };
     });

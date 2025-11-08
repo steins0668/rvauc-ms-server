@@ -23,7 +23,7 @@ export namespace Schemas {
         error: (iss) =>
           iss.input === undefined ? "Number is required." : "Invalid number.",
       }),
-      reasons: z.array(z.enum(Data.Enums.ViolationReason)),
+      reasons: z.array(z.enum(Data.Records.ViolationReason)),
     });
 
     export type RecordDTO = z.infer<typeof recordDTO>;
@@ -34,7 +34,7 @@ export namespace Schemas {
       day: z.string(),
       time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
       status: z.string(),
-      reasons: z.array(z.enum(Data.Enums.ViolationReason)),
+      reasons: z.array(z.enum(Data.Records.ViolationReason)),
     });
   }
 }
