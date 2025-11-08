@@ -1,0 +1,1 @@
+ALTER TABLE `violation_records` DROP COLUMN `reason`;

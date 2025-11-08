@@ -20,7 +20,6 @@ export const violationRecords = sqliteTable("violation_records", {
     }),
   number: text("number").unique().notNull(),
   date: text("date").notNull(),
-  reason: text("reason"),
   reasons: text("reasons", { mode: "json" }).$type<string[]>(),
   complianceRecordId: integer("compliance_record_id").references(
     () => complianceRecords.id,
