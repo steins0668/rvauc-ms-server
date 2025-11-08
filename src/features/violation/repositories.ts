@@ -1,4 +1,4 @@
-import { and, eq, or, SQL } from "drizzle-orm";
+import { and, eq, isNull, or, SQL } from "drizzle-orm";
 import { DbContext } from "../../db/create-context";
 import { violationRecords } from "../../models";
 import { Repository } from "../../services";
@@ -63,6 +63,15 @@ export namespace Repositories {
 
         if (filter.reason !== undefined)
           conditions.push(eq(violationRecords.reason, filter.reason));
+
+        const { complianceRecordId } = filter;
+        if (complianceRecordId !== undefined) {
+          conditions.push(
+            complianceRecordId === null
+              ? isNull(violationRecords.complianceRecordId)
+              : eq(violationRecords.complianceRecordId, complianceRecordId)
+          );
+        }
 
         if (conditions.length > 0)
           return filter.filterType === "or"
