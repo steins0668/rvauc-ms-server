@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { execTransaction } from "../../../db/create-context";
 import { ResultBuilder } from "../../../utils";
 import { Auth } from "../../auth";
+import { Violation } from "../../violation";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Services } from "../services";
@@ -15,6 +16,7 @@ export async function handleNewRecord(
     body,
     complianceDataService,
     userDataService,
+    violationDataService,
     requestLogger: logger,
   } = req;
 
@@ -22,6 +24,7 @@ export async function handleNewRecord(
   const store = await storeRecord({
     userDataService,
     complianceDataService,
+    violationDataService,
     body,
   });
 
@@ -45,6 +48,7 @@ export async function handleNewRecord(
 async function storeRecord(args: {
   userDataService: Auth.Core.Services.UserData.Service;
   complianceDataService: Services.ComplianceData.Service;
+  violationDataService: Violation.Services.ViolationData.Service;
   body: Schemas.ComplianceData.NewRecord;
 }): Promise<
   | Types.ComplianceResult.Success<Types.Db.ViewModels.ComplianceRecord[]>
@@ -59,16 +63,59 @@ async function storeRecord(args: {
     if (!studentQuery.success) return studentQuery; //  ! propagate error
 
     const now = new Date().toISOString();
-    return await args.complianceDataService.storeRecords({
-      dbOrTx: tx,
-      values: [
+    const storeComplianceRecord = await args.complianceDataService.storeRecords(
+      {
+        dbOrTx: tx,
+        values: [
+          {
+            studentId: studentQuery.result.id,
+            ...args.body,
+            createdAt: now,
+          },
+        ],
+      }
+    );
+
+    if (!storeComplianceRecord.success) return storeComplianceRecord; // ! propagate error
+
+    const { studentNumber, termId, uniformTypeId, ...flags } = args.body;
+    const hasViolation = Object.values(flags).some((value) => !value);
+
+    if (hasViolation) {
+      const { id: complianceRecordId } = storeComplianceRecord
+        .result[0] as Types.Db.ViewModels.ComplianceRecord;
+      const { id: studentId } = studentQuery.result;
+
+      const reasons = [];
+
+      if (!flags.hasId)
+        reasons.push(Violation.Data.Records.ViolationReason.noId);
+      if (!flags.validBottoms)
+        reasons.push(Violation.Data.Records.ViolationReason.incorrectBottoms);
+      if (!flags.validFootwear)
+        reasons.push(Violation.Data.Records.ViolationReason.incorrectFootwear);
+      if (!flags.validUpperwear)
+        reasons.push(Violation.Data.Records.ViolationReason.incorrectUpperwear);
+
+      const storeViolationRecord = await args.violationDataService.storeRecords(
         {
-          studentId: studentQuery.result.id,
-          ...args.body,
-          createdAt: now,
-        },
-      ],
-    });
+          dbOrTx: tx,
+          values: [
+            {
+              complianceRecordId,
+              date: now,
+              statusId: Violation.Data.Records.ViolationStatus.unsettled,
+              studentId,
+              reasons,
+            },
+          ],
+        }
+      );
+
+      if (!storeViolationRecord.success) return storeViolationRecord; //  ! propagate error
+    }
+
+    return storeComplianceRecord;
   });
 
   if (!insertion.success)

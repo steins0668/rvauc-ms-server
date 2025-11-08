@@ -4,6 +4,7 @@ import { Middlewares } from "./middlewares";
 import { Controllers } from "./controllers";
 import { validateRequest } from "../../middlewares";
 import { Schemas } from "./schemas";
+import { Violation } from "../violation";
 
 export const Routes = Router();
 
@@ -20,5 +21,6 @@ Routes.get(
   "/new-record",
   Auth.Core.Middlewares.validateJwt,
   validateRequest(Schemas.ComplianceData.newRecord),
+  Violation.Middlewares.attachViolationDataService,
   Controllers.handleNewRecord
 );

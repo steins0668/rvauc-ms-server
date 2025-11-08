@@ -15,7 +15,7 @@ export namespace Schemas {
               : "Invalid student number.",
         })
         .regex(Auth.Core.Data.Regex.Auth.StudentNumber),
-      statusId: z.number({
+      statusId: z.enum(Data.Records.ViolationStatus, {
         error: (iss) =>
           iss.input === undefined ? "Status is required." : "Invalid status.",
       }),
