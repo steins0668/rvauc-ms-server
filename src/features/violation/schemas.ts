@@ -23,10 +23,6 @@ export namespace Schemas {
         error: (iss) =>
           iss.input === undefined ? "Number is required." : "Invalid number.",
       }),
-      reason: z.enum(Data.Enums.ViolationReason, {
-        error: (iss) =>
-          iss.input === undefined ? "Reason is required." : "Invalid reason.",
-      }),
       reasons: z.array(z.enum(Data.Enums.ViolationReason)),
     });
   }
