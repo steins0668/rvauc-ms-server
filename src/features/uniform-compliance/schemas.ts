@@ -1,5 +1,6 @@
 import z from "zod";
 import { Auth } from "../auth";
+import { Data } from "./data";
 
 export namespace Schemas {
   export namespace ComplianceData {
@@ -27,4 +28,13 @@ export namespace Schemas {
       termId: z.number(),
     });
   }
+
+  export type RecordDTO = z.infer<typeof recordDTO>;
+
+  export const recordDTO = z.strictObject({
+    date: z.string(),
+    day: z.string(),
+    time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+    status: z.enum(Data.Enums.ComplianceStatus),
+  });
 }
