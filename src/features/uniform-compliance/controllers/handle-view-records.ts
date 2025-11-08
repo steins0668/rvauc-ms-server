@@ -83,6 +83,12 @@ const recordsResolver = {
               ],
               with: { uniformType: true },
               limit: 6,
+              columns: {
+                id: false,
+                studentId: false,
+                uniformTypeId: false,
+                termId: false,
+              },
             },
           },
         });
