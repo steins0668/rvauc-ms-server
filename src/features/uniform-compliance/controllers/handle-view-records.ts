@@ -101,9 +101,9 @@ const recordsResolver = {
       );
 
     const rawRecords = transaction.result;
-    const recordsDTO = toDTORecord(rawRecords);
+    const conversion = toDTORecord(rawRecords);
 
-    return ResultBuilder.success(recordsDTO);
+    return conversion;
   },
 
   professor: async (args: {
