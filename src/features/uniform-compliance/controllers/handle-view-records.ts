@@ -101,7 +101,7 @@ const recordsResolver = {
       );
 
     const rawRecords = transaction.result;
-    const recordsDTO: Schemas.RecordDTO[] = toDTORecord(rawRecords);
+    const recordsDTO = toDTORecord(rawRecords);
 
     return ResultBuilder.success(recordsDTO);
   },
@@ -172,22 +172,38 @@ type RawRecords = FetchRecordsResult extends
   ? R
   : never;
 
-function toDTORecord(rawRecords: RawRecords): Schemas.RecordDTO[] {
-  return rawRecords.map((record) => {
-    const { uniformType, createdAt, ...flags } = record;
+function toDTORecord(
+  rawRecords: RawRecords
+):
+  | Types.ComplianceResult.Success<Schemas.RecordDTO[]>
+  | Types.ComplianceResult.Fail {
+  try {
+    const dto = rawRecords.map((record) => {
+      const { uniformType, createdAt, ...flags } = record;
 
-    const rawDate = new Date(createdAt);
-    const date = createdAt.split("T")[0] as string;
-    const day = Enums.Days[rawDate.getDay()] as string;
-    const hours = rawDate.getHours().toString().padStart(2, "0");
-    const minutes = rawDate.getMinutes().toString().padStart(2, "0");
-    const time = hours + ":" + minutes; //  * hh:mm format
+      const rawDate = new Date(createdAt);
+      const date = createdAt.split("T")[0] as string;
+      const day = Enums.Days[rawDate.getDay()] as string;
+      const hours = rawDate.getHours().toString().padStart(2, "0");
+      const minutes = rawDate.getMinutes().toString().padStart(2, "0");
+      const time = hours + ":" + minutes; //  * hh:mm format
 
-    const hasViolation = Object.values(flags).some((value) => !value);
-    const status = hasViolation
-      ? Data.Enums.ComplianceStatus.NonCompliant
-      : Data.Enums.ComplianceStatus.Compliant;
+      const hasViolation = Object.values(flags).some((value) => !value);
+      const status = hasViolation
+        ? Data.Enums.ComplianceStatus.NonCompliant
+        : Data.Enums.ComplianceStatus.Compliant;
 
-    return { date, day, time, status };
-  });
+      return { date, day, time, status };
+    });
+
+    return ResultBuilder.success(dto);
+  } catch (err) {
+    return ResultBuilder.fail(
+      Errors.ComplianceData.normalizeError({
+        name: "COMPLIANCE_DATA_DTO_CONVERSION_ERROR",
+        message: "Failed converting records to DTO.",
+        err,
+      })
+    );
+  }
 }
