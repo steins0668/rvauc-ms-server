@@ -77,7 +77,10 @@ const recordsResolver = {
           where: converter({ studentNumber: payload.studentNumber }),
           with: {
             complianceRecords: {
-              orderBy: (records, { desc }) => [desc(records.termId)],
+              orderBy: (records, { desc }) => [
+                desc(records.termId),
+                desc(records.createdAt),
+              ],
               with: { uniformType: true },
               limit: 6,
             },
