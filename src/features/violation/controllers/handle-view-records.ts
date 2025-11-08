@@ -154,7 +154,6 @@ async function fetchRecords(args: {
         columns: {
           studentId: false,
           complianceRecordId: false,
-          number: false,
           statusId: false,
         },
       });

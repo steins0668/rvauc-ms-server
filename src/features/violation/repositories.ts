@@ -55,9 +55,6 @@ export namespace Repositories {
         if (filter.statusId !== undefined)
           conditions.push(eq(violationRecords.statusId, filter.statusId));
 
-        if (filter.number !== undefined)
-          conditions.push(eq(violationRecords.number, filter.number));
-
         if (filter.date !== undefined)
           conditions.push(eq(violationRecords.date, filter.date));
 
