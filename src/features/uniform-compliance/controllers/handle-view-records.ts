@@ -73,46 +73,37 @@ const recordsResolver = {
       { role: "student" }
     >;
   }) => {
-    const { userDataService, payload } = args;
+    const { complianceDataService, userDataService, payload } = args;
 
-    //  todo: implement transaction to be able to apply offset and pagination for records
-    const query = await userDataService.queryStudents({
-      fn: async (query, converter) => {
-        const student = await query.findFirst({
-          where: converter({ studentNumber: payload.studentNumber }),
-          with: {
-            complianceRecords: {
-              orderBy: (records, { desc }) => [
-                desc(records.termId),
-                desc(records.createdAt),
-              ],
-              with: { uniformType: true },
-              limit: 6,
-              columns: {
-                id: false,
-                studentId: false,
-                uniformTypeId: false,
-                termId: false,
-              },
-            },
-          },
-        });
+    const transaction = await execTransaction(async (tx) => {
+      const studentQuery = await fetchStudent({ tx, userDataService, payload });
 
-        return student;
-      },
+      if (!studentQuery.success) return studentQuery; //  ! propagate error
+
+      const studentId = studentQuery.result;
+      const recordsQuery = await fetchRecords({
+        tx,
+        complianceDataService,
+        studentId,
+      });
+
+      return recordsQuery;
     });
 
-    if (!query.success)
+    if (!transaction.success)
       //  ! propagate error
       return ResultBuilder.fail(
         Errors.ComplianceData.normalizeError({
           name: "COMPLIANCE_DATA_QUERY_RECORD_ERROR",
           message: "Failed to get records",
-          err: query.error,
+          err: transaction.error,
         })
       );
 
-    return ResultBuilder.success(query.result.complianceRecords);
+    const rawRecords = transaction.result;
+    const recordsDTO: Schemas.RecordDTO[] = toDTORecord(rawRecords);
+
+    return ResultBuilder.success(recordsDTO);
   },
 
   professor: async (args: {
