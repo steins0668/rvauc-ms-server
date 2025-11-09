@@ -36,6 +36,16 @@ export namespace Schemas {
             iss.input === undefined ? "Role is required." : "Invalid role.",
         }
       );
+
+      export type MinimalStudent = z.infer<typeof minimalStudent>;
+
+      export const minimalStudent = z.strictObject({
+        role: z.literal(Data.Records.roles.student.name),
+        studentNumber: z.string(),
+        department: z.string(),
+        yearLevel: z.number(),
+        block: z.string(),
+      });
     }
 
     export namespace RefreshToken {
