@@ -14,9 +14,24 @@ export async function handleViewRecords(req: Request, res: Response) {
   const {
     violationDataService,
     userDataService,
-    authenticationPayload: payload,
+    auth,
     requestLogger: logger,
   } = req;
+
+  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
+    auth,
+    "roleBased"
+  );
+
+  if (!isAllowedPayload) {
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong. Please try again later.",
+    });
+    return;
+  }
+
+  const { payload } = auth;
 
   const resolution = await resolveRecords({
     violationDataService,

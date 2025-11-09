@@ -9,14 +9,27 @@ import { Services } from "../services";
 import { Types } from "../types";
 import { Schemas } from "../schemas";
 import { Data } from "../data";
+import { ensureAllowedPayload } from "../../auth/core/utils/ensure-allowed-payload.util";
 
 export async function handleViewRecords(req: Request, res: Response) {
   const {
     complianceDataService,
     userDataService,
-    authenticationPayload: payload,
+    auth,
     requestLogger: logger,
   } = req;
+
+  const validPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "roleBased");
+
+  if (!validPayload) {
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong. Please try again later.",
+    });
+    return;
+  }
+
+  const { payload } = auth;
 
   const resolution = await resolveRecords({
     complianceDataService,
