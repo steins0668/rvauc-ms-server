@@ -36,6 +36,19 @@ export namespace Schemas {
             iss.input === undefined ? "Role is required." : "Invalid role.",
         }
       );
+
+      export const schemas = [
+        { type: "roleBased", schema: roleBased },
+        { type: "base", schema: base },
+      ] as const; //  ! add all future access token payload types here.
+
+      export type AnySchema = (typeof schemas)[number];
+
+      export type AnyPayload = AnySchema extends infer S
+        ? S extends { type: infer T; schema: infer S }
+          ? { type: T; payload: z.infer<S> }
+          : never
+        : never;
     }
 
     export namespace RefreshToken {
