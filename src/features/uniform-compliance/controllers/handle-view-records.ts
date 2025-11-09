@@ -178,7 +178,7 @@ function toDTORecord(
   | Types.ComplianceResult.Success<Schemas.ComplianceData.RecordDTO[]>
   | Types.ComplianceResult.Fail {
   try {
-    const dto = rawRecords.map((record) => {
+    const dtoRecord = rawRecords.map((record) => {
       const { uniformType, createdAt, ...flags } = record;
 
       const rawDate = new Date(createdAt);
@@ -193,12 +193,13 @@ function toDTORecord(
         ? Data.Records.ComplianceStatus.nonCompliant
         : Data.Records.ComplianceStatus.compliant;
 
-      return { date, day, time, status };
+      const dto = { date, day, time, status };
+      Schemas.ComplianceData.recordDTO.parse(dto);
+
+      return dto;
     });
 
-    Schemas.ComplianceData.recordDTO.parse(dto);
-
-    return ResultBuilder.success(dto);
+    return ResultBuilder.success(dtoRecord);
   } catch (err) {
     return ResultBuilder.fail(
       Errors.ComplianceData.normalizeError({
