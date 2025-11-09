@@ -9,7 +9,6 @@ import { Services } from "../services";
 import { Types } from "../types";
 import { Schemas } from "../schemas";
 import { Data } from "../data";
-import { ensureAllowedPayload } from "../../auth/core/utils/ensure-allowed-payload.util";
 
 export async function handleViewRecords(req: Request, res: Response) {
   const {
