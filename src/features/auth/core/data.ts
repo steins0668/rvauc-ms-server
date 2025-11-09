@@ -66,6 +66,8 @@ export namespace Data {
       StudentNumber: /^\d{3}-\d{4}$/,
 
       UserId: /^\d+$/,
+
+      RfidUid: /^[0-9A-Fa-f]{8,14}$/,
     } as const;
   }
 
