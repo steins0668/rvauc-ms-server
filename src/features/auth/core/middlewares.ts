@@ -61,6 +61,7 @@ export namespace Middlewares {
         const payload = jwt.verify(token, retrieveEnv.result);
 
         for (const arg of Object.values(args)) {
+          requestLogger.log("debug", `Parsing payload with schema ${arg.type}`);
           const parse = arg.schema.safeParse(payload);
 
           if (parse.success) {
