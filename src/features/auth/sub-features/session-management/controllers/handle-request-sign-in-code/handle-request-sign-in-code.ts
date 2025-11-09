@@ -4,7 +4,6 @@ import { ResultBuilder } from "../../../../../../utils";
 import { Core } from "../../../../core";
 import { Schemas } from "../../schemas";
 import { getSignInMethod } from "./get-sign-in-method";
-import { verifyUser } from "./verify-user";
 
 export async function handleRequestSignInCode(
   req: Request<{}, {}, Schemas.SignIn.Schema>,
@@ -12,12 +11,16 @@ export async function handleRequestSignInCode(
 ) {
   const {
     body: authDetails,
-    requestLogger: logger,
+    authenticationService,
     signInRequestService,
+    requestLogger: logger,
   } = req;
 
   //  *validate and verify user credentials
-  const verificationResult = await verifyUser(req);
+  const verificationResult = await authenticationService.authenticate({
+    type: "password",
+    ...authDetails,
+  });
 
   if (!verificationResult.success) {
     //  !authentication failed

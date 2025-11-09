@@ -1,13 +1,12 @@
 import { DbAccess } from "../../../../../error";
 import { ResultBuilder } from "../../../../../utils";
-import { ViewModels } from "../../../types";
 import { Schemas } from "../../schemas";
 import { Services } from "../../services";
 
 export const payloadResolver = {
   professor: async (
     dataService: Services.UserData.Service,
-    user: ViewModels.User
+    user: Schemas.UserData.AuthenticationDTO
   ) => {
     const query = await dataService.queryProfessors({
       fn: async (query, converter) => {
@@ -40,7 +39,7 @@ export const payloadResolver = {
   },
   student: async (
     dataService: Services.UserData.Service,
-    user: ViewModels.User
+    user: Schemas.UserData.AuthenticationDTO
   ) => {
     const query = await dataService.queryStudents({
       fn: async (query, converter) => {
