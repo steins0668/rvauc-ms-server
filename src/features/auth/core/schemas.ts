@@ -15,7 +15,7 @@ export namespace Schemas {
         "role",
         [
           //  * student
-          z.strictObject({
+          z.object({
             ...base.shape,
             role: z.literal(Data.Records.roles.student.name),
             department: z.string(),
@@ -24,7 +24,7 @@ export namespace Schemas {
             block: z.string(),
           }),
           //  * professor
-          z.strictObject({
+          z.object({
             ...base.shape,
             role: z.literal(Data.Records.roles.professor.name),
             college: z.string(),
