@@ -61,4 +61,18 @@ export namespace Schemas {
       });
     }
   }
+
+  export namespace UserData {
+    export type AuthenticationDTO = z.infer<typeof authenticationDTO>;
+
+    export const authenticationDTO = z.strictObject({
+      id: z.number(),
+      role: z.string(),
+      email: z.string(),
+      username: z.string(),
+      surname: z.string(),
+      firstName: z.string(),
+      middleName: z.string().nullish(),
+    });
+  }
 }
