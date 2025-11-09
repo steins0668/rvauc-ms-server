@@ -5,7 +5,7 @@ import { isError, StatusCode } from "../../../utils";
 export namespace Errors {
   export namespace Authentication {
     export type ErrorName =
-      | "AUTHENTICATION_IDENTITY_USER_NOT_FOUND_ERROR" // for users not found
+      | "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR" // for users not found
       | "AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR" //  for failure of sending reset url email to users
       | "AUTHENTICATION_PASSWORD_RESET_PASSWORD_MISMATCH_ERROR" // for password and confirm password mismatch
       | "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR" // for failure of updating password
@@ -38,7 +38,7 @@ export namespace Errors {
     export class ErrorClass extends BaseError<ErrorName> {}
 
     export const statusCodeMap: Exhaustive<ErrorName> = {
-      AUTHENTICATION_IDENTITY_USER_NOT_FOUND_ERROR: 401,
+      AUTHENTICATION_IDENTITY_VERIFICATION_ERROR: 401,
       AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR: 500,
       AUTHENTICATION_PASSWORD_RESET_PASSWORD_MISMATCH_ERROR: 403, //  forbidden
       AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR: 500,
