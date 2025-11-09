@@ -71,6 +71,12 @@ export namespace Middlewares {
             requestLogger.log("debug", "Access token validated.");
             return next();
           }
+
+          requestLogger.log(
+            "debug",
+            `Failed parsing schema ${arg.type}`,
+            parse.error
+          );
         }
 
         throw new Error("Payload does not match any schema.");
