@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { HashUtil, ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
-import { Utils } from "../utils";
 
 export async function handleVerifySignInCode(
   req: Request<{}, {}, Schemas.VerifyCode>,
@@ -81,7 +80,7 @@ export async function handleVerifySignInCode(
   const sessionNumber = sessionManager.generateSessionNumber(user.id);
 
   //  *create tokens
-  const tokenResult = await Utils.createTokens({
+  const tokenResult = await Core.Utils.createTokens({
     userDataService,
     verifiedUser: user,
     sessionNumber,

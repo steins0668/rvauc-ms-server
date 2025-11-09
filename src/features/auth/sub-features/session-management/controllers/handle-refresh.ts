@@ -3,7 +3,6 @@ import { BaseResult } from "../../../../../types";
 import { ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
 import { ViewModels } from "../../../types";
-import { Utils } from "../utils";
 import { Schemas } from "../schemas";
 
 export async function handleRefresh(
@@ -49,7 +48,7 @@ export async function handleRefresh(
   }
 
   //  * verify payload
-  const payloadVerification = Utils.verifyRefreshTkn(req, oldRefreshTkn);
+  const payloadVerification = Core.Utils.verifyRefreshTkn(req, oldRefreshTkn);
   if (!payloadVerification.success) {
     //  !failed payload verification
     const { error } = payloadVerification;
@@ -78,7 +77,7 @@ export async function handleRefresh(
   const { sessionNumber, isPersistentAuth } = payloadVerification.result;
 
   //  * create new tokens
-  const tknCreation = await Utils.createTokens({
+  const tknCreation = await Core.Utils.createTokens({
     userDataService,
     verifiedUser: userQuery.result,
     sessionNumber,
