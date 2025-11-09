@@ -33,13 +33,15 @@ export namespace Authentication {
       | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>
       | Types.AuthenticationResult.Fail
     > {
+      const invalidCredentialsResult =
+        ResultBuilder.fail<Errors.Authentication.ErrorClass>({
+          name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
+          message: "Incorrect credentials. Please try again.",
+        });
+
       const field = this.getIdentifierField(args.identifier);
 
-      if (field === null)
-        return ResultBuilder.fail({
-          name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
-          message: "Incorrect sign-in credentials. Please try again.",
-        });
+      if (field === null) return invalidCredentialsResult;
 
       const userQuery = await this.findUserWhere({
         filter: { [field]: args.identifier },
@@ -53,12 +55,6 @@ export namespace Authentication {
         });
 
       const { result: userRecord } = userQuery;
-
-      const invalidCredentialsResult =
-        ResultBuilder.fail<Errors.Authentication.ErrorClass>({
-          name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
-          message: "Incorrect sign-in credentials. Please try again.",
-        });
 
       if (!userRecord) return invalidCredentialsResult;
 
