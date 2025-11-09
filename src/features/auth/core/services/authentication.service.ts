@@ -43,8 +43,14 @@ export namespace Authentication {
 
       if (field === null) return invalidCredentialsResult;
 
+      const isPasswordFlow = args.type === "password";
+      const isIdField = field === "id";
+      if (isPasswordFlow && isIdField) return invalidCredentialsResult; //  ! id is not allowed in password mode/type.
+
+      const value = isIdField ? Number(args.identifier) : args.identifier; //  * cast values as needed.
+
       const userQuery = await this.findUserWhere({
-        filter: { [field]: args.identifier },
+        filter: { [field]: value },
       });
 
       if (!userQuery.success)
@@ -73,8 +79,9 @@ export namespace Authentication {
     private getIdentifierField(identifier: string) {
       const isEmail = Data.Regex.Auth.Email.test(identifier);
       const isUsername = Data.Regex.Auth.Username.test(identifier);
+      const isId = Data.Regex.Auth.UserId.test(identifier);
 
-      return isEmail ? "email" : isUsername ? "username" : null;
+      return isEmail ? "email" : isUsername ? "username" : isId ? "id" : null;
     }
 
     private async findUserWhere(args: {
