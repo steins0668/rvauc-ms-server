@@ -7,6 +7,15 @@ import { Schemas } from "./schemas";
 import { Services } from "./services";
 
 export namespace Middlewares {
+  export async function attachAuthenticationService(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    req.authenticationService = await Services.Authentication.createService();
+    next();
+  }
+
   export async function attachUserDataService(
     req: Request,
     res: Response,
@@ -89,6 +98,7 @@ export namespace Middlewares {
 declare global {
   namespace Express {
     interface Request {
+      authenticationService: Services.Authentication.Service;
       userDataService: Services.UserData.Service;
       authenticationPayload: Schemas.Payloads.AccessToken.RoleBased;
     }

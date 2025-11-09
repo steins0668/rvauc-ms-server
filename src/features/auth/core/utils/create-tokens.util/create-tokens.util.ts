@@ -1,6 +1,5 @@
 import { BaseResult } from "../../../../../types";
 import { ResultBuilder } from "../../../../../utils";
-import { ViewModels } from "../../../types";
 import { Data } from "../../data";
 import { Errors } from "../../errors";
 import { Schemas } from "../../schemas";
@@ -26,7 +25,7 @@ type Tokens = {
  * - Creates JWT `access` and `refresh` tokens containing the payload.
  * - Returns both tokens.
  * @param req
- * @param verifiedUser A {@link UserViewModel} used for retrieving the `User`'s `role`s and
+ * @param verifiedUser A user data dto used for retrieving the `User`'s `role`s and
  * creating the token `payload`.
  * @param sessionNumber The `sessionNumber` corresponding to the current `UserSession`.
  * @param isPersistentAuth An optional boolean representing the persistence of the authentication state.
@@ -36,7 +35,7 @@ type Tokens = {
  */
 export async function createTokens(args: {
   userDataService: Services.UserData.Service;
-  verifiedUser: ViewModels.User;
+  verifiedUser: Schemas.UserData.AuthenticationDTO;
   sessionNumber: string;
   isPersistentAuth?: boolean | undefined;
 }): Promise<
@@ -47,9 +46,7 @@ export async function createTokens(args: {
     args;
 
   try {
-    const role = Object.values(Data.Records.roles).find(
-      (role) => role.id === verifiedUser.roleId
-    )!.name as Role; //  ! throws in case of undefined.
+    const role = verifiedUser.role as Role;
     const createAccessTkn = await createAccessToken({
       userDataService,
       verifiedUser,
@@ -83,7 +80,7 @@ export async function createTokens(args: {
 
 async function createAccessToken(args: {
   userDataService: Services.UserData.Service;
-  verifiedUser: ViewModels.User;
+  verifiedUser: Schemas.UserData.AuthenticationDTO;
   role: Role;
 }) {
   const { userDataService, role, verifiedUser } = args;

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { HashUtil, ResultBuilder } from "../../../../../utils";
+import { HashUtil } from "../../../../../utils";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 
@@ -10,15 +10,19 @@ export async function handleVerifySignInCode(
   const {
     body,
     requestLogger: logger,
-    userDataService,
+    authenticationService,
     sessionManager,
     signInRequestService,
+    userDataService,
   } = req;
   const { email, code, isPersistentAuth } = body;
 
   //    * verify user
   logger.log("debug", "Verifying user...");
-  const verification = await verifyUser({ userDataService, email });
+  const verification = await authenticationService.authenticate({
+    type: "session",
+    identifier: email,
+  });
 
   if (!verification.success) {
     //  ! failed verifying user
@@ -150,28 +154,3 @@ export async function handleVerifySignInCode(
   );
   res.json({ success: true, accessToken, refreshToken });
 }
-//#region Utils
-async function verifyUser(args: {
-  email: string;
-  userDataService: Core.Services.UserData.Service;
-}) {
-  const query = await args.userDataService.queryUsers({
-    fn: async (query, converter) => {
-      const { email } = args;
-      return await query.findFirst({
-        where: converter({ email }),
-      });
-    },
-  });
-
-  if (query.success) return query;
-
-  return ResultBuilder.fail(
-    Core.Errors.Authentication.normalizeError({
-      name: "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR",
-      message: "Could not find user.",
-      err: query.error,
-    })
-  );
-}
-//#endregion

@@ -5,7 +5,7 @@ import { isError, StatusCode } from "../../../utils";
 export namespace Errors {
   export namespace Authentication {
     export type ErrorName =
-      | "AUTHENTICATION_IDENTITY_USER_NOT_FOUND_ERROR" // for users not found
+      | "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR" // for users not found
       | "AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR" //  for failure of sending reset url email to users
       | "AUTHENTICATION_PASSWORD_RESET_PASSWORD_MISMATCH_ERROR" // for password and confirm password mismatch
       | "AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR" // for failure of updating password
@@ -23,7 +23,6 @@ export namespace Errors {
       | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR" // for failure finding sign-in request
       | "AUTHENTICATION_SIGN_IN_REQUEST_CODE_UPDATE_ERROR" // for failure updating sign-in request
       | "AUTHENTICATION_SIGN_IN_REQUEST_EMAIL_ERROR" // failed sending sign in request code to email
-      | "AUTHENTICATION_SIGN_IN_SYSTEM_ERROR" //  internal errors (e.g. db)
       | "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR" //  for incorrect login credentials
       | "AUTHENTICATION_SESSION_START_ERROR" //  failed starting session
       | "AUTHENTICATION_SESSION_TOKEN_CREATION_ERROR" //  failed creating token
@@ -33,12 +32,13 @@ export namespace Errors {
       | "AUTHENTICATION_SESSION_TOKEN_ROTATION_ERROR" //  failed rotating tokens
       | "AUTHENTICATION_SESSION_TOKEN_REUSE_ERROR" //  detected token reuse attempt
       | "AUTHENTICATION_SESSION_CLEANUP_ERROR" //  failed cleaning up/ending session
-      | "AUTHENTICATION_SESSION_REFRESH_ERROR"; //  failed refreshing session
+      | "AUTHENTICATION_SESSION_REFRESH_ERROR" //  failed refreshing session
+      | "AUTHENTICATION_SYSTEM_ERROR"; //  internal errors (e.g. db)
 
     export class ErrorClass extends BaseError<ErrorName> {}
 
     export const statusCodeMap: Exhaustive<ErrorName> = {
-      AUTHENTICATION_IDENTITY_USER_NOT_FOUND_ERROR: 401,
+      AUTHENTICATION_IDENTITY_VERIFICATION_ERROR: 401,
       AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR: 500,
       AUTHENTICATION_PASSWORD_RESET_PASSWORD_MISMATCH_ERROR: 403, //  forbidden
       AUTHENTICATION_PASSWORD_RESET_PASSWORD_UPDATE_ERROR: 500,
@@ -56,7 +56,6 @@ export namespace Errors {
       AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR: 500,
       AUTHENTICATION_SIGN_IN_REQUEST_CODE_UPDATE_ERROR: 500,
       AUTHENTICATION_SIGN_IN_REQUEST_EMAIL_ERROR: 500,
-      AUTHENTICATION_SIGN_IN_SYSTEM_ERROR: 500, //  internal server error
       AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR: 401, //  unauthorized
       AUTHENTICATION_SESSION_CLEANUP_ERROR: 500,
       AUTHENTICATION_SESSION_START_ERROR: 500,
@@ -67,6 +66,7 @@ export namespace Errors {
       AUTHENTICATION_SESSION_TOKEN_REUSE_ERROR: 403,
       AUTHENTICATION_SESSION_TOKEN_ROTATION_ERROR: 500,
       AUTHENTICATION_SESSION_REFRESH_ERROR: 500,
+      AUTHENTICATION_SYSTEM_ERROR: 500, //  internal server error
     } as const;
 
     export function normalizeError<E extends ErrorName>({

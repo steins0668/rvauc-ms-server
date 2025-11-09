@@ -12,6 +12,7 @@ export async function handleRefresh(
   const {
     requestLogger: logger,
     cookies,
+    authenticationService,
     sessionManager,
     userDataService,
   } = req;
@@ -63,7 +64,10 @@ export async function handleRefresh(
   }
 
   //  * get user with user id from payload
-  const userQuery = await resolveUser(req, payloadVerification.result.userId);
+  const userQuery = await authenticationService.authenticate({
+    type: "session",
+    identifier: payloadVerification.result.userId.toString(),
+  });
 
   if (!userQuery.success) {
     //  ! could not get user from db.

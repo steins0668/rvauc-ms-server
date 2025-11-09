@@ -64,6 +64,8 @@ export namespace Data {
        *
        */
       StudentNumber: /^\d{3}-\d{4}$/,
+
+      UserId: /^\d+$/,
     } as const;
   }
 

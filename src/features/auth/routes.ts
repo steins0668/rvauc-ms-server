@@ -7,6 +7,7 @@ import { SessionManagement } from "./sub-features/session-management";
 
 export const Routes = Router();
 
+Routes.use(Core.Middlewares.attachAuthenticationService);
 Routes.use(Core.Middlewares.attachUserDataService);
 
 //  * Registration
