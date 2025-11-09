@@ -1,6 +1,5 @@
 import type { Request, Response } from "express";
 import { Core } from "../../../core";
-import { Utils } from "../utils";
 import { Schemas } from "../schemas";
 
 export async function handleSignOut(
@@ -46,7 +45,7 @@ export async function handleSignOut(
   if (refreshTkn === undefined) return clearCookie(cookieConfig.result);
 
   //  * verify payload
-  const payloadVerification = Utils.verifyRefreshTkn(req, refreshTkn);
+  const payloadVerification = Core.Utils.verifyRefreshTkn(req, refreshTkn);
   //  ! payload not found, just clear cookie
   if (!payloadVerification.success) return clearCookie(cookieConfig.result);
 

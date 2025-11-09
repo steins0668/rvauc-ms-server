@@ -15,4 +15,9 @@ export namespace Types {
     export type Success<TResult> = BaseResult.Success<TResult, SuccessSource>;
     export type Fail = BaseResult.Fail<Errors.Authentication.ErrorClass>;
   }
+
+  export namespace Token {
+    export type Access = "access";
+    export type Refresh = "refresh";
+  }
 }

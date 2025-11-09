@@ -1,12 +1,14 @@
-import { BaseResult } from "../../../../../../types";
-import { ResultBuilder } from "../../../../../../utils";
-import { Core } from "../../../../core";
-import { ViewModels } from "../../../../types";
+import { BaseResult } from "../../../../../types";
+import { ResultBuilder } from "../../../../../utils";
+import { ViewModels } from "../../../types";
+import { Data } from "../../data";
+import { Errors } from "../../errors";
 import { Schemas } from "../../schemas";
+import { Services } from "../../services";
 import { createJwt } from "./create-jwt.util";
 import { payloadResolver } from "./payload-resolver.util";
 
-type Role = keyof typeof Core.Data.Records.roles;
+type Role = keyof typeof Data.Records.roles;
 
 type Tokens = {
   accessToken: string;
@@ -33,19 +35,19 @@ type Tokens = {
  * and `refreshToken`.
  */
 export async function createTokens(args: {
-  userDataService: Core.Services.UserData.Service;
+  userDataService: Services.UserData.Service;
   verifiedUser: ViewModels.User;
   sessionNumber: string;
   isPersistentAuth?: boolean | undefined;
 }): Promise<
   | BaseResult.Success<Tokens, "TOKEN_CREATION">
-  | BaseResult.Fail<Core.Errors.Authentication.ErrorClass>
+  | BaseResult.Fail<Errors.Authentication.ErrorClass>
 > {
   const { userDataService, verifiedUser, sessionNumber, isPersistentAuth } =
     args;
 
   try {
-    const role = Object.values(Core.Data.Records.roles).find(
+    const role = Object.values(Data.Records.roles).find(
       (role) => role.id === verifiedUser.roleId
     )!.name as Role; //  ! throws in case of undefined.
     const createAccessTkn = await createAccessToken({
@@ -70,7 +72,7 @@ export async function createTokens(args: {
     );
   } catch (err) {
     return ResultBuilder.fail(
-      Core.Errors.Authentication.normalizeError({
+      Errors.Authentication.normalizeError({
         name: "AUTHENTICATION_SESSION_TOKEN_CREATION_ERROR",
         message: "Failed creating tokens.",
         err,
@@ -80,7 +82,7 @@ export async function createTokens(args: {
 }
 
 async function createAccessToken(args: {
-  userDataService: Core.Services.UserData.Service;
+  userDataService: Services.UserData.Service;
   verifiedUser: ViewModels.User;
   role: Role;
 }) {

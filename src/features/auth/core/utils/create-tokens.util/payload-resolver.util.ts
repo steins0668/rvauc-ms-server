@@ -1,11 +1,12 @@
-import { DbAccess } from "../../../../../../error";
-import { ResultBuilder } from "../../../../../../utils";
-import { Core } from "../../../../core";
-import { ViewModels } from "../../../../types";
+import { DbAccess } from "../../../../../error";
+import { ResultBuilder } from "../../../../../utils";
+import { ViewModels } from "../../../types";
+import { Schemas } from "../../schemas";
+import { Services } from "../../services";
 
 export const payloadResolver = {
   professor: async (
-    dataService: Core.Services.UserData.Service,
+    dataService: Services.UserData.Service,
     user: ViewModels.User
   ) => {
     const query = await dataService.queryProfessors({
@@ -33,12 +34,12 @@ export const payloadResolver = {
       role: "professor",
       college: college.name,
       facultyRank,
-    } as Core.Schemas.Payloads.AccessToken.RoleBased;
+    } as Schemas.Payloads.AccessToken.RoleBased;
 
     return ResultBuilder.success(payload);
   },
   student: async (
-    dataService: Core.Services.UserData.Service,
+    dataService: Services.UserData.Service,
     user: ViewModels.User
   ) => {
     const query = await dataService.queryStudents({
@@ -67,7 +68,7 @@ export const payloadResolver = {
       role: "student",
       department: department.name,
       ...student,
-    } as Core.Schemas.Payloads.AccessToken.RoleBased;
+    } as Schemas.Payloads.AccessToken.RoleBased;
 
     return ResultBuilder.success(payload);
   },
