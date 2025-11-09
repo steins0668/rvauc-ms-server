@@ -39,11 +39,7 @@ Routes.post(
   SessionManagement.Controllers.handleSignOut
 );
 
-Routes.post(
-  "/refresh",
-  validateRequest(SessionManagement.Schemas.Payloads.RefreshToken.schema),
-  SessionManagement.Controllers.handleRefresh
-);
+Routes.post("/refresh", SessionManagement.Controllers.handleRefresh);
 
 //  * Password Management
 Routes.use(PasswordManagement.Middlewares.attachPasswordManagementService);
