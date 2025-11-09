@@ -99,6 +99,13 @@
       "when": 1762615441635,
       "tag": "0013_wide_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1762686447886,
+      "tag": "0014_serious_grandmaster",
+      "breakpoints": true
     }
   ]
 }
