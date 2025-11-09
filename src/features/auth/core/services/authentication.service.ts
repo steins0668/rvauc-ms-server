@@ -47,7 +47,7 @@ export namespace Authentication {
 
       if (!userQuery.success)
         return ResultBuilder.fail({
-          name: "AUTHENTICATION_SIGN_IN_SYSTEM_ERROR",
+          name: "AUTHENTICATION_SYSTEM_ERROR",
           message:
             "An error occured while authenticating. Please try again later.",
         });
