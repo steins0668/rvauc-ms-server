@@ -44,9 +44,12 @@ export namespace Authentication {
       if (field === null) return invalidCredentialsResult;
 
       const isPasswordFlow = args.type === "password";
-      const isIdField = field === "id";
-      if (isPasswordFlow && isIdField) return invalidCredentialsResult; //  ! id is not allowed in password mode/type.
+      const isNotEmailOrUsernameField =
+        field !== "email" && field !== "username";
+      if (isPasswordFlow && isNotEmailOrUsernameField)
+        return invalidCredentialsResult; //  ! email or username only for password mode/type.
 
+      const isIdField = field === "id";
       const value = isIdField ? Number(args.identifier) : args.identifier; //  * cast values as needed.
 
       const userQuery = await this.findUserWhere({
