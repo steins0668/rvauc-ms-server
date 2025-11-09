@@ -37,7 +37,7 @@ export namespace Authentication {
 
       if (field === null)
         return ResultBuilder.fail({
-          name: "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR",
+          name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
           message: "Incorrect sign-in credentials. Please try again.",
         });
 
@@ -56,7 +56,7 @@ export namespace Authentication {
 
       const invalidCredentialsResult =
         ResultBuilder.fail<Errors.Authentication.ErrorClass>({
-          name: "AUTHENTICATION_SIGN_IN_VERIFICATION_ERROR",
+          name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
           message: "Incorrect sign-in credentials. Please try again.",
         });
 
