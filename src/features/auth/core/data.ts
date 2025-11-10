@@ -6,6 +6,8 @@ import { Errors } from "./errors";
 
 export namespace Data {
   export namespace Records {
+    export type Role = keyof typeof roles;
+
     export const roles = {
       student: {
         id: 0,
