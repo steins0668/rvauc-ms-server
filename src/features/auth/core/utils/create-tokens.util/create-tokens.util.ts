@@ -4,13 +4,6 @@ import { Errors } from "../../errors";
 import { Schemas } from "../../schemas";
 import { createJwt } from "./create-jwt.util";
 
-type Role = keyof typeof Data.Records.roles;
-
-type Tokens = {
-  accessToken: string;
-  refreshToken: string;
-};
-
 type Payloads = {
   access: Schemas.Payloads.AccessToken.RoleBased;
   refresh: Schemas.Payloads.RefreshToken.Payload;
