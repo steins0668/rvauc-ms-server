@@ -33,14 +33,22 @@ export const payloadResolver = {
 
     const { college, facultyRank } = query.result;
 
-    const payload = {
+    const parse = Schemas.Payloads.AccessToken.professor.strip().safeParse({
       ...user,
       role: "professor",
       college: college.name,
       facultyRank,
-    } as Schemas.Payloads.AccessToken.RoleBased;
+    });
 
-    return ResultBuilder.success(payload);
+    return parse.success
+      ? ResultBuilder.success(parse.data)
+      : ResultBuilder.fail(
+          Errors.Authentication.normalizeError({
+            name: "AUTHENTICATION_PAYLOAD_CREATION_ERROR",
+            message: "Failed parsing payload with professor schema.",
+            err: parse.error,
+          })
+        );
   },
   student: async (
     dataService: Services.UserData.Service,
@@ -71,14 +79,22 @@ export const payloadResolver = {
 
     const { department, ...student } = query.result;
 
-    const payload = {
+    const parse = Schemas.Payloads.AccessToken.student.strip().safeParse({
       ...user,
       role: "student",
       department: department.name,
       ...student,
-    } as Schemas.Payloads.AccessToken.RoleBased;
+    });
 
-    return ResultBuilder.success(payload);
+    return parse.success
+      ? ResultBuilder.success(parse.data)
+      : ResultBuilder.fail(
+          Errors.Authentication.normalizeError({
+            name: "AUTHENTICATION_PAYLOAD_CREATION_ERROR",
+            message: "Failed parsing payload with student schema.",
+            err: parse.error,
+          })
+        );
   },
 };
 
