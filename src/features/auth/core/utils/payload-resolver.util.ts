@@ -103,6 +103,28 @@ export const payloadResolver = {
   },
 };
 
+async function getStudent(args: {
+  dataService: Services.UserData.Service;
+  user: Schemas.UserData.AuthenticationDTO;
+}) {
+  return await args.dataService.queryStudents({
+    fn: async (query, converter) => {
+      const result = await query.findFirst({
+        where: converter({ filterType: "or", id: args.user.id }),
+        with: { department: true },
+      });
+
+      if (result === undefined)
+        throw new DbAccess.ErrorClass({
+          name: "DB_ACCESS_QUERY_ERROR",
+          message: "Could not find student.",
+        });
+
+      return result;
+    },
+  });
+}
+
 function failPayloadCreation(args: { message: string; err: unknown }) {
   return ResultBuilder.fail(
     Errors.Authentication.normalizeError({
