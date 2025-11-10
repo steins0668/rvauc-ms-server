@@ -55,9 +55,27 @@ export namespace Schemas {
 
       export type AnySchema = (typeof schemas)[number];
 
+      export type AnySchemaType = AnySchema extends infer S
+        ? S extends { type: infer T }
+          ? T
+          : never
+        : never;
+
+      export type AnySchemaObject = AnySchema extends infer S
+        ? S extends { schema: infer O }
+          ? O
+          : never
+        : never;
+
       export type AnyPayload = AnySchema extends infer S
         ? S extends { type: infer T; schema: infer S }
           ? { type: T; payload: z.infer<S> }
+          : never
+        : never;
+
+      export type AnyPayloadObject = AnySchema extends infer S
+        ? S extends { schema: infer S }
+          ? z.infer<S>
           : never
         : never;
     }
