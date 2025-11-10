@@ -25,6 +25,11 @@ export namespace Authentication {
   export class Service {
     private readonly _userRepo: Repositories.User;
     private readonly _studentRepo: Repositories.Student;
+    private readonly invalidCredentialsResult =
+      ResultBuilder.fail<Errors.Authentication.ErrorClass>({
+        name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
+        message: "Incorrect credentials. Please try again.",
+      });
 
     constructor(
       userRepo: Repositories.User,
@@ -49,15 +54,9 @@ export namespace Authentication {
       | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>
       | Types.AuthenticationResult.Fail
     > {
-      const invalidCredentialsResult =
-        ResultBuilder.fail<Errors.Authentication.ErrorClass>({
-          name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
-          message: "Incorrect credentials. Please try again.",
-        });
-
       const field = this.getStudentIdentifierField(studentNumber);
 
-      if (field === null) return invalidCredentialsResult;
+      if (field === null) return this.invalidCredentialsResult;
 
       const studentQuery = await this.findStudentUser({
         filter: { studentNumber },
@@ -72,7 +71,7 @@ export namespace Authentication {
 
       const userRecord = studentQuery.result;
 
-      if (!userRecord) return invalidCredentialsResult;
+      if (!userRecord) return this.invalidCredentialsResult;
 
       return this.recordToDTO(userRecord);
     }
@@ -83,21 +82,15 @@ export namespace Authentication {
       | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>
       | Types.AuthenticationResult.Fail
     > {
-      const invalidCredentialsResult =
-        ResultBuilder.fail<Errors.Authentication.ErrorClass>({
-          name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
-          message: "Incorrect credentials. Please try again.",
-        });
-
       const field = this.getUserIdentifierField(args.identifier);
 
-      if (field === null) return invalidCredentialsResult;
+      if (field === null) return this.invalidCredentialsResult;
 
       const isPasswordFlow = args.type === "password";
       const isNotEmailOrUsernameField =
         field !== "email" && field !== "username";
       if (isPasswordFlow && isNotEmailOrUsernameField)
-        return invalidCredentialsResult; //  ! email or username only for password mode/type.
+        return this.invalidCredentialsResult; //  ! email or username only for password mode/type.
 
       const isIdField = field === "id";
       const value = isIdField ? Number(args.identifier) : args.identifier; //  * cast values as needed.
@@ -115,7 +108,7 @@ export namespace Authentication {
 
       const { result: userRecord } = userQuery;
 
-      if (!userRecord) return invalidCredentialsResult;
+      if (!userRecord) return this.invalidCredentialsResult;
 
       const { passwordHash, role, ...profileData } = userRecord;
 
@@ -123,7 +116,7 @@ export namespace Authentication {
         const { password } = args;
         const isAuthenticated = await bcrypt.compare(password, passwordHash);
 
-        if (!isAuthenticated) return invalidCredentialsResult;
+        if (!isAuthenticated) return this.invalidCredentialsResult;
       }
 
       return this.recordToDTO(userRecord);
