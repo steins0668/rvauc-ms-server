@@ -6,9 +6,8 @@ import { Schemas } from "../schemas";
 import { Services } from "../services";
 import { Types } from "../types";
 
-type PayloadType = "full" | "minimal";
 type ResolverArgs = {
-  type?: PayloadType;
+  type?: Schemas.Payloads.AccessToken.AnySchemaType;
   dataService: Services.UserData.Service;
   user: Schemas.UserData.AuthenticationDTO;
 };
@@ -128,7 +127,7 @@ async function getStudent(args: {
 }
 
 function studentDTOtoPayload(args: {
-  type: PayloadType;
+  type: Schemas.Payloads.AccessToken.AnySchemaType;
   user: Schemas.UserData.AuthenticationDTO;
   student: Awaited<ReturnType<typeof getStudent>> extends
     | BaseResult.Success<infer R>
