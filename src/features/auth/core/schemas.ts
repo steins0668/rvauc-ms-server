@@ -39,14 +39,17 @@ export namespace Schemas {
         block: z.string(),
       });
 
+      export const minimal = z.discriminatedUnion("role", [minimalStudent]);
+
       export type Professor = z.infer<typeof professor>;
       export type Student = z.infer<typeof student>;
       export type Full = z.infer<typeof full>;
       export type MinimalStudent = z.infer<typeof minimalStudent>;
+      export type Minimal = z.infer<typeof minimal>;
 
       export const schemas = [
         { type: "full", schema: full },
-        { type: "minimalStudent", schema: minimalStudent },
+        { type: "minimal", schema: minimal },
       ] as const; //  ! add all future access token payload types here.
 
       export type AnySchema = (typeof schemas)[number];
