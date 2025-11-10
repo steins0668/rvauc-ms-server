@@ -168,7 +168,10 @@ function studentDTOtoPayload(args: {
       });
 }
 
-function failPayloadCreation(args: { message: string; err?: unknown }) {
+function failPayloadCreation(args: {
+  message: string;
+  err?: unknown;
+}): Types.AuthenticationResult.Fail {
   return ResultBuilder.fail(
     Errors.Authentication.normalizeError({
       name: "AUTHENTICATION_PAYLOAD_CREATION_ERROR",
