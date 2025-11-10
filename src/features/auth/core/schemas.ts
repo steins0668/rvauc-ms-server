@@ -49,6 +49,7 @@ export namespace Schemas {
 
       export const schemas = [
         { type: "roleBased", schema: roleBased },
+        { type: "minimalStudent", schema: minimalStudent },
       ] as const; //  ! add all future access token payload types here.
 
       export type AnySchema = (typeof schemas)[number];
