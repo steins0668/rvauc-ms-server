@@ -52,7 +52,7 @@ export namespace Authentication {
       return await this.authenticateUser({ ...args, field });
     }
 
-    public async authenticateStudent(
+    private async authenticateStudent(
       studentNumber: string
     ): Promise<
       | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>
@@ -76,7 +76,7 @@ export namespace Authentication {
       return this.recordToDTO(userRecord);
     }
 
-    public async authenticateUser(
+    private async authenticateUser(
       args: AuthenticationArgs & {
         field: NonNullable<IdentifierType>;
       }
