@@ -135,7 +135,10 @@ function studentDTOtoPayload(args: {
     ? R
     : never;
 }):
-  | Types.AuthenticationResult.Success<unknown>
+  | Types.AuthenticationResult.Success<
+      | Schemas.Payloads.AccessToken.Student
+      | Schemas.Payloads.AccessToken.MinimalStudent
+    >
   | Types.AuthenticationResult.Fail {
   const { type, user, student } = args;
   const { department, ...studentProfile } = student;
