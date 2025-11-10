@@ -4,8 +4,9 @@ import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Services } from "../services";
 
+type PayloadType = "full" | "minimal";
 type ResolverArgs = {
-  type?: "full" | "minimal";
+  type?: PayloadType;
   dataService: Services.UserData.Service;
   user: Schemas.UserData.AuthenticationDTO;
 };
