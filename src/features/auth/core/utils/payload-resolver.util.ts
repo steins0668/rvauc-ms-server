@@ -7,7 +7,7 @@ import { Services } from "../services";
 import { Types } from "../types";
 
 type ResolverArgs = {
-  type?: Schemas.Payloads.AccessToken.AnySchemaType;
+  type: Schemas.Payloads.AccessToken.AnySchemaType;
   dataService: Services.UserData.Service;
   user: Schemas.UserData.AuthenticationDTO;
 };
@@ -57,52 +57,36 @@ export const payloadResolver = {
           })
         );
   },
-  student: async (args: ResolverArgs) => {
-    const { dataService, user } = args;
-
-    const query = await dataService.queryStudents({
-      fn: async (query, converter) => {
-        const result = await query.findFirst({
-          where: converter({ filterType: "or", id: user.id }),
-          with: { department: true },
-        });
-
-        if (result === undefined)
-          throw new DbAccess.ErrorClass({
-            name: "DB_ACCESS_QUERY_ERROR",
-            message: "Could not find student.",
-          });
-
-        return result;
-      },
-    });
-
-    if (!query.success)
-      return failPayloadCreation({
-        message: "Failed creating student payload.",
-        err: query.error,
-      });
-
-    const { department, ...student } = query.result;
-
-    const parse = Schemas.Payloads.AccessToken.student.strip().safeParse({
-      ...user,
-      role: "student",
-      department: department.name,
-      ...student,
-    });
-
-    return parse.success
-      ? ResultBuilder.success(parse.data)
-      : ResultBuilder.fail(
-          Errors.Authentication.normalizeError({
-            name: "AUTHENTICATION_PAYLOAD_CREATION_ERROR",
-            message: "Failed parsing payload with student schema.",
-            err: parse.error,
-          })
-        );
-  },
+  student,
 };
+
+async function student(
+  args: ResolverArgs & { type: "full" }
+): Promise<
+  | Types.AuthenticationResult.Success<Schemas.Payloads.AccessToken.Student>
+  | Types.AuthenticationResult.Fail
+>;
+async function student(
+  args: ResolverArgs & { type: "minimal" }
+): Promise<
+  | Types.AuthenticationResult.Success<Schemas.Payloads.AccessToken.MinimalStudent>
+  | Types.AuthenticationResult.Fail
+>;
+async function student(args: ResolverArgs) {
+  const { type = "full", dataService, user } = args;
+
+  const query = await getStudent({ dataService, user });
+
+  if (!query.success)
+    return failPayloadCreation({
+      message: "Failed creating student payload.",
+      err: query.error,
+    });
+
+  const { result: student } = query;
+
+  return studentDTOtoPayload({ type, user, student });
+}
 
 async function getStudent(args: {
   dataService: Services.UserData.Service;

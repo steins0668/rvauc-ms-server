@@ -88,7 +88,7 @@ export async function handleVerifySignInCode(
   //  * create payloads
   const createAccessPayload = await Core.Utils.payloadResolver[
     user.role as Core.Data.Records.Role
-  ]({ dataService: userDataService, user });
+  ]({ type: "full", dataService: userDataService, user });
 
   if (!createAccessPayload.success) {
     const { error } = createAccessPayload;
