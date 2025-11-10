@@ -39,10 +39,13 @@ export async function handleVerifySignInCode(
     return;
   }
 
+  const { result: user } = authentication;
+
   //  * find non-expired request code with code (encrypt first) from body.
   logger.log("debug", "Verifying request code...");
   const codeHash = HashUtil.byCrypto(code);
   const codeVerification = await signInRequestService.verifyRequestCode(
+    user.id,
     codeHash
   );
 
@@ -80,7 +83,6 @@ export async function handleVerifySignInCode(
   }
 
   //  * start session creation
-  const { result: user } = authentication;
   const sessionNumber = sessionManager.generateSessionNumber(user.id);
 
   //  * create payloads

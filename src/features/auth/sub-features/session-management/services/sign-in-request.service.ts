@@ -62,13 +62,14 @@ export namespace SignInRequest {
     }
 
     public async verifyRequestCode(
+      userId: number,
       codeHash: string
     ): Promise<
       | Core.Types.AuthenticationResult.Success<ViewModels.SignInRequest>
       | Core.Types.AuthenticationResult.Fail
     > {
       const query = await this.findRequestWhere({
-        filter: { codeHash },
+        filter: { userId, codeHash },
       });
 
       if (!query.success)
