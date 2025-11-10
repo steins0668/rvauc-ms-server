@@ -95,8 +95,17 @@ export namespace Authentication {
       const isEmail = Data.Regex.Auth.Email.test(identifier);
       const isUsername = Data.Regex.Auth.Username.test(identifier);
       const isId = Data.Regex.Auth.UserId.test(identifier);
+      const isRfidUid = Data.Regex.Auth.RfidUid.test(identifier);
 
-      return isEmail ? "email" : isUsername ? "username" : isId ? "id" : null;
+      return isEmail
+        ? "email"
+        : isUsername
+        ? "username"
+        : isId
+        ? "id"
+        : isRfidUid
+        ? "rfidUid"
+        : null;
     }
 
     private async findUserWhere(args: {
