@@ -73,7 +73,16 @@ export namespace Authentication {
         if (!isAuthenticated) return invalidCredentialsResult;
       }
 
-      return ResultBuilder.success({ ...profileData, role: role.name });
+      const dto = this.toAuthDTO({ ...profileData, role: role.name });
+
+      if (!dto)
+        return ResultBuilder.fail({
+          name: "AUTHENTICATION_SYSTEM_ERROR",
+          message:
+            "Data leak risk. Ensure all fields match the authentication dto.",
+        });
+
+      return ResultBuilder.success(dto);
     }
 
     private getIdentifierField(identifier: string) {
@@ -109,6 +118,12 @@ export namespace Authentication {
           }
         },
       });
+    }
+
+    private toAuthDTO(arg: unknown) {
+      const parse = Schemas.UserData.authenticationDTO.safeParse(arg);
+
+      return parse.success ? parse.data : null;
     }
 
     private getSafeId(identifier: string): string {
