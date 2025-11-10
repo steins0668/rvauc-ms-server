@@ -4,11 +4,13 @@ import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Services } from "../services";
 
+type ResolverArgs = {
+  dataService: Services.UserData.Service;
+  user: Schemas.UserData.AuthenticationDTO;
+};
+
 export const payloadResolver = {
-  professor: async (args: {
-    dataService: Services.UserData.Service;
-    user: Schemas.UserData.AuthenticationDTO;
-  }) => {
+  professor: async (args: ResolverArgs) => {
     const { dataService, user } = args;
 
     const query = await dataService.queryProfessors({
@@ -52,10 +54,7 @@ export const payloadResolver = {
           })
         );
   },
-  student: async (args: {
-    dataService: Services.UserData.Service;
-    user: Schemas.UserData.AuthenticationDTO;
-  }) => {
+  student: async (args: ResolverArgs) => {
     const { dataService, user } = args;
 
     const query = await dataService.queryStudents({
