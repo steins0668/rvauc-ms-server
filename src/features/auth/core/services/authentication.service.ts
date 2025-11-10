@@ -17,14 +17,63 @@ export namespace Authentication {
   export async function createService() {
     const context = await createContext();
     const userRepo = new Repositories.User(context);
-    return new Service(userRepo);
+    const studentRepo = new Repositories.Student(context);
+    return new Service(userRepo, studentRepo);
   }
 
   export class Service {
     private readonly _userRepo: Repositories.User;
+    private readonly _studentRepo: Repositories.Student;
 
-    constructor(userRepo: Repositories.User) {
+    constructor(
+      userRepo: Repositories.User,
+      studentRepo: Repositories.Student
+    ) {
       this._userRepo = userRepo;
+      this._studentRepo = studentRepo;
+    }
+
+    public async authenticateStudent(studentNumber: string) {
+      const invalidCredentialsResult =
+        ResultBuilder.fail<Errors.Authentication.ErrorClass>({
+          name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
+          message: "Incorrect credentials. Please try again.",
+        });
+
+      const isValidNumber = Data.Regex.Auth.StudentNumber.test(studentNumber);
+
+      if (!isValidNumber) return invalidCredentialsResult;
+
+      const studentQuery = await this.findStudentUser({
+        filter: { studentNumber },
+      });
+
+      if (!studentQuery.success)
+        return ResultBuilder.fail({
+          name: "AUTHENTICATION_SYSTEM_ERROR",
+          message:
+            "An error occured while authenticating. Please try again later.",
+        });
+
+      const userRecord = studentQuery.result?.user;
+
+      if (!userRecord) return invalidCredentialsResult;
+
+      const { passwordHash, role, ...profileData } = userRecord;
+
+      const dtoParse = Schemas.UserData.authenticationDTO
+        .strip()
+        .safeParse({ ...profileData, role: role.name });
+
+      return dtoParse.success
+        ? ResultBuilder.success(dtoParse.data)
+        : ResultBuilder.fail(
+            Errors.Authentication.normalizeError({
+              name: "AUTHENTICATION_SYSTEM_ERROR",
+              message: "Dto conversion failed.",
+              err: dtoParse.error,
+            })
+          );
     }
 
     public async authenticate(
@@ -106,6 +155,38 @@ export namespace Authentication {
         : isRfidUid
         ? "rfidUid"
         : null;
+    }
+
+    private async findStudentUser(args: {
+      dbOrTx?: DbOrTx;
+      filter: SharedTypes.Repository.QueryFilters.Student;
+    }) {
+      return await this._studentRepo.execQuery({
+        fn: async (query, converter) => {
+          try {
+            const result = await query.findFirst({
+              where: converter(args.filter),
+              columns: {}, //  * no need for columns. only user
+              with: {
+                user: {
+                  columns: { roleId: false, rfidUid: false },
+                  with: { role: true },
+                },
+              },
+            });
+
+            return ResultBuilder.success(result);
+          } catch (err) {
+            return ResultBuilder.fail(
+              DbAccess.normalizeError({
+                name: "DB_ACCESS_QUERY_ERROR",
+                message: "Failed querying users.",
+                err,
+              })
+            );
+          }
+        },
+      });
     }
 
     private async findUserWhere(args: {
