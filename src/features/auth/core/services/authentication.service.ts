@@ -40,9 +40,9 @@ export namespace Authentication {
           message: "Incorrect credentials. Please try again.",
         });
 
-      const isValidNumber = Data.Regex.Auth.StudentNumber.test(studentNumber);
+      const field = this.getStudentIdentifierField(studentNumber);
 
-      if (!isValidNumber) return invalidCredentialsResult;
+      if (field === null) return invalidCredentialsResult;
 
       const studentQuery = await this.findStudentUser({
         filter: { studentNumber },
@@ -138,6 +138,12 @@ export namespace Authentication {
               err: dtoParse.error,
             })
           );
+    }
+
+    private getStudentIdentifierField(identifier: string) {
+      const isStudentNumber = Data.Regex.Auth.StudentNumber.test(identifier);
+
+      return isStudentNumber ? "studentNumber" : null;
     }
 
     private getUserIdentifierField(identifier: string) {
