@@ -18,7 +18,7 @@ export async function handleViewRecords(req: Request, res: Response) {
     requestLogger: logger,
   } = req;
 
-  const validPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "roleBased");
+  const validPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!validPayload) {
     logger.log(
@@ -59,7 +59,7 @@ export async function handleViewRecords(req: Request, res: Response) {
 async function resolveRecords(args: {
   complianceDataService: Services.ComplianceData.Service;
   userDataService: Auth.Core.Services.UserData.Service;
-  payload: Auth.Core.Schemas.Payloads.AccessToken.RoleBased;
+  payload: Auth.Core.Schemas.Payloads.AccessToken.Full;
 }) {
   const { complianceDataService, userDataService, payload } = args;
   switch (payload.role) {
@@ -86,7 +86,7 @@ const recordsResolver = {
     complianceDataService: Services.ComplianceData.Service;
     userDataService: Auth.Core.Services.UserData.Service;
     payload: Extract<
-      Auth.Core.Schemas.Payloads.AccessToken.RoleBased,
+      Auth.Core.Schemas.Payloads.AccessToken.Full,
       { role: "student" }
     >;
   }) => {
@@ -127,7 +127,7 @@ const recordsResolver = {
     complianceDataService: Services.ComplianceData.Service;
     userDataService: Auth.Core.Services.UserData.Service;
     payload: Extract<
-      Auth.Core.Schemas.Payloads.AccessToken.RoleBased,
+      Auth.Core.Schemas.Payloads.AccessToken.Full,
       { role: "professor" }
     >;
   }) => [] as Types.Db.ViewModels.ComplianceRecord[], //  todo: do this
@@ -137,7 +137,7 @@ async function fetchStudent(args: {
   tx: TxContext;
   userDataService: Auth.Core.Services.UserData.Service;
   payload: Extract<
-    Auth.Core.Schemas.Payloads.AccessToken.RoleBased,
+    Auth.Core.Schemas.Payloads.AccessToken.Full,
     { role: "student" }
   >;
 }) {

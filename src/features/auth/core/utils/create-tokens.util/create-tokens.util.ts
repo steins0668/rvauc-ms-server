@@ -4,7 +4,7 @@ import { Schemas } from "../../schemas";
 import { createJwt } from "./create-jwt.util";
 
 type Payloads = {
-  access: Schemas.Payloads.AccessToken.RoleBased;
+  access: Schemas.Payloads.AccessToken.Full;
   refresh: Schemas.Payloads.RefreshToken.Payload;
 };
 
@@ -42,7 +42,7 @@ function validatePayloads(payloads: Payloads) {
       err,
     });
 
-  const accessValidation = Schemas.Payloads.AccessToken.roleBased.safeParse(
+  const accessValidation = Schemas.Payloads.AccessToken.full.safeParse(
     payloads.access
   );
 

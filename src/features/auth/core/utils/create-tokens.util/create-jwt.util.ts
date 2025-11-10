@@ -5,7 +5,7 @@ import { Types } from "../../types";
 
 type AccessOptions = {
   tokenType: Types.Token.Access;
-  payload: Schemas.Payloads.AccessToken.RoleBased;
+  payload: Schemas.Payloads.AccessToken.Full;
 };
 
 type RefreshOptions = {

@@ -26,14 +26,10 @@ export namespace Schemas {
         block: z.string(),
       });
 
-      export const roleBased = z.discriminatedUnion(
-        "role",
-        [professor, student],
-        {
-          error: (iss) =>
-            iss.input === undefined ? "Role is required." : "Invalid role.",
-        }
-      );
+      export const full = z.discriminatedUnion("role", [professor, student], {
+        error: (iss) =>
+          iss.input === undefined ? "Role is required." : "Invalid role.",
+      });
 
       export const minimalStudent = z.strictObject({
         role: z.literal(Data.Records.roles.student.name),
@@ -45,11 +41,11 @@ export namespace Schemas {
 
       export type Professor = z.infer<typeof professor>;
       export type Student = z.infer<typeof student>;
-      export type RoleBased = z.infer<typeof roleBased>;
+      export type Full = z.infer<typeof full>;
       export type MinimalStudent = z.infer<typeof minimalStudent>;
 
       export const schemas = [
-        { type: "roleBased", schema: roleBased },
+        { type: "full", schema: full },
         { type: "minimalStudent", schema: minimalStudent },
       ] as const; //  ! add all future access token payload types here.
 
