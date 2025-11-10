@@ -103,13 +103,12 @@ export async function handleVerifySignInCode(
     return;
   }
 
-  const payloads = {
+  //  * create tokens
+  const tknCreation = Core.Utils.createTokens({
+    type: "full",
     access: createAccessPayload.result,
     refresh: { sessionNumber, userId: user.id, isPersistentAuth },
-  };
-
-  //  * create tokens
-  const tknCreation = Core.Utils.createTokens(payloads);
+  });
 
   const internalErrMsg =
     "An error occurred while authenticating. Please try again later.";

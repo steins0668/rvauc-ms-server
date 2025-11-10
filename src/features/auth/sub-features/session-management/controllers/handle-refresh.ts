@@ -99,13 +99,12 @@ export async function handleRefresh(
     return;
   }
 
-  const payloads = {
+  //  * create new tokens
+  const tknCreation = Core.Utils.createTokens({
+    type: "full",
     access: createAccessPayload.result,
     refresh: { sessionNumber, userId: user.id, isPersistentAuth },
-  };
-
-  //  * create new tokens
-  const tknCreation = Core.Utils.createTokens(payloads);
+  });
 
   if (!tknCreation.success) {
     //  !failed creating tokens

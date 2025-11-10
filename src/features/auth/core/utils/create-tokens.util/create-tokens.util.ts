@@ -3,10 +3,11 @@ import { Errors } from "../../errors";
 import { Schemas } from "../../schemas";
 import { createJwt } from "./create-jwt.util";
 
-type Payloads = {
-  access: Schemas.Payloads.AccessToken.Full;
-  refresh: Schemas.Payloads.RefreshToken.Payload;
-};
+type Payloads = Schemas.Payloads.AccessToken.AnyPayload extends infer AP
+  ? AP extends { type: infer T; payload: infer P }
+    ? { type: T; access: P; refresh: Schemas.Payloads.RefreshToken.Payload }
+    : never
+  : never;
 
 export function createTokens(payloads: Payloads) {
   try {
@@ -42,9 +43,14 @@ function validatePayloads(payloads: Payloads) {
       err,
     });
 
-  const accessValidation = Schemas.Payloads.AccessToken.full.safeParse(
-    payloads.access
-  );
+  const accessSchema = Schemas.Payloads.AccessToken.schemas.find(
+    (value) => value.type === payloads.type
+  )?.schema;
+
+  if (!accessSchema)
+    throw validationErr(`Invalid schema type ${payloads.type}`);
+
+  const accessValidation = accessSchema.safeParse(payloads.access);
 
   const refreshValidation = Schemas.Payloads.RefreshToken.payload.safeParse(
     payloads.refresh
