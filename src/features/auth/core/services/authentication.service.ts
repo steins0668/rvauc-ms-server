@@ -69,7 +69,7 @@ export namespace Authentication {
             "An error occured while authenticating. Please try again later.",
         });
 
-      const userRecord = studentQuery.result?.user;
+      const userRecord = studentQuery.result;
 
       if (!userRecord) return invalidCredentialsResult;
 
@@ -205,7 +205,7 @@ export namespace Authentication {
               },
             });
 
-            return ResultBuilder.success(result);
+            return ResultBuilder.success(result?.user);
           } catch (err) {
             return ResultBuilder.fail(
               DbAccess.normalizeError({
