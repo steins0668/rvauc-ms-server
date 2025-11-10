@@ -76,7 +76,7 @@ export namespace Authentication {
           );
     }
 
-    public async authenticate(
+    public async authenticateUser(
       args: AuthenticationArgs
     ): Promise<
       | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>

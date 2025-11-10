@@ -11,7 +11,7 @@ export async function handleForgotPassword(
   const { body, authenticationService, requestLogger: logger } = req;
   //  * get user based on POST email
   logger.log("debug", "Verifying user...");
-  const verification = await authenticationService.authenticate({
+  const verification = await authenticationService.authenticateUser({
     type: "session",
     identifier: body.email,
   });

@@ -64,7 +64,7 @@ export async function handleRefresh(
   }
 
   //  * get user with user id from payload
-  const authentication = await authenticationService.authenticate({
+  const authentication = await authenticationService.authenticateUser({
     type: "session",
     identifier: payloadVerification.result.userId.toString(),
   });

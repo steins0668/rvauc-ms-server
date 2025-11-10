@@ -12,7 +12,7 @@ export async function handleVerifyCode(
 
   //    * verify user
   logger.log("debug", "Verifying user...");
-  const verification = await authenticationService.authenticate({
+  const verification = await authenticationService.authenticateUser({
     type: "session",
     identifier: email,
   });

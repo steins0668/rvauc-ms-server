@@ -17,7 +17,7 @@ export async function handleRequestSignInCode(
   } = req;
 
   //  *validate and verify user credentials
-  const verificationResult = await authenticationService.authenticate({
+  const verificationResult = await authenticationService.authenticateUser({
     type: "password",
     ...authDetails,
   });
