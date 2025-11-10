@@ -33,7 +33,12 @@ export namespace Authentication {
       this._studentRepo = studentRepo;
     }
 
-    public async authenticateStudent(studentNumber: string) {
+    public async authenticateStudent(
+      studentNumber: string
+    ): Promise<
+      | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>
+      | Types.AuthenticationResult.Fail
+    > {
       const invalidCredentialsResult =
         ResultBuilder.fail<Errors.Authentication.ErrorClass>({
           name: "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR",
