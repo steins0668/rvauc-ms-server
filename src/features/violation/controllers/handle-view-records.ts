@@ -24,9 +24,14 @@ export async function handleViewRecords(req: Request, res: Response) {
   );
 
   if (!isAllowedPayload) {
-    res.status(500).json({
+    logger.log(
+      "error",
+      "Invalid payload attempted to access `violation/view-records`."
+    );
+
+    res.status(401).json({
       success: false,
-      message: "Something went wrong. Please try again later.",
+      message: "You are not allowed to access this resource.",
     });
     return;
   }
