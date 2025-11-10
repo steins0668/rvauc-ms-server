@@ -35,7 +35,7 @@ export function createTokens(payloads: Payloads) {
 }
 
 function validatePayloads(payloads: Payloads) {
-  const validationErr = (message: string, err: unknown) =>
+  const validationErr = (message: string, err?: unknown) =>
     Errors.Authentication.normalizeError({
       name: "AUTHENTICATION_PAYLOAD_VALIDATION_ERROR",
       message,
