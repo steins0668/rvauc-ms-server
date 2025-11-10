@@ -14,6 +14,8 @@ type AuthenticationArgs =
   | { type: "password"; identifier: string; password: string }
   | { type: "session"; identifier: string };
 
+type IdentifierType = ReturnType<Authentication.Service["getIdentifierField"]>;
+
 export namespace Authentication {
   export async function createService() {
     const context = await createContext();
@@ -42,10 +44,12 @@ export namespace Authentication {
     public async authenticate(args: AuthenticationArgs) {
       const field = this.getIdentifierField(args.identifier);
 
+      if (field === null) return this.invalidCredentialsResult;
+
       if (field === "studentNumber")
         return await this.authenticateStudent(args.identifier);
 
-      return await this.authenticateUser(args);
+      return await this.authenticateUser({ ...args, field });
     }
 
     public async authenticateStudent(
@@ -54,10 +58,6 @@ export namespace Authentication {
       | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>
       | Types.AuthenticationResult.Fail
     > {
-      const field = this.getStudentIdentifierField(studentNumber);
-
-      if (field === null) return this.invalidCredentialsResult;
-
       const studentQuery = await this.findStudentUser({
         filter: { studentNumber },
       });
@@ -77,26 +77,24 @@ export namespace Authentication {
     }
 
     public async authenticateUser(
-      args: AuthenticationArgs
+      args: AuthenticationArgs & {
+        field: NonNullable<IdentifierType>;
+      }
     ): Promise<
       | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>
       | Types.AuthenticationResult.Fail
     > {
-      const field = this.getUserIdentifierField(args.identifier);
-
-      if (field === null) return this.invalidCredentialsResult;
-
       const isPasswordFlow = args.type === "password";
       const isNotEmailOrUsernameField =
-        field !== "email" && field !== "username";
+        args.field !== "email" && args.field !== "username";
       if (isPasswordFlow && isNotEmailOrUsernameField)
         return this.invalidCredentialsResult; //  ! email or username only for password mode/type.
 
-      const isIdField = field === "id";
+      const isIdField = args.field === "id";
       const value = isIdField ? Number(args.identifier) : args.identifier; //  * cast values as needed.
 
       const userQuery = await this.findUserWhere({
-        filter: { [field]: value },
+        filter: { [args.field]: value },
       });
 
       if (!userQuery.success)
