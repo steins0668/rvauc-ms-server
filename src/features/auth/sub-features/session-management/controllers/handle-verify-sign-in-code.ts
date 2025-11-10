@@ -86,9 +86,8 @@ export async function handleVerifySignInCode(
   const sessionNumber = sessionManager.generateSessionNumber(user.id);
 
   //  * create payloads
-  type Role = keyof typeof Core.Data.Records.roles;
   const createAccessPayload = await Core.Utils.payloadResolver[
-    user.role as Role
+    user.role as Core.Data.Records.Role
   ]({ dataService: userDataService, user });
 
   if (!createAccessPayload.success) {
