@@ -102,7 +102,7 @@ export namespace Authentication {
           try {
             const result = await query.findFirst({
               where: converter(args.filter),
-              columns: { roleId: false },
+              columns: { roleId: false, rfidUid: false },
               with: { role: true },
             });
 
