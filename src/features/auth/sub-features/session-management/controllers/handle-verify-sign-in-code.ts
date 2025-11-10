@@ -19,14 +19,14 @@ export async function handleVerifySignInCode(
 
   //    * verify user
   logger.log("debug", "Verifying user...");
-  const verification = await authenticationService.authenticate({
+  const authentication = await authenticationService.authenticate({
     type: "session",
     identifier: email,
   });
 
-  if (!verification.success) {
+  if (!authentication.success) {
     //  ! failed verifying user
-    const { error } = verification;
+    const { error } = authentication;
 
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -79,23 +79,41 @@ export async function handleVerifySignInCode(
     return;
   }
 
-  //  *start session creation
-  const { result: user } = verification;
+  //  * start session creation
+  const { result: user } = authentication;
   const sessionNumber = sessionManager.generateSessionNumber(user.id);
 
-  //  *create tokens
-  const tokenResult = await Core.Utils.createTokens({
-    userDataService,
-    verifiedUser: user,
-    sessionNumber,
-    isPersistentAuth,
-  });
+  //  * create payloads
+  type Role = keyof typeof Core.Data.Records.roles;
+  const createAccessPayload = await Core.Utils.payloadResolver[
+    user.role as Role
+  ](userDataService, user);
+
+  if (!createAccessPayload.success) {
+    const { error } = createAccessPayload;
+    const message = "Something went wrong. Please try again later.";
+
+    res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message });
+
+    logger.log("debug", "Failed creating payload.", error);
+    return;
+  }
+
+  const payloads = {
+    access: createAccessPayload.result,
+    refresh: { sessionNumber, userId: user.id, isPersistentAuth },
+  };
+
+  //  * create tokens
+  const tknCreation = Core.Utils.createTokens(payloads);
 
   const internalErrMsg =
     "An error occurred while authenticating. Please try again later.";
-  if (!tokenResult.success) {
+  if (!tknCreation.success) {
     //  !failed creating tokens
-    const { error } = tokenResult;
+    const { error } = tknCreation;
 
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -106,7 +124,7 @@ export async function handleVerifySignInCode(
     return;
   }
   //  *start session
-  const { accessToken, refreshToken } = tokenResult.result;
+  const { accessToken, refreshToken } = tknCreation.result;
 
   const persistentTokenExpiry = new Date();
   persistentTokenExpiry.setDate(persistentTokenExpiry.getDate() + 30);
