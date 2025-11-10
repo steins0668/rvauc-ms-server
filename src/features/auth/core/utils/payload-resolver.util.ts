@@ -5,6 +5,7 @@ import { Schemas } from "../schemas";
 import { Services } from "../services";
 
 type ResolverArgs = {
+  type?: "full" | "minimal";
   dataService: Services.UserData.Service;
   user: Schemas.UserData.AuthenticationDTO;
 };
