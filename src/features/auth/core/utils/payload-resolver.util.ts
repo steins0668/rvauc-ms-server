@@ -1,8 +1,10 @@
 import { DbAccess } from "../../../../error";
+import { BaseResult } from "../../../../types";
 import { ResultBuilder } from "../../../../utils";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Services } from "../services";
+import { Types } from "../types";
 
 type PayloadType = "full" | "minimal";
 type ResolverArgs = {
@@ -123,6 +125,45 @@ async function getStudent(args: {
       return result;
     },
   });
+}
+
+function studentDTOtoPayload(args: {
+  type: PayloadType;
+  user: Schemas.UserData.AuthenticationDTO;
+  student: Awaited<ReturnType<typeof getStudent>> extends
+    | BaseResult.Success<infer R>
+    | BaseResult.Fail<infer _>
+    ? R
+    : never;
+}):
+  | Types.AuthenticationResult.Success<unknown>
+  | Types.AuthenticationResult.Fail {
+  const { type, user, student } = args;
+  const { department, ...studentProfile } = student;
+
+  const schema =
+    type === "full"
+      ? Schemas.Payloads.AccessToken.student
+      : type === "minimal"
+      ? Schemas.Payloads.AccessToken.minimalStudent
+      : null;
+
+  if (!schema)
+    return failPayloadCreation({ message: `Invalid payload type ${type}` });
+
+  const parse = schema.strict().safeParse({
+    ...user,
+    role: "student",
+    department: department.name,
+    ...studentProfile,
+  });
+
+  return parse.success
+    ? ResultBuilder.success(parse.data)
+    : failPayloadCreation({
+        message: "Failed validating payload with schema.",
+        err: parse.error,
+      });
 }
 
 function failPayloadCreation(args: { message: string; err?: unknown }) {
