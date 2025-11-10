@@ -55,15 +55,29 @@ export namespace Middlewares {
     try {
       requestLogger.log("debug", "Validating access token...");
 
-      const payload = jwt.verify(
-        token,
-        retrieveEnv.result
-      ) as Schemas.Payloads.AccessToken.RoleBased;
+      const payload = jwt.verify(token, retrieveEnv.result);
 
-      req.authenticationPayload = payload;
+      for (const arg of Object.values(Schemas.Payloads.AccessToken.schemas)) {
+        requestLogger.log("debug", `Parsing payload with schema ${arg.type}`);
+        const parse = arg.schema.safeParse(payload);
 
-      requestLogger.log("debug", "Access token validated.");
-      next();
+        if (parse.success) {
+          req.auth = {
+            type: arg.type,
+            payload: parse.data,
+          } as Schemas.Payloads.AccessToken.AnyPayload;
+          requestLogger.log("debug", "Access token validated.");
+          return next();
+        }
+
+        requestLogger.log(
+          "debug",
+          `Failed parsing schema ${arg.type}`,
+          parse.error
+        );
+      }
+
+      throw new Error("Payload does not match any schema.");
     } catch (err) {
       const error = Errors.Authentication.normalizeError({
         name: "AUTHENTICATION_SESSION_TOKEN_EXPIRED_OR_INVALID_ERROR",
@@ -100,7 +114,7 @@ declare global {
     interface Request {
       authenticationService: Services.Authentication.Service;
       userDataService: Services.UserData.Service;
-      authenticationPayload: Schemas.Payloads.AccessToken.RoleBased;
+      auth: Schemas.Payloads.AccessToken.AnyPayload;
     }
   }
 }

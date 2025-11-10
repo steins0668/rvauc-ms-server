@@ -14,9 +14,29 @@ export async function handleViewRecords(req: Request, res: Response) {
   const {
     violationDataService,
     userDataService,
-    authenticationPayload: payload,
+    auth,
     requestLogger: logger,
   } = req;
+
+  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
+    auth,
+    "roleBased"
+  );
+
+  if (!isAllowedPayload) {
+    logger.log(
+      "error",
+      "Invalid payload attempted to access `violation/view-records`."
+    );
+
+    res.status(401).json({
+      success: false,
+      message: "You are not allowed to access this resource.",
+    });
+    return;
+  }
+
+  const { payload } = auth;
 
   const resolution = await resolveRecords({
     violationDataService,
