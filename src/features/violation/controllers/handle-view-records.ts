@@ -14,9 +14,29 @@ export async function handleViewRecords(req: Request, res: Response) {
   const {
     violationDataService,
     userDataService,
-    authenticationPayload: payload,
+    auth,
     requestLogger: logger,
   } = req;
+
+  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
+    auth,
+    "roleBased"
+  );
+
+  if (!isAllowedPayload) {
+    logger.log(
+      "error",
+      "Invalid payload attempted to access `violation/view-records`."
+    );
+
+    res.status(401).json({
+      success: false,
+      message: "You are not allowed to access this resource.",
+    });
+    return;
+  }
+
+  const { payload } = auth;
 
   const resolution = await resolveRecords({
     violationDataService,
@@ -177,7 +197,7 @@ function toDTORecord(
   | Types.ViolationResult.Success<Schemas.ViolationData.RecordDTO[]>
   | Types.ViolationResult.Fail {
   try {
-    const dto = rawRecords.map((record) => {
+    const dtoRecord = rawRecords.map((record) => {
       const { id, date: isoDate } = record;
       const rawDate = new Date(isoDate);
       const date = isoDate.split("T")[0] as string;
@@ -188,12 +208,13 @@ function toDTORecord(
       const status = record.status.name;
       const reasons = record.reasons as Reasons;
 
-      return { id, date, day, time, status, reasons };
+      const dto = { id, date, day, time, status, reasons };
+      Schemas.ViolationData.recordDTO.parse(dto);
+
+      return dto;
     });
 
-    Schemas.ViolationData.newRecord.parse(dto);
-
-    return ResultBuilder.success(dto);
+    return ResultBuilder.success(dtoRecord);
   } catch (err) {
     return ResultBuilder.fail(
       Errors.ViolationData.normalizeError({

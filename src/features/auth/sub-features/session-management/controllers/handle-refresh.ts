@@ -37,7 +37,7 @@ export async function handleRefresh(
 
   const { cookieName: refreshTknCookie } = cookieConfig.result;
   const cookieToken = cookies[refreshTknCookie] as string | undefined;
-  const bodyToken = req.body.refreshToken;
+  const bodyToken = req.body?.refreshToken;
   const oldRefreshTkn = cookieToken ?? bodyToken;
 
   if (!oldRefreshTkn) {
