@@ -13,19 +13,13 @@ Routes.use(Middlewares.attachComplianceDataService);
 
 Routes.get(
   "/view-records",
-  Auth.Core.Middlewares.validateJwt({
-    type: "roleBased",
-    schema: Auth.Core.Schemas.Payloads.AccessToken.roleBased,
-  }),
+  Auth.Core.Middlewares.validateJwt,
   Controllers.handleViewRecords
 );
 
 Routes.post(
   "/new-record",
-  Auth.Core.Middlewares.validateJwt({
-    type: "roleBased",
-    schema: Auth.Core.Schemas.Payloads.AccessToken.roleBased,
-  }),
+  Auth.Core.Middlewares.validateJwt,
   validateRequest(Schemas.ComplianceData.newRecord),
   Violation.Middlewares.attachViolationDataService,
   Controllers.handleNewRecord
