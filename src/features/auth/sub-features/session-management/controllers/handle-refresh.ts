@@ -85,7 +85,7 @@ export async function handleRefresh(
   type Role = keyof typeof Core.Data.Records.roles;
   const createAccessPayload = await Core.Utils.payloadResolver[
     user.role as Role
-  ](userDataService, user);
+  ]({ dataService: userDataService, user });
 
   if (!createAccessPayload.success) {
     const { error } = createAccessPayload;

@@ -5,10 +5,12 @@ import { Schemas } from "../schemas";
 import { Services } from "../services";
 
 export const payloadResolver = {
-  professor: async (
-    dataService: Services.UserData.Service,
-    user: Schemas.UserData.AuthenticationDTO
-  ) => {
+  professor: async (args: {
+    dataService: Services.UserData.Service;
+    user: Schemas.UserData.AuthenticationDTO;
+  }) => {
+    const { dataService, user } = args;
+
     const query = await dataService.queryProfessors({
       fn: async (query, converter) => {
         const result = await query.findFirst({
@@ -50,10 +52,12 @@ export const payloadResolver = {
           })
         );
   },
-  student: async (
-    dataService: Services.UserData.Service,
-    user: Schemas.UserData.AuthenticationDTO
-  ) => {
+  student: async (args: {
+    dataService: Services.UserData.Service;
+    user: Schemas.UserData.AuthenticationDTO;
+  }) => {
+    const { dataService, user } = args;
+
     const query = await dataService.queryStudents({
       fn: async (query, converter) => {
         const result = await query.findFirst({
