@@ -88,7 +88,7 @@ export namespace Authentication {
           message: "Incorrect credentials. Please try again.",
         });
 
-      const field = this.getIdentifierField(args.identifier);
+      const field = this.getUserIdentifierField(args.identifier);
 
       if (field === null) return invalidCredentialsResult;
 
@@ -140,7 +140,7 @@ export namespace Authentication {
           );
     }
 
-    private getIdentifierField(identifier: string) {
+    private getUserIdentifierField(identifier: string) {
       const isEmail = Data.Regex.Auth.Email.test(identifier);
       const isUsername = Data.Regex.Auth.Username.test(identifier);
       const isId = Data.Regex.Auth.UserId.test(identifier);
@@ -217,7 +217,7 @@ export namespace Authentication {
     }
 
     private getSafeId(identifier: string): string {
-      const signInMethod = this.getIdentifierField(identifier);
+      const signInMethod = this.getUserIdentifierField(identifier);
 
       switch (signInMethod) {
         case "email":
