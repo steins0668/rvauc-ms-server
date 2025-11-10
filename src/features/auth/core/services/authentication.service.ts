@@ -33,6 +33,15 @@ export namespace Authentication {
       this._studentRepo = studentRepo;
     }
 
+    public async authenticate(args: AuthenticationArgs) {
+      const field = this.getIdentifierField(args.identifier);
+
+      if (field === "studentNumber")
+        return await this.authenticateStudent(args.identifier);
+
+      return await this.authenticateUser(args);
+    }
+
     public async authenticateStudent(
       studentNumber: string
     ): Promise<
