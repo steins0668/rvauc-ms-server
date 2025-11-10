@@ -12,11 +12,30 @@ export async function handleNewRecord(
   res: Response
 ) {
   const {
+    auth,
     body,
     violationDataService,
     userDataService,
     requestLogger: logger,
   } = req;
+
+  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
+    auth,
+    "roleBased"
+  );
+
+  if (!isAllowedPayload) {
+    logger.log(
+      "error",
+      "Invalid payload attempted to access `violation/new-record`."
+    );
+
+    res.status(401).json({
+      success: false,
+      message: "You are not allowed to access this resource.",
+    });
+    return;
+  }
 
   logger.log("debug", "Storing new compliance record...");
   const store = await storeRecord({
