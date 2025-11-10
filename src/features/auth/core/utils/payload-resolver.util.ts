@@ -125,7 +125,7 @@ async function getStudent(args: {
   });
 }
 
-function failPayloadCreation(args: { message: string; err: unknown }) {
+function failPayloadCreation(args: { message: string; err?: unknown }) {
   return ResultBuilder.fail(
     Errors.Authentication.normalizeError({
       name: "AUTHENTICATION_PAYLOAD_CREATION_ERROR",
