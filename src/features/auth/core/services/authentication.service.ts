@@ -76,7 +76,19 @@ export namespace Authentication {
         if (!isAuthenticated) return invalidCredentialsResult;
       }
 
-      return ResultBuilder.success({ ...profileData, role: role.name });
+      const dtoParse = Schemas.UserData.authenticationDTO
+        .strip()
+        .safeParse({ ...profileData, role: role.name });
+
+      return dtoParse.success
+        ? ResultBuilder.success(dtoParse.data)
+        : ResultBuilder.fail(
+            Errors.Authentication.normalizeError({
+              name: "AUTHENTICATION_SYSTEM_ERROR",
+              message: "Dto conversion failed.",
+              err: dtoParse.error,
+            })
+          );
     }
 
     private getIdentifierField(identifier: string) {
@@ -96,7 +108,7 @@ export namespace Authentication {
           try {
             const result = await query.findFirst({
               where: converter(args.filter),
-              columns: { roleId: false },
+              columns: { roleId: false, rfidUid: false },
               with: { role: true },
             });
 

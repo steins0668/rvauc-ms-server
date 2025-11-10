@@ -10,34 +10,30 @@ export namespace Schemas {
         role: z.string(),
       });
 
-      export type RoleBased = z.infer<typeof roleBased>;
+      export const professor = z.object({
+        ...base.shape,
+        role: z.literal(Data.Records.roles.professor.name),
+        college: z.string(),
+        facultyRank: z.string(),
+      });
+
+      export const student = z.object({
+        ...base.shape,
+        role: z.literal(Data.Records.roles.student.name),
+        department: z.string(),
+        studentNumber: z.string(),
+        yearLevel: z.number(),
+        block: z.string(),
+      });
+
       export const roleBased = z.discriminatedUnion(
         "role",
-        [
-          //  * student
-          z.object({
-            ...base.shape,
-            role: z.literal(Data.Records.roles.student.name),
-            department: z.string(),
-            studentNumber: z.string(),
-            yearLevel: z.number(),
-            block: z.string(),
-          }),
-          //  * professor
-          z.object({
-            ...base.shape,
-            role: z.literal(Data.Records.roles.professor.name),
-            college: z.string(),
-            facultyRank: z.string(),
-          }),
-        ],
+        [professor, student],
         {
           error: (iss) =>
             iss.input === undefined ? "Role is required." : "Invalid role.",
         }
       );
-
-      export type MinimalStudent = z.infer<typeof minimalStudent>;
 
       export const minimalStudent = z.strictObject({
         role: z.literal(Data.Records.roles.student.name),
@@ -46,6 +42,11 @@ export namespace Schemas {
         yearLevel: z.number(),
         block: z.string(),
       });
+
+      export type Professor = z.infer<typeof professor>;
+      export type Student = z.infer<typeof student>;
+      export type RoleBased = z.infer<typeof roleBased>;
+      export type MinimalStudent = z.infer<typeof minimalStudent>;
 
       export const schemas = [
         { type: "roleBased", schema: roleBased },
