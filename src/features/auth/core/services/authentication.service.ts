@@ -73,16 +73,19 @@ export namespace Authentication {
         if (!isAuthenticated) return invalidCredentialsResult;
       }
 
-      const dto = this.toAuthDTO({ ...profileData, role: role.name });
+      const dtoParse = Schemas.UserData.authenticationDTO
+        .strip()
+        .safeParse({ ...profileData, role: role.name });
 
-      if (!dto)
-        return ResultBuilder.fail({
-          name: "AUTHENTICATION_SYSTEM_ERROR",
-          message:
-            "Data leak risk. Ensure all fields match the authentication dto.",
-        });
-
-      return ResultBuilder.success(dto);
+      return dtoParse.success
+        ? ResultBuilder.success(dtoParse.data)
+        : ResultBuilder.fail(
+            Errors.Authentication.normalizeError({
+              name: "AUTHENTICATION_SYSTEM_ERROR",
+              message: "Dto conversion failed.",
+              err: dtoParse.error,
+            })
+          );
     }
 
     private getIdentifierField(identifier: string) {
@@ -118,12 +121,6 @@ export namespace Authentication {
           }
         },
       });
-    }
-
-    private toAuthDTO(arg: unknown) {
-      const parse = Schemas.UserData.authenticationDTO.safeParse(arg);
-
-      return parse.success ? parse.data : null;
     }
 
     private getSafeId(identifier: string): string {
