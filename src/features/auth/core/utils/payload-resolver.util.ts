@@ -160,7 +160,7 @@ function studentDTOtoPayload(args: {
   return parse.success
     ? ResultBuilder.success(parse.data)
     : failPayloadCreation({
-        message: "Failed validating payload with schema.",
+        message: "Failed validating payload with student schema.",
         err: parse.error,
       });
 }
