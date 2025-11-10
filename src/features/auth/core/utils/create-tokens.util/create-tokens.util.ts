@@ -1,11 +1,8 @@
-import { BaseResult } from "../../../../../types";
 import { ResultBuilder } from "../../../../../utils";
 import { Data } from "../../data";
 import { Errors } from "../../errors";
 import { Schemas } from "../../schemas";
-import { Services } from "../../services";
 import { createJwt } from "./create-jwt.util";
-import { payloadResolver } from "./payload-resolver.util";
 
 type Role = keyof typeof Data.Records.roles;
 
@@ -14,59 +11,26 @@ type Tokens = {
   refreshToken: string;
 };
 
-/**
- * @public
- * @async
- * @function createTokens
- * @description A helper for the {@link handleLogin} controller. Asynchronously handles access
- * and refresh token creation.
- * - Retrieves a list of `role`s associated with the `User`.
- * - Creates a token payload containing the `verifiedUser` and the list of `role`s.
- * - Creates JWT `access` and `refresh` tokens containing the payload.
- * - Returns both tokens.
- * @param req
- * @param verifiedUser A user data dto used for retrieving the `User`'s `role`s and
- * creating the token `payload`.
- * @param sessionNumber The `sessionNumber` corresponding to the current `UserSession`.
- * @param isPersistentAuth An optional boolean representing the persistence of the authentication state.
- * `true` if the auth is persistent. `false` otherwise.
- * @returns A `Promise` that resolves to a {@link Tokens} object containing the `accessToken`
- * and `refreshToken`.
- */
-export async function createTokens(args: {
-  userDataService: Services.UserData.Service;
-  verifiedUser: Schemas.UserData.AuthenticationDTO;
-  sessionNumber: string;
-  isPersistentAuth?: boolean | undefined;
-}): Promise<
-  | BaseResult.Success<Tokens, "TOKEN_CREATION">
-  | BaseResult.Fail<Errors.Authentication.ErrorClass>
-> {
-  const { userDataService, verifiedUser, sessionNumber, isPersistentAuth } =
-    args;
+type Payloads = {
+  access: Schemas.Payloads.AccessToken.RoleBased;
+  refresh: Schemas.Payloads.RefreshToken.Payload;
+};
 
+export function createTokens(payloads: Payloads) {
   try {
-    const role = verifiedUser.role as Role;
-    const createAccessTkn = await createAccessToken({
-      userDataService,
-      verifiedUser,
-      role,
+    validatePayloads(payloads);
+
+    const accessToken = createJwt({
+      tokenType: "access",
+      payload: payloads.access,
     });
 
-    if (!createAccessTkn.success) throw createAccessTkn.error;
-
-    const accessToken = createAccessTkn.result;
-
-    const refreshToken = createRefreshToken({
-      sessionNumber,
-      userId: verifiedUser.id,
-      isPersistentAuth,
+    const refreshToken = createJwt({
+      tokenType: "refresh",
+      payload: payloads.refresh,
     });
 
-    return ResultBuilder.success(
-      { accessToken, refreshToken },
-      "TOKEN_CREATION"
-    );
+    return ResultBuilder.success({ accessToken, refreshToken });
   } catch (err) {
     return ResultBuilder.fail(
       Errors.Authentication.normalizeError({
@@ -78,42 +42,43 @@ export async function createTokens(args: {
   }
 }
 
-async function createAccessToken(args: {
-  userDataService: Services.UserData.Service;
-  verifiedUser: Schemas.UserData.AuthenticationDTO;
-  role: Role;
-}) {
-  const { userDataService, role, verifiedUser } = args;
+function validatePayloads(payloads: Payloads) {
+  const validationErr = (message: string, err: unknown) =>
+    Errors.Authentication.normalizeError({
+      name: "AUTHENTICATION_PAYLOAD_VALIDATION_ERROR",
+      message,
+      err,
+    });
 
-  const payloadResolution = await payloadResolver[role](
-    userDataService,
-    verifiedUser
+  const accessValidation = Schemas.Payloads.AccessToken.roleBased.safeParse(
+    payloads.access
   );
 
-  if (!payloadResolution.success) return payloadResolution;
-
-  return ResultBuilder.success(
-    createJwt({
-      tokenType: "access",
-      payload: payloadResolution.result,
-    })
+  const refreshValidation = Schemas.Payloads.RefreshToken.payload.safeParse(
+    payloads.refresh
   );
-}
 
-function createRefreshToken(args: {
-  sessionNumber: string;
-  userId: number;
-  isPersistentAuth?: boolean | undefined;
-}) {
-  const { sessionNumber, userId, isPersistentAuth } = args;
+  const isAccessValid = accessValidation.success;
+  const isRefreshValid = refreshValidation.success;
 
-  const payload: Schemas.Payloads.RefreshToken.Payload = {
-    sessionNumber,
-    userId,
-    isPersistentAuth,
-  };
-  return createJwt({
-    tokenType: "refresh",
-    payload,
-  });
+  if (!isAccessValid && !isRefreshValid)
+    throw validationErr(
+      "Failed access payload and refresh payload validation.",
+      {
+        accessError: accessValidation.error,
+        refreshError: refreshValidation.error,
+      }
+    );
+
+  if (!isAccessValid)
+    throw validationErr(
+      "Failed access payload validation.",
+      accessValidation.error
+    );
+
+  if (!isRefreshValid)
+    throw validationErr(
+      "Failed refresh payload validation.",
+      refreshValidation.error
+    );
 }

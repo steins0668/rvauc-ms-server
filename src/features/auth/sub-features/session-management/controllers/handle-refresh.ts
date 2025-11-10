@@ -64,29 +64,48 @@ export async function handleRefresh(
   }
 
   //  * get user with user id from payload
-  const userQuery = await authenticationService.authenticate({
+  const authentication = await authenticationService.authenticate({
     type: "session",
     identifier: payloadVerification.result.userId.toString(),
   });
 
-  if (!userQuery.success) {
+  if (!authentication.success) {
     //  ! could not get user from db.
     res.status(500).json({ success: false, message: internalErrMsg });
 
-    const { error } = userQuery;
+    const { error } = authentication;
     logger.log("error", "Failed retrieving user", error);
     return;
   }
 
   const { sessionNumber, isPersistentAuth } = payloadVerification.result;
+  const { result: user } = authentication;
+
+  //  * create payloads
+  type Role = keyof typeof Core.Data.Records.roles;
+  const createAccessPayload = await Core.Utils.payloadResolver[
+    user.role as Role
+  ](userDataService, user);
+
+  if (!createAccessPayload.success) {
+    const { error } = createAccessPayload;
+    const message = "Something went wrong. Please try again later.";
+
+    res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message });
+
+    logger.log("debug", "Failed creating payload", error);
+    return;
+  }
+
+  const payloads = {
+    access: createAccessPayload.result,
+    refresh: { sessionNumber, userId: user.id, isPersistentAuth },
+  };
 
   //  * create new tokens
-  const tknCreation = await Core.Utils.createTokens({
-    userDataService,
-    verifiedUser: userQuery.result,
-    sessionNumber,
-    isPersistentAuth,
-  });
+  const tknCreation = Core.Utils.createTokens(payloads);
 
   if (!tknCreation.success) {
     //  !failed creating tokens

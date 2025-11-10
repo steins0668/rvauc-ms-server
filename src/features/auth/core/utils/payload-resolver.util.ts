@@ -1,7 +1,8 @@
-import { DbAccess } from "../../../../../error";
-import { ResultBuilder } from "../../../../../utils";
-import { Schemas } from "../../schemas";
-import { Services } from "../../services";
+import { DbAccess } from "../../../../error";
+import { ResultBuilder } from "../../../../utils";
+import { Errors } from "../errors";
+import { Schemas } from "../schemas";
+import { Services } from "../services";
 
 export const payloadResolver = {
   professor: async (
@@ -18,13 +19,17 @@ export const payloadResolver = {
         if (result === undefined)
           throw new DbAccess.ErrorClass({
             name: "DB_ACCESS_QUERY_ERROR",
-            message: "Failed querying professors.",
+            message: "Could not find professor.",
           });
         return result;
       },
     });
 
-    if (!query.success) return query;
+    if (!query.success)
+      return failPayloadCreation({
+        message: "Failed creating professor payload.",
+        err: query.error,
+      });
 
     const { college, facultyRank } = query.result;
 
@@ -51,14 +56,18 @@ export const payloadResolver = {
         if (result === undefined)
           throw new DbAccess.ErrorClass({
             name: "DB_ACCESS_QUERY_ERROR",
-            message: "Failed querying students.",
+            message: "Could not find student.",
           });
 
         return result;
       },
     });
 
-    if (!query.success) return query;
+    if (!query.success)
+      return failPayloadCreation({
+        message: "Failed creating student payload.",
+        err: query.error,
+      });
 
     const { department, ...student } = query.result;
 
@@ -72,3 +81,13 @@ export const payloadResolver = {
     return ResultBuilder.success(payload);
   },
 };
+
+function failPayloadCreation(args: { message: string; err: unknown }) {
+  return ResultBuilder.fail(
+    Errors.Authentication.normalizeError({
+      name: "AUTHENTICATION_PAYLOAD_CREATION_ERROR",
+      message: args.message,
+      err: args.err,
+    })
+  );
+}
