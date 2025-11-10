@@ -140,6 +140,16 @@ export namespace Authentication {
           );
     }
 
+    private getIdentifierField(identifier: string) {
+      const studentField = this.getStudentIdentifierField(identifier);
+
+      if (studentField !== null) return studentField;
+
+      const userField = this.getUserIdentifierField(identifier);
+
+      return userField;
+    }
+
     private getStudentIdentifierField(identifier: string) {
       const isStudentNumber = Data.Regex.Auth.StudentNumber.test(identifier);
 
