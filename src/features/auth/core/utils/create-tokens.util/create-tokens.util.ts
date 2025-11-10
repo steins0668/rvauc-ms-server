@@ -1,5 +1,4 @@
 import { ResultBuilder } from "../../../../../utils";
-import { Data } from "../../data";
 import { Errors } from "../../errors";
 import { Schemas } from "../../schemas";
 import { createJwt } from "./create-jwt.util";
