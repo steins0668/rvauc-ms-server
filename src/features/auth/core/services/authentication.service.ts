@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
+import { BaseResult } from "../../../../types";
 import { ResultBuilder } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Types as SharedTypes } from "../../types";
@@ -73,21 +74,7 @@ export namespace Authentication {
 
       if (!userRecord) return invalidCredentialsResult;
 
-      const { passwordHash, role, ...profileData } = userRecord;
-
-      const dtoParse = Schemas.UserData.authenticationDTO
-        .strip()
-        .safeParse({ ...profileData, role: role.name });
-
-      return dtoParse.success
-        ? ResultBuilder.success(dtoParse.data)
-        : ResultBuilder.fail(
-            Errors.Authentication.normalizeError({
-              name: "AUTHENTICATION_SYSTEM_ERROR",
-              message: "Dto conversion failed.",
-              err: dtoParse.error,
-            })
-          );
+      return this.recordToDTO(userRecord);
     }
 
     public async authenticateUser(
@@ -139,19 +126,7 @@ export namespace Authentication {
         if (!isAuthenticated) return invalidCredentialsResult;
       }
 
-      const dtoParse = Schemas.UserData.authenticationDTO
-        .strip()
-        .safeParse({ ...profileData, role: role.name });
-
-      return dtoParse.success
-        ? ResultBuilder.success(dtoParse.data)
-        : ResultBuilder.fail(
-            Errors.Authentication.normalizeError({
-              name: "AUTHENTICATION_SYSTEM_ERROR",
-              message: "Dto conversion failed.",
-              err: dtoParse.error,
-            })
-          );
+      return this.recordToDTO(userRecord);
     }
 
     private getIdentifierField(identifier: string) {
@@ -244,6 +219,32 @@ export namespace Authentication {
           }
         },
       });
+    }
+
+    private recordToDTO(
+      userRecord: Awaited<ReturnType<typeof this.findUserWhere>> extends
+        | BaseResult.Success<infer R>
+        | BaseResult.Fail<infer _>
+        ? NonNullable<R>
+        : never
+    ):
+      | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>
+      | Types.AuthenticationResult.Fail {
+      const { role, ...profileData } = userRecord;
+
+      const dtoParse = Schemas.UserData.authenticationDTO
+        .strip()
+        .safeParse({ ...profileData, role: role.name });
+
+      return dtoParse.success
+        ? ResultBuilder.success(dtoParse.data)
+        : ResultBuilder.fail(
+            Errors.Authentication.normalizeError({
+              name: "AUTHENTICATION_SYSTEM_ERROR",
+              message: "Dto conversion failed.",
+              err: dtoParse.error,
+            })
+          );
     }
 
     private getSafeId(identifier: string): string {
