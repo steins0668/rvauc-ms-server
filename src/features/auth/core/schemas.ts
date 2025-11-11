@@ -111,7 +111,7 @@ export namespace Schemas {
 
     export const authenticationDTO = z.strictObject({
       id: z.number(),
-      role: z.string(),
+      role: z.enum(Data.Records.roles),
       email: z.string(),
       username: z.string(),
       surname: z.string(),
