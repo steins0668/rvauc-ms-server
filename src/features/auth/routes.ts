@@ -39,7 +39,7 @@ Routes.post(
   "/verify-sign-in-code",
   SessionManagement.Middlewares.attachSignInRequestService,
   validateRequest(SessionManagement.Schemas.verifyCode),
-  SessionManagement.Controllers.handleVerifySignInCode
+  SessionManagement.Controllers.handleVerifyCode
 );
 
 Routes.post(

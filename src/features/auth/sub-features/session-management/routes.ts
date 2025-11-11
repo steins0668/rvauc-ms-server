@@ -19,7 +19,7 @@ Routes.post(
   "/verify-code",
   Middlewares.attachSignInRequestService,
   validateRequest(Schemas.verifyCode),
-  Controllers.handleVerifySignInCode
+  Controllers.handleVerifyCode
 );
 
 Routes.post(

@@ -3,7 +3,7 @@ import { HashUtil } from "../../../../../utils";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 
-export async function handleVerifySignInCode(
+export async function handleVerifyCode(
   req: Request<{}, {}, Schemas.VerifyCode>,
   res: Response
 ) {
