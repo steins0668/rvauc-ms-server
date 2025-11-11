@@ -11,6 +11,7 @@ export namespace Data {
       professor: "professor",
     } as const;
 
+    //  todo: remove the need for id checks?
     export const _roles = {
       student: {
         id: 0,
