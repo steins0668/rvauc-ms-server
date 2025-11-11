@@ -38,9 +38,11 @@ export namespace Controllers {
     const { result: user } = authentication;
 
     //  * create payload
-    const createAccessPayload = await Core.Utils.payloadResolver[
-      user.role as Core.Data.Records.Role
-    ]({ type: "minimal", dataService: userDataService, user });
+    const createAccessPayload = await Core.Utils.payloadResolver[user.role]({
+      type: "minimal",
+      dataService: userDataService,
+      user,
+    });
 
     if (!createAccessPayload.success) {
       const { error } = createAccessPayload;

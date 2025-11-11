@@ -56,7 +56,7 @@ export namespace Schemas {
       [
         z.object({
           ...base.shape,
-          roleId: z.literal(Core.Data.Records.roles.professor.id),
+          roleId: z.literal(Core.Data.Records._roles.professor.id),
           collegeId: z.number({
             error: (iss) =>
               iss.input === undefined
@@ -72,7 +72,7 @@ export namespace Schemas {
         }),
         z.object({
           ...base.shape,
-          roleId: z.literal(Core.Data.Records.roles.student.id),
+          roleId: z.literal(Core.Data.Records._roles.student.id),
           //  todo: handle constraints for current valid ids
           departmentId: z.number({
             error: (iss) =>

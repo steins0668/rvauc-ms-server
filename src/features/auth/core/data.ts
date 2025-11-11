@@ -6,9 +6,13 @@ import { Errors } from "./errors";
 
 export namespace Data {
   export namespace Records {
-    export type Role = keyof typeof roles;
-
     export const roles = {
+      student: "student",
+      professor: "professor",
+    } as const;
+
+    //  todo: remove the need for id checks?
+    export const _roles = {
       student: {
         id: 0,
         name: "student",
