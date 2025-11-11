@@ -201,7 +201,7 @@ export namespace UserData {
               user: form,
             });
 
-            const roleName = Object.values(Core.Data.Records.roles).find(
+            const roleName = Object.values(Core.Data.Records._roles).find(
               (role) => role.id === form.roleId
             )?.name;
             if (id === undefined) return getInsertResult(roleName, id); //  ! failed inserting into users table
@@ -252,7 +252,7 @@ export namespace UserData {
           },
         });
 
-        const roleName = Object.values(Core.Data.Records.roles).find(
+        const roleName = Object.values(Core.Data.Records._roles).find(
           (role) => role.id === form.roleId
         )?.name;
         if (user) return getResult(true, roleName); //  ! duplicate in users table.
@@ -343,7 +343,7 @@ export namespace UserData {
   }
 
   //#region Types
-  type Role = keyof typeof Core.Data.Records.roles;
+  type Role = keyof typeof Core.Data.Records._roles;
   type RoleId = Registration.Schemas.Register.RoleBased["roleId"];
   type RegisterSchema<R extends RoleId> = Extract<
     Registration.Schemas.Register.RoleBased,

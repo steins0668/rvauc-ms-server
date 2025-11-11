@@ -12,14 +12,14 @@ export namespace Schemas {
 
       export const professor = z.object({
         ...base.shape,
-        role: z.literal(Data.Records.roles.professor.name),
+        role: z.literal(Data.Records._roles.professor.name),
         college: z.string(),
         facultyRank: z.string(),
       });
 
       export const student = z.object({
         ...base.shape,
-        role: z.literal(Data.Records.roles.student.name),
+        role: z.literal(Data.Records._roles.student.name),
         department: z.string(),
         studentNumber: z.string(),
         yearLevel: z.number(),
@@ -32,7 +32,7 @@ export namespace Schemas {
       });
 
       export const minimalStudent = z.strictObject({
-        role: z.literal(Data.Records.roles.student.name),
+        role: z.literal(Data.Records._roles.student.name),
         studentNumber: z.string(),
         department: z.string(),
         yearLevel: z.number(),
