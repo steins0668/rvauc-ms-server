@@ -39,7 +39,10 @@ export namespace Schemas {
         block: z.string(),
       });
 
-      export const minimal = z.discriminatedUnion("role", [minimalStudent]);
+      export const minimal = z.discriminatedUnion("role", [
+        professor, //  ! temporary. a `minimalProfessor` payload should be added once needed.
+        minimalStudent,
+      ]);
 
       export type Professor = z.infer<typeof professor>;
       export type Student = z.infer<typeof student>;
