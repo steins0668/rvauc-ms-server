@@ -137,7 +137,7 @@ function studentDTOtoPayload(args: {
   if (!schema)
     return failPayloadCreation({ message: `Invalid payload type ${type}` });
 
-  const parse = schema.strict().safeParse({
+  const parse = schema.strip().safeParse({
     ...user,
     role: "student",
     department: department.name,
