@@ -4,7 +4,7 @@ import { Core } from "../../core";
 
 export namespace Controllers {
   export async function handleSignIn(
-    req: Request<{}, {}, Schemas.SignIn.Schema>,
+    req: Request<{}, {}, Schemas.SignIn.MethodsSchema>,
     res: Response
   ) {
     const {
@@ -17,7 +17,7 @@ export namespace Controllers {
     //  * authenticate user
     const authentication = await authenticationService.authenticate({
       type: "session",
-      identifier: body.type,
+      identifier: body.identifier,
     });
 
     if (!authentication.success) {
