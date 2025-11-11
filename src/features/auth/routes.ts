@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { validateRequest } from "../../middlewares";
 import { Core } from "./core";
+import { MinimalAuthentication } from "./sub-features/minimal-authentication";
 import { PasswordManagement } from "./sub-features/password-management";
 import { Registration } from "./sub-features/registration";
 import { SessionManagement } from "./sub-features/session-management";
@@ -17,6 +18,14 @@ Routes.post(
   Registration.Controllers.handleRegister
 );
 
+//  * Minimal Authentication
+Routes.post(
+  "/minimal-sign-in",
+  validateRequest(MinimalAuthentication.Schemas.SignIn.schema),
+  MinimalAuthentication.Controllers.handleSignIn
+);
+
+//  * Session Management
 Routes.use(SessionManagement.Middlewares.attachSessionManager);
 
 Routes.post(

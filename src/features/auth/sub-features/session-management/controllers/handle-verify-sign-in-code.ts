@@ -86,10 +86,9 @@ export async function handleVerifySignInCode(
   const sessionNumber = sessionManager.generateSessionNumber(user.id);
 
   //  * create payloads
-  type Role = keyof typeof Core.Data.Records.roles;
   const createAccessPayload = await Core.Utils.payloadResolver[
-    user.role as Role
-  ](userDataService, user);
+    user.role as Core.Data.Records.Role
+  ]({ type: "full", dataService: userDataService, user });
 
   if (!createAccessPayload.success) {
     const { error } = createAccessPayload;
@@ -103,13 +102,12 @@ export async function handleVerifySignInCode(
     return;
   }
 
-  const payloads = {
+  //  * create tokens
+  const tknCreation = Core.Utils.createTokens({
+    type: "full",
     access: createAccessPayload.result,
     refresh: { sessionNumber, userId: user.id, isPersistentAuth },
-  };
-
-  //  * create tokens
-  const tknCreation = Core.Utils.createTokens(payloads);
+  });
 
   const internalErrMsg =
     "An error occurred while authenticating. Please try again later.";

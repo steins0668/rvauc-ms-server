@@ -18,10 +18,7 @@ export async function handleViewRecords(req: Request, res: Response) {
     requestLogger: logger,
   } = req;
 
-  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
-    auth,
-    "roleBased"
-  );
+  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!isAllowedPayload) {
     logger.log(
@@ -62,7 +59,7 @@ export async function handleViewRecords(req: Request, res: Response) {
 async function resolveRecords(args: {
   violationDataService: Services.ViolationData.Service;
   userDataService: Auth.Core.Services.UserData.Service;
-  payload: Auth.Core.Schemas.Payloads.AccessToken.RoleBased;
+  payload: Auth.Core.Schemas.Payloads.AccessToken.Full;
 }) {
   const { violationDataService, userDataService, payload } = args;
   switch (payload.role) {
@@ -89,7 +86,7 @@ const recordsResolver = {
     violationDataService: Services.ViolationData.Service;
     userDataService: Auth.Core.Services.UserData.Service;
     payload: Extract<
-      Auth.Core.Schemas.Payloads.AccessToken.RoleBased,
+      Auth.Core.Schemas.Payloads.AccessToken.Full,
       { role: "student" }
     >;
   }) => {
@@ -130,7 +127,7 @@ const recordsResolver = {
     violationDataService: Services.ViolationData.Service;
     userDataService: Auth.Core.Services.UserData.Service;
     payload: Extract<
-      Auth.Core.Schemas.Payloads.AccessToken.RoleBased,
+      Auth.Core.Schemas.Payloads.AccessToken.Full,
       { role: "professor" }
     >;
   }) => [] as Types.Db.ViewModels.ViolationRecord[], //  todo: do this
@@ -140,7 +137,7 @@ async function fetchStudent(args: {
   tx: TxContext;
   userDataService: Auth.Core.Services.UserData.Service;
   payload: Extract<
-    Auth.Core.Schemas.Payloads.AccessToken.RoleBased,
+    Auth.Core.Schemas.Payloads.AccessToken.Full,
     { role: "student" }
   >;
 }) {

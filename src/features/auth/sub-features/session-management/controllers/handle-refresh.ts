@@ -82,10 +82,9 @@ export async function handleRefresh(
   const { result: user } = authentication;
 
   //  * create payloads
-  type Role = keyof typeof Core.Data.Records.roles;
   const createAccessPayload = await Core.Utils.payloadResolver[
-    user.role as Role
-  ](userDataService, user);
+    user.role as Core.Data.Records.Role
+  ]({ type: "full", dataService: userDataService, user });
 
   if (!createAccessPayload.success) {
     const { error } = createAccessPayload;
@@ -99,13 +98,12 @@ export async function handleRefresh(
     return;
   }
 
-  const payloads = {
+  //  * create new tokens
+  const tknCreation = Core.Utils.createTokens({
+    type: "full",
     access: createAccessPayload.result,
     refresh: { sessionNumber, userId: user.id, isPersistentAuth },
-  };
-
-  //  * create new tokens
-  const tknCreation = Core.Utils.createTokens(payloads);
+  });
 
   if (!tknCreation.success) {
     //  !failed creating tokens

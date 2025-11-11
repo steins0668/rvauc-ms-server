@@ -6,6 +6,8 @@ import { Errors } from "./errors";
 
 export namespace Data {
   export namespace Records {
+    export type Role = keyof typeof roles;
+
     export const roles = {
       student: {
         id: 0,
@@ -66,6 +68,8 @@ export namespace Data {
       StudentNumber: /^\d{3}-\d{4}$/,
 
       UserId: /^\d+$/,
+
+      RfidUid: /^[0-9A-Fa-f]{8,14}$/,
     } as const;
   }
 

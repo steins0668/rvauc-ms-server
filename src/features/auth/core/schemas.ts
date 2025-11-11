@@ -26,28 +26,58 @@ export namespace Schemas {
         block: z.string(),
       });
 
-      export const roleBased = z.discriminatedUnion(
-        "role",
-        [professor, student],
-        {
-          error: (iss) =>
-            iss.input === undefined ? "Role is required." : "Invalid role.",
-        }
-      );
+      export const full = z.discriminatedUnion("role", [professor, student], {
+        error: (iss) =>
+          iss.input === undefined ? "Role is required." : "Invalid role.",
+      });
+
+      export const minimalStudent = z.strictObject({
+        role: z.literal(Data.Records.roles.student.name),
+        studentNumber: z.string(),
+        department: z.string(),
+        yearLevel: z.number(),
+        block: z.string(),
+      });
+
+      export const minimal = z.discriminatedUnion("role", [
+        professor, //  ! temporary. a `minimalProfessor` payload should be added once needed.
+        minimalStudent,
+      ]);
 
       export type Professor = z.infer<typeof professor>;
       export type Student = z.infer<typeof student>;
-      export type RoleBased = z.infer<typeof roleBased>;
+      export type Full = z.infer<typeof full>;
+      export type MinimalStudent = z.infer<typeof minimalStudent>;
+      export type Minimal = z.infer<typeof minimal>;
 
       export const schemas = [
-        { type: "roleBased", schema: roleBased },
+        { type: "full", schema: full },
+        { type: "minimal", schema: minimal },
       ] as const; //  ! add all future access token payload types here.
 
       export type AnySchema = (typeof schemas)[number];
 
+      export type AnySchemaType = AnySchema extends infer S
+        ? S extends { type: infer T }
+          ? T
+          : never
+        : never;
+
+      export type AnySchemaObject = AnySchema extends infer S
+        ? S extends { schema: infer O }
+          ? O
+          : never
+        : never;
+
       export type AnyPayload = AnySchema extends infer S
         ? S extends { type: infer T; schema: infer S }
           ? { type: T; payload: z.infer<S> }
+          : never
+        : never;
+
+      export type AnyPayloadObject = AnySchema extends infer S
+        ? S extends { schema: infer S }
+          ? z.infer<S>
           : never
         : never;
     }
