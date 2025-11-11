@@ -13,52 +13,71 @@ type ResolverArgs = {
 };
 
 export const payloadResolver = {
-  professor: async (args: ResolverArgs) => {
-    const { dataService, user } = args;
+  professor,
+  student,
+} as const;
 
-    const query = await dataService.queryProfessors({
-      fn: async (query, converter) => {
-        const result = await query.findFirst({
-          where: converter({ filterType: "or", id: user.id }),
-          with: { college: true },
-        });
+async function professor(
+  args: ResolverArgs & { type: "full" }
+): Promise<
+  | Types.AuthenticationResult.Success<Schemas.Payloads.AccessToken.Professor>
+  | Types.AuthenticationResult.Fail
+>;
+async function professor(
+  args: ResolverArgs & { type: "minimal" }
+): Promise<
+  | Types.AuthenticationResult.Success<Schemas.Payloads.AccessToken.Professor>
+  | Types.AuthenticationResult.Fail
+>;
+async function professor(
+  args: ResolverArgs
+): Promise<
+  | Types.AuthenticationResult.Success<Schemas.Payloads.AccessToken.Professor>
+  | Types.AuthenticationResult.Fail
+> {
+  const { dataService, user } = args;
 
-        if (result === undefined)
-          throw new DbAccess.ErrorClass({
-            name: "DB_ACCESS_QUERY_ERROR",
-            message: "Could not find professor.",
-          });
-        return result;
-      },
-    });
-
-    if (!query.success)
-      return failPayloadCreation({
-        message: "Failed creating professor payload.",
-        err: query.error,
+  const query = await dataService.queryProfessors({
+    fn: async (query, converter) => {
+      const result = await query.findFirst({
+        where: converter({ filterType: "or", id: user.id }),
+        with: { college: true },
       });
 
-    const { college, facultyRank } = query.result;
+      if (result === undefined)
+        throw new DbAccess.ErrorClass({
+          name: "DB_ACCESS_QUERY_ERROR",
+          message: "Could not find professor.",
+        });
+      return result;
+    },
+  });
 
-    const parse = Schemas.Payloads.AccessToken.professor.strip().safeParse({
-      ...user,
-      role: "professor",
-      college: college.name,
-      facultyRank,
+  if (!query.success)
+    return failPayloadCreation({
+      message: "Failed creating professor payload.",
+      err: query.error,
     });
 
-    return parse.success
-      ? ResultBuilder.success(parse.data)
-      : ResultBuilder.fail(
-          Errors.Authentication.normalizeError({
-            name: "AUTHENTICATION_PAYLOAD_CREATION_ERROR",
-            message: "Failed parsing payload with professor schema.",
-            err: parse.error,
-          })
-        );
-  },
-  student,
-};
+  const { college, facultyRank } = query.result;
+
+  const parse = Schemas.Payloads.AccessToken.professor.strip().safeParse({
+    ...user,
+    role: "professor",
+    college: college.name,
+    facultyRank,
+  });
+
+  return parse.success
+    ? ResultBuilder.success(parse.data)
+    : ResultBuilder.fail(
+        Errors.Authentication.normalizeError({
+          name: "AUTHENTICATION_PAYLOAD_CREATION_ERROR",
+          message: "Failed parsing payload with professor schema.",
+          err: parse.error,
+        })
+      );
+}
 
 async function student(
   args: ResolverArgs & { type: "full" }
