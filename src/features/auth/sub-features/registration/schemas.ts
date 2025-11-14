@@ -103,6 +103,13 @@ export namespace Schemas {
       block: z.string(),
     });
 
+    export const roleBased = z.discriminatedUnion("role", [professor, student]);
+
+    export type Base = z.infer<typeof base>;
+    export type Student = z.infer<typeof student>;
+    export type Professor = z.infer<typeof professor>;
+    export type RoleBased = z.infer<typeof roleBased>;
+
     /**
      * @deprecated
      */
