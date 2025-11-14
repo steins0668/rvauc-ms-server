@@ -173,7 +173,7 @@ export namespace UserData {
      * 3. Returns a success or failure result depending on the outcome.
      */
     public async insertUser(
-      form: Registration.Schemas.Register.RoleBased
+      form: Registration.Schemas.Register._RoleBased
     ): Promise<
       | BaseResult.Success<number | undefined, Role>
       | BaseResult.Fail<DbAccess.ErrorClass>
@@ -231,7 +231,7 @@ export namespace UserData {
      * @returns
      */
     public async ensureNoDuplicates(
-      form: Registration.Schemas.Register.RoleBased
+      form: Registration.Schemas.Register._RoleBased
     ): Promise<
       | BaseResult.Success<{
           hasDuplicate: boolean;
@@ -344,9 +344,9 @@ export namespace UserData {
 
   //#region Types
   type Role = keyof typeof Core.Data.Records._roles;
-  type RoleId = Registration.Schemas.Register.RoleBased["roleId"];
+  type RoleId = Registration.Schemas.Register._RoleBased["roleId"];
   type RegisterSchema<R extends RoleId> = Extract<
-    Registration.Schemas.Register.RoleBased,
+    Registration.Schemas.Register._RoleBased,
     { roleId: R }
   >;
   type DuplicateCheckResolvers = {

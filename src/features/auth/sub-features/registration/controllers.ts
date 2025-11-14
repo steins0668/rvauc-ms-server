@@ -3,7 +3,7 @@ import { Schemas } from "./schemas";
 
 export namespace Controllers {
   export async function handleRegister(
-    req: Request<{}, {}, Schemas.Register.RoleBased>,
+    req: Request<{}, {}, Schemas.Register._RoleBased>,
     res: Response
   ) {
     const { body, requestLogger, userDataService } = req;

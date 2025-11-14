@@ -103,8 +103,14 @@ export namespace Schemas {
       block: z.string(),
     });
 
-    export type RoleBased = z.infer<typeof roleBased>;
-    export const roleBased = z.discriminatedUnion(
+    /**
+     * @deprecated
+     */
+    export type _RoleBased = z.infer<typeof _roleBased>;
+    /**
+     * @deprecated
+     */
+    export const _roleBased = z.discriminatedUnion(
       "roleId",
       [
         z.object({
