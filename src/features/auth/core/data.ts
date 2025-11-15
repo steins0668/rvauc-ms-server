@@ -22,6 +22,11 @@ export namespace Data {
         name: "professor",
       },
     } as const;
+
+    export const roleIds = {
+      student: 0,
+      professor: 1,
+    } as const;
   }
 
   export namespace Regex {

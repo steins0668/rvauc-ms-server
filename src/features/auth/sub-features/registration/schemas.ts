@@ -6,7 +6,7 @@ const { Username, Password, StudentNumber } = Core.Data.Regex.Auth;
 export namespace Schemas {
   export namespace Register {
     const base = z.object({
-      roleId: z.number(),
+      roleId: z.enum(Core.Data.Records.roleIds),
       role: z.enum(Core.Data.Records.roles, {
         error: (iss) =>
           iss.input === undefined ? "Role is required." : "Invalid role.",
@@ -56,6 +56,9 @@ export namespace Schemas {
 
     export const professor = z.object({
       ...base.shape,
+      roleId: z
+        .literal(Core.Data.Records.roleIds.professor)
+        .default(Core.Data.Records.roleIds.professor),
       role: z.literal(Core.Data.Records.roles.professor),
       collegeId: z.number({
         error: (iss) =>
@@ -73,6 +76,9 @@ export namespace Schemas {
 
     export const student = z.object({
       ...base.shape,
+      roleId: z
+        .literal(Core.Data.Records.roleIds.student)
+        .default(Core.Data.Records.roleIds.student),
       role: z.literal(Core.Data.Records.roles.student),
       //  todo: handle constraints for current valid ids
       departmentId: z.number({
