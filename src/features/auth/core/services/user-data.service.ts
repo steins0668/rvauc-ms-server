@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import {
   createContext,
   DbOrTx,
+  execTransaction,
   TxContext,
 } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
@@ -153,14 +154,13 @@ export namespace UserData {
         );
       }
     }
-
     /**
      * Inserts a user into the database and, depending on the type, also into
      * related tables (e.g. `students`).
      *
      * @param form - Contains the form data.
      * @returns {Promise<
-     *   | BaseResult.Success<number | undefined, Role>
+     *   | BaseResult.Success<number | undefined, _Role>
      *   | BaseResult.Fail<DbAccess.ErrorClass>
      * >}
      * Resolves with the inserted user ID and table name on success, or a database
@@ -191,29 +191,20 @@ export namespace UserData {
       };
 
       try {
-        //  * initiate insertion
-        const insertResult = await this._userRepository.execTransaction(
-          async (tx) => {
-            form.passwordHash = await bcrypt.hash(form.passwordHash, 10);
-            //  * insert into users table.
-            const id = await this._userRepository.insertOne({
-              dbOrTx: tx,
-              user: form,
-            });
+        return await execTransaction(async (tx) => {
+          form.passwordHash = await bcrypt.hash(form.passwordHash, 10);
 
-            const roleName = Object.values(Core.Data.Records._roles).find(
-              (role) => role.id === form.roleId
-            )?.name;
-            if (id === undefined) return getInsertResult(roleName, id); //  ! failed inserting into users table
+          const id = await this._userRepository.insertOne({
+            dbOrTx: tx,
+            user: form,
+          });
 
-            //  * additionally insert into other tables as needed.
-            const id2 = await this._runInsert({ tx, id, schema: form });
+          if (id === undefined) return getInsertResult(form.role, id);
 
-            return getInsertResult(roleName, id2);
-          }
-        );
+          const id2 = await this._runInsert({ tx, id, schema: form });
 
-        return insertResult;
+          return getInsertResult(form.role, id2);
+        });
       } catch (err) {
         return ResultBuilder.fail(
           DbAccess.normalizeError({
@@ -224,7 +215,6 @@ export namespace UserData {
         );
       }
     }
-
     /**
      * Returns true if there are no duplicates and false otherwise.
      * @param form
@@ -243,24 +233,24 @@ export namespace UserData {
         ResultBuilder.success({ hasDuplicate, from });
 
       try {
-        //  * check in users table
-        const user = await this._userRepository.execQuery({
-          fn: async (query, converter) => {
-            const { email, username } = form;
-            const where = converter({ email, username });
-            return await query.findFirst({ where, with: { role: true } });
-          },
+        return await execTransaction(async (tx) => {
+          //  * check in users table
+          const user = await this._userRepository.execQuery({
+            dbOrTx: tx,
+            fn: async (query, converter) => {
+              const { email, username } = form;
+              const where = converter({ email, username });
+              return query.findFirst({ where, with: { role: true } });
+            },
+          });
+
+          if (user) return getResult(true, form.role);
+
+          //  * additional checks in extended tables as needed.
+          const hasDuplicate = await this._runDuplicateCheck(form.role, form);
+
+          return getResult(hasDuplicate, form.role);
         });
-
-        const roleName = Object.values(Core.Data.Records._roles).find(
-          (role) => role.id === form.roleId
-        )?.name;
-        if (user) return getResult(true, roleName); //  ! duplicate in users table.
-
-        //  * additional checks in extended tables as needed.
-        const hasDuplicate = await this._runDuplicateCheck(form.roleId, form);
-
-        return getResult(hasDuplicate, roleName);
       } catch (err) {
         return ResultBuilder.fail(
           DbAccess.normalizeError({
@@ -277,25 +267,22 @@ export namespace UserData {
      * Used as a workaround for the type limitations when calling ambiguously
      * with a given `roleId` and `schema`.
      */
-    private async _runInsert<R extends RoleId>(args: InsertArgs<R>) {
-      return await this._insertResolvers[args.schema.roleId](args);
+    private async _runInsert<R extends Role>(args: InsertArgs<R>) {
+      return await this._insertResolvers[args.schema.role](args);
     }
 
     /**
      * @description A collection of resolvers for inserting new data into
      * the `students` and `professors` tables with the following mapping
-     *
-     * `0` - `students` table.
-     * `1` - `professors` table.
      */
     private _insertResolvers: InsertResolvers = {
-      0: async (args: InsertArgs<0>) => {
+      student: async (args: InsertArgs<"student">) => {
         return await this._studentRepository.insertOne({
           dbOrTx: args.tx,
           student: { ...args.schema, id: args.id },
         });
       },
-      1: async (args: InsertArgs<1>) => {
+      professor: async (args: InsertArgs<"professor">) => {
         return await this._professorRepository.insertOne({
           dbOrTx: args.tx,
           professor: { ...args.schema, id: args.id },
@@ -303,30 +290,25 @@ export namespace UserData {
       },
     };
 
-    /**
-     * @description A `linker` for the `duplicateCheckResolvers` and the call site.
-     * Used as a workaround for the type limitations when calling ambiguously with a
-     * given `roleId` and `schema`
-     */
-    private _runDuplicateCheck<R extends RoleId>(
-      roleId: R,
+    private _runDuplicateCheck<R extends Role>(
+      role: R,
       schema: RegisterSchema<R>
     ) {
-      return this._duplicateCheckResolvers[roleId](schema);
+      return this._duplicateCheckResolvers[role](schema);
     }
 
     /**
      * @description A collection of resolvers for checking duplicates from the
      * the `students` and `professors` tables with the following mapping
-     *
-     * `0` - `students` table.
-     * `1` - `professors` table.
      */
     private _duplicateCheckResolvers: DuplicateCheckResolvers = {
-      0: async (schema: RegisterSchema<0>) => {
+      //  * professors table does not need additional checks
+      professor: async (schema: Registration.Schemas.Register.Professor) =>
+        false,
+      student: async (schema: Registration.Schemas.Register.Student) => {
         const student = await this._studentRepository.execQuery({
           fn: async (query, converter) => {
-            return await query.findFirst({
+            return query.findFirst({
               where: converter({
                 filterType: "or",
                 studentNumber: schema.studentNumber,
@@ -334,33 +316,31 @@ export namespace UserData {
             });
           },
         });
-        return !!student; //  ! duplicate in students table
+
+        return !!student; //  ! duplicate in students table.
       },
-      //  * professors table does not need additional checks
-      1: async (schema: RegisterSchema<1>) => false,
     };
     //#endregion Utilities
   }
 
   //#region Types
-  type Role = keyof typeof Core.Data.Records._roles;
-  type RoleId = Registration.Schemas.Register.RoleBased["roleId"];
-  type RegisterSchema<R extends RoleId> = Extract<
+  type Role = keyof typeof Core.Data.Records.roles;
+  type RegisterSchema<R extends Role> = Extract<
     Registration.Schemas.Register.RoleBased,
-    { roleId: R }
+    { role: R }
   >;
   type DuplicateCheckResolvers = {
-    [R in RoleId]: (schema: RegisterSchema<R>) => Promise<boolean>;
+    [R in Role]: (schema: RegisterSchema<R>) => Promise<boolean>;
   };
 
-  type InsertResolvers = {
-    [R in RoleId]: (args: InsertArgs<R>) => Promise<number | undefined>;
-  };
-
-  type InsertArgs<R extends RoleId> = {
+  type InsertArgs<R extends Role> = {
     tx: TxContext;
     schema: RegisterSchema<R>;
     id: number;
+  };
+
+  type InsertResolvers = {
+    [R in Role]: (args: InsertArgs<R>) => Promise<number | undefined>;
   };
   //#endregion
 }

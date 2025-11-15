@@ -6,7 +6,11 @@ const { Username, Password, StudentNumber } = Core.Data.Regex.Auth;
 export namespace Schemas {
   export namespace Register {
     const base = z.object({
-      roleId: z.number(),
+      roleId: z.enum(Core.Data.Records.roleIds),
+      role: z.enum(Core.Data.Records.roles, {
+        error: (iss) =>
+          iss.input === undefined ? "Role is required." : "Invalid role.",
+      }),
       email: z.email({
         error: (iss) =>
           iss.input === undefined ? "Email is required." : "Invalid email.",
@@ -50,64 +54,66 @@ export namespace Schemas {
       }),
     });
 
-    export type RoleBased = z.infer<typeof roleBased>;
-    export const roleBased = z.discriminatedUnion(
-      "roleId",
-      [
-        z.object({
-          ...base.shape,
-          roleId: z.literal(Core.Data.Records._roles.professor.id),
-          collegeId: z.number({
-            error: (iss) =>
-              iss.input === undefined
-                ? "College id is required."
-                : "Invalid college id.",
-          }),
-          facultyRank: z.string({
-            error: (iss) =>
-              iss.input === undefined
-                ? "Faculty rank is required."
-                : "Invalid faculty rank.",
-          }),
-        }),
-        z.object({
-          ...base.shape,
-          roleId: z.literal(Core.Data.Records._roles.student.id),
-          //  todo: handle constraints for current valid ids
-          departmentId: z.number({
-            error: (iss) =>
-              iss.input === undefined
-                ? "Department is required."
-                : "Invalid department.",
-          }),
-
-          studentNumber: z
-            .string({
-              error: (iss) =>
-                iss.input === undefined
-                  ? "Student number is required."
-                  : "Invalid student number.",
-            })
-            .regex(StudentNumber, { error: "Invalid student number." }),
-          yearLevel: z
-            .number()
-            .min(1, {
-              error:
-                "Year must be between no lower than 1 and no higher than 4.",
-            })
-            .max(4, {
-              error:
-                "Year must be between no lower than 1 and no higher than 4.",
-            }),
-
-          //  todo: add validation for available blocks
-          block: z.string(),
-        }),
-      ],
-      {
+    export const professor = z.object({
+      ...base.shape,
+      roleId: z
+        .literal(Core.Data.Records.roleIds.professor)
+        .default(Core.Data.Records.roleIds.professor),
+      role: z.literal(Core.Data.Records.roles.professor),
+      collegeId: z.number({
         error: (iss) =>
-          iss.input === undefined ? "Role id is required." : "Invalid role id.",
-      }
-    );
+          iss.input === undefined
+            ? "College id is required."
+            : "Invalid college id.",
+      }),
+      facultyRank: z.string({
+        error: (iss) =>
+          iss.input === undefined
+            ? "Faculty rank is required."
+            : "Invalid faculty rank.",
+      }),
+    });
+
+    export const student = z.object({
+      ...base.shape,
+      roleId: z
+        .literal(Core.Data.Records.roleIds.student)
+        .default(Core.Data.Records.roleIds.student),
+      role: z.literal(Core.Data.Records.roles.student),
+      //  todo: handle constraints for current valid ids
+      departmentId: z.number({
+        error: (iss) =>
+          iss.input === undefined
+            ? "Department is required."
+            : "Invalid department.",
+      }),
+
+      studentNumber: z
+        .string({
+          error: (iss) =>
+            iss.input === undefined
+              ? "Student number is required."
+              : "Invalid student number.",
+        })
+        .regex(StudentNumber, { error: "Invalid student number." }),
+      yearLevel: z
+        .number()
+        .min(1, {
+          error: "Year must be between no lower than 1 and no higher than 4.",
+        })
+        .max(4, {
+          error: "Year must be between no lower than 1 and no higher than 4.",
+        }),
+
+      //  todo: add validation for available blocks
+      block: z.string(),
+    });
+
+    export const roleBased = z.discriminatedUnion("role", [professor, student]);
+
+    export type Base = z.infer<typeof base>;
+    export type Student = z.infer<typeof student>;
+    export type Professor = z.infer<typeof professor>;
+    export type RoleBased = z.infer<typeof roleBased>;
   }
 }
