@@ -32,7 +32,6 @@ export namespace Controllers {
     const userInsert = await userDataService.insertUser(body);
 
     if (userInsert.success) {
-      console.log(`Inserted from ${userInsert.source}`);
       //  * success register
       const message = "User registration success.";
 
