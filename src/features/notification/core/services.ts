@@ -19,21 +19,32 @@ export namespace Services {
         );
 
       type ResponseType = Types.NotificationMicroservice.Response.Union<null>;
-      const result = await Utils.notifClient.post<ResponseType>(
-        "/notifications/push-notifications/send-firebase-notification",
-        body
-      );
 
-      const { success, message } = result.data;
+      try {
+        const result = await Utils.notifClient.post<ResponseType>(
+          "/notifications/push-notifications/send-firebase-notification",
+          body
+        );
 
-      return success
-        ? ResultBuilder.success(message)
-        : ResultBuilder.fail(
-            new Errors.Notification.ErrorClass({
-              name: "NOTIFICATION_INVALID_SCHEMA_ERROR",
-              message: message ?? "Failed sending notification.",
-            })
-          );
+        const { success, message } = result.data;
+
+        return success
+          ? ResultBuilder.success(message)
+          : ResultBuilder.fail(
+              new Errors.Notification.ErrorClass({
+                name: "NOTIFICATION_FAILED_SENDING_NOTIFICATION_ERROR",
+                message: message ?? "Failed sending notification.",
+              })
+            );
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.Notification.normalizeError({
+            name: "NOTIFICATION_FAILED_SENDING_NOTIFICATION_ERROR",
+            message: "Failed sending notification",
+            err,
+          })
+        );
+      }
     }
   }
 }
