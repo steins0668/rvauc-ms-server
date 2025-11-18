@@ -1,0 +1,7 @@
+import z from "zod";
+
+export namespace Schemas {
+  export const environment = z.enum(["dev", "prod", "testing"]);
+
+  export type Environment = z.infer<typeof environment>;
+}
