@@ -28,4 +28,23 @@ export namespace Data {
       return tokenSecret;
     }
   }
+
+  export namespace Notification {
+    export const categories = [
+      "account_created",
+      "password_code_sent",
+      "password_code_verified",
+      "password_change_success",
+      "sign_in_success",
+      "sign_out_success",
+      "uniform_compliant",
+      "uniform_non_compliant",
+      "verification_code_sent",
+      "verification_code_verified",
+      "violation_minor",
+      "violation_major",
+    ] as const;
+
+    export type Categories = (typeof categories)[number];
+  }
 }
