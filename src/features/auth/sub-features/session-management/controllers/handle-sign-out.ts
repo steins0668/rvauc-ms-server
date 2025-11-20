@@ -40,7 +40,7 @@ export async function handleSignOut(
 
   //  * get refresh tkn
   const cookieToken = cookies?.[refresh] as string | undefined;
-  const bodyToken = req.body.refreshToken;
+  const bodyToken = req.body?.refreshToken;
   const refreshTkn = cookieToken ?? bodyToken;
   //  ! refresh tkn not found. just clear cookie
   if (refreshTkn === undefined) return clearCookie(cookieConfig.result);
