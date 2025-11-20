@@ -11,6 +11,7 @@ export namespace Schemas {
         error: (iss) =>
           iss.input === undefined ? "Role is required." : "Invalid role.",
       }),
+      deviceToken: z.string().optional(),
       email: z.email({
         error: (iss) =>
           iss.input === undefined ? "Email is required." : "Invalid email.",
