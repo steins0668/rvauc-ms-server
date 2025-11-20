@@ -46,11 +46,16 @@ export namespace Data {
     ] as const;
 
     const uniformCompliance = [
+      "uniform_compliance_recorded",
       "uniform_compliant",
       "uniform_non_compliant",
     ] as const;
 
-    const violation = ["violation_minor", "violation_major"] as const;
+    const violation = [
+      "violation_minor",
+      "violation_major",
+      "violation_recorded",
+    ] as const;
 
     const internalCategories = ["internal_error"] as const;
 
