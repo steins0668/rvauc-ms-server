@@ -118,7 +118,7 @@ export namespace Services {
 
       try {
         const result = await Utils.notifClient.post<ResponseType>(
-          "/notifications/registration/register-device",
+          "/auth/registration/register",
           args
         );
 
