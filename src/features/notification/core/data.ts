@@ -41,7 +41,7 @@ export namespace Data {
       "sign_out_success",
       "request_code_sent",
       "request_code_verified",
-      "request_failed",
+      "verification_failed",
     ] as const;
 
     const uniformCompliance = [
