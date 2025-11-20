@@ -32,6 +32,7 @@ export namespace Data {
   export namespace Notification {
     const authentication = [
       "account_created",
+      "password_code_not_verified",
       "password_code_sent",
       "password_code_still_active",
       "password_code_verified",
