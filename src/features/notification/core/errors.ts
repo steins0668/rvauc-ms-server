@@ -4,6 +4,8 @@ import { isError } from "../../../utils";
 export namespace Errors {
   export namespace Notification {
     export type ErrorName =
+      | "NOTIFICATION_FAILED_GETTING_NOTIFICATIONS_ERROR"
+      | "NOTIFICATION_FAILED_REGISTERING_USER_ERROR"
       | "NOTIFICATION_FAILED_SENDING_NOTIFICATION_ERROR"
       | "NOTIFICATION_INVALID_SCHEMA_ERROR";
 
