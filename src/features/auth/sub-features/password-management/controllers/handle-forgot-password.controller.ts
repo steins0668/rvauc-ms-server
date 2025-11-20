@@ -164,19 +164,18 @@ async function sendEmail(args: {
   }
 }
 
-async function notifyInternalError(args: { userId: number; message?: string }) {
-  await notify({
+const notifyInternalError = async (args: {
+  userId: number;
+  message?: string;
+}) =>
+  notify({
     category: "internal_error",
     userId: args.userId,
     title: "Internal error.",
     message: args.message ?? "Something went wrong. Please try again later.",
   });
-}
 
-async function notify(
+const notify = async (
   notification: Notification.Core.Schemas.PushNotification
-) {
-  const notificationServices = Notification.Core.Services.Api;
-  return await notificationServices.pushNotification(notification);
-}
+) => Notification.Core.Services.Api.pushNotification(notification);
 //#endregion
