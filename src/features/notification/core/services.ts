@@ -6,6 +6,37 @@ import { Types } from "./types";
 
 export namespace Services {
   export namespace Notification {
+    export async function getNotifications(args: { userId: number }) {
+      type ResponseType =
+        Types.NotificationMicroservice.Response.Union<Schemas.PushNotification>;
+
+      try {
+        const result = await Utils.notifClient.post<ResponseType>(
+          "/notifications/get-notifications",
+          args
+        );
+
+        const { success, message } = result.data;
+
+        return success
+          ? ResultBuilder.success(message)
+          : ResultBuilder.fail(
+              new Errors.Notification.ErrorClass({
+                name: "NOTIFICATION_FAILED_GETTING_NOTIFICATIONS_ERROR",
+                message: message ?? "Failed getting notifications.",
+              })
+            );
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.Notification.normalizeError({
+            name: "NOTIFICATION_FAILED_GETTING_NOTIFICATIONS_ERROR",
+            message: "Failed getting notifications",
+            err,
+          })
+        );
+      }
+    }
+
     export async function pushNotification(body: Schemas.PushNotification) {
       const parsed = Schemas.pushNotification.strip().safeParse(body);
 
@@ -22,7 +53,7 @@ export namespace Services {
 
       try {
         const result = await Utils.notifClient.post<ResponseType>(
-          "/notifications/push-notifications/send-firebase-notification",
+          "/notifications/send-firebase-notification",
           body
         );
 
@@ -41,6 +72,41 @@ export namespace Services {
           Errors.Notification.normalizeError({
             name: "NOTIFICATION_FAILED_SENDING_NOTIFICATION_ERROR",
             message: "Failed sending notification",
+            err,
+          })
+        );
+      }
+    }
+
+    export async function registerDevice(args: {
+      userId: number;
+      deviceToken: string;
+    }) {
+      type ResponseType = Types.NotificationMicroservice.Response.Union<{
+        userId: number;
+      }>;
+
+      try {
+        const result = await Utils.notifClient.post<ResponseType>(
+          "/notifications/registration/register-device",
+          args
+        );
+
+        const { success, message } = result.data;
+
+        return success
+          ? ResultBuilder.success(message)
+          : ResultBuilder.fail(
+              new Errors.Notification.ErrorClass({
+                name: "NOTIFICATION_FAILED_REGISTERING_USER_ERROR",
+                message: message ?? "Failed registering user.",
+              })
+            );
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.Notification.normalizeError({
+            name: "NOTIFICATION_FAILED_REGISTERING_USER_ERROR",
+            message: "Failed registering user",
             err,
           })
         );
