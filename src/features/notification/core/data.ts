@@ -30,19 +30,33 @@ export namespace Data {
   }
 
   export namespace Notification {
-    export const categories = [
+    const authentication = [
       "account_created",
       "password_code_sent",
+      "password_code_still_active",
       "password_code_verified",
       "password_change_success",
       "sign_in_success",
       "sign_out_success",
-      "uniform_compliant",
-      "uniform_non_compliant",
       "verification_code_sent",
       "verification_code_verified",
-      "violation_minor",
-      "violation_major",
+      "verification_failed",
+    ] as const;
+
+    const uniformCompliance = [
+      "uniform_compliant",
+      "uniform_non_compliant",
+    ] as const;
+
+    const violation = ["violation_minor", "violation_major"] as const;
+
+    const internalCategories = ["internal_error"] as const;
+
+    export const categories = [
+      ...authentication,
+      ...uniformCompliance,
+      ...violation,
+      ...internalCategories,
     ] as const;
 
     export type Categories = (typeof categories)[number];
