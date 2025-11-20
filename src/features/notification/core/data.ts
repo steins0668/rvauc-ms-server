@@ -39,6 +39,7 @@ export namespace Data {
       "password_change_success",
       "sign_in_success",
       "sign_out_success",
+      "request_code_not_verified",
       "request_code_sent",
       "request_code_verified",
       "verification_failed",
