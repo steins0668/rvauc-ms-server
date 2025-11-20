@@ -5,7 +5,7 @@ import { Utils } from "./utils";
 import { Types } from "./types";
 
 export namespace Services {
-  export namespace Notification {
+  export namespace Api {
     export async function clearNotifications(args: { userId: number }) {
       type ResponseType = Types.NotificationMicroservice.Response.Union<null>;
 
