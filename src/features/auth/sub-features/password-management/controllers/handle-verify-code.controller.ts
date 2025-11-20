@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { HashUtil } from "../../../../../utils";
+import { Notification } from "../../../../notification";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 
@@ -32,6 +33,7 @@ export async function handleVerifyCode(
     return;
   }
 
+  //  todo: verify with user id
   const user = verification.result;
 
   //    * find non-expired reset code with code (encrypt first) from body.
@@ -44,10 +46,22 @@ export async function handleVerifyCode(
   if (!codeVerification.success) {
     //  ! code verification failed
     const { error } = codeVerification;
-    const message =
-      error.name === "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR"
-        ? "Something went wrong. Please try again later"
-        : error.message; //  ? either could not find code or code is expired.
+    const isInternalError =
+      error.name === "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR";
+    const message = isInternalError
+      ? "Something went wrong. Please try again later"
+      : error.message; //  ? either could not find code or code is expired.
+
+    const notification = isInternalError
+      ? notifyInternalError({ userId: user.id })
+      : notify({
+          category: "password_code_not_verified",
+          userId: user.id,
+          title: "Failed verification.",
+          message,
+        });
+
+    await notification;
 
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -57,5 +71,29 @@ export async function handleVerifyCode(
     return;
   }
 
-  res.status(200).json({ successs: true, message: "Code verified." });
+  const message = "Code verified.";
+
+  await notify({
+    category: "password_code_verified",
+    userId: user.id,
+    title: "Code verification",
+    message,
+  });
+
+  res.status(200).json({ success: true, message });
 }
+
+const notifyInternalError = async (args: {
+  userId: number;
+  message?: string;
+}) =>
+  notify({
+    category: "internal_error",
+    userId: args.userId,
+    title: "Internal error.",
+    message: args.message ?? "Something went wrong. Please try again later.",
+  });
+
+const notify = async (
+  notification: Notification.Core.Schemas.PushNotification
+) => Notification.Core.Services.Api.pushNotification(notification);
