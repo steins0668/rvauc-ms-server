@@ -94,6 +94,12 @@ export async function handleRequestSignInCode(
     return;
   }
 
+  if (authDetails.deviceToken)
+    await Notification.Core.Services.Api.registerDevice({
+      userId: user.id,
+      deviceToken: authDetails.deviceToken,
+    });
+
   const message = "Request code sent. Please check your email.";
   await notify({
     category: "request_code_sent",
