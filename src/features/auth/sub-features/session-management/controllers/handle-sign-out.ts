@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { Notification } from "../../../../notification";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 
@@ -53,6 +54,17 @@ export async function handleSignOut(
   const { sessionNumber } = payloadVerification.result;
   await sessionManager.endSession(sessionNumber);
 
+  await notify({
+    category: "sign_out_success",
+    userId: payloadVerification.result.userId,
+    title: "Sign Out",
+    message: "Signed out successfully.",
+  });
+
   //  * clear cookie
   clearCookie(cookieConfig.result);
 }
+
+const notify = async (
+  notification: Notification.Core.Schemas.PushNotification
+) => Notification.Core.Services.Api.pushNotification(notification);
