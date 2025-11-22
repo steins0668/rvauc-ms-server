@@ -36,7 +36,7 @@ export namespace Services {
     export async function getNotifications(args: { userId: number }) {
       const url = "/notifications/get-notifications/" + args.userId;
 
-      type R = Response.Union<Schemas.PushNotification>;
+      type R = Response.Union<Schemas.NewNotification>;
       try {
         const response = await Utils.notifClient.get<R>(url);
 
@@ -61,8 +61,8 @@ export namespace Services {
       }
     }
 
-    export async function pushNotification(body: Schemas.PushNotification) {
-      const parsed = Schemas.pushNotification.strip().safeParse(body);
+    export async function pushNotification(body: Schemas.NewNotification) {
+      const parsed = Schemas.newNotification.strip().safeParse(body);
 
       if (!parsed.success)
         return ResultBuilder.fail(

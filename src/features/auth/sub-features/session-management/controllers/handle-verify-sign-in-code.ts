@@ -216,5 +216,5 @@ const notifyInternalError = async (args: {
   });
 
 const notify = async (
-  notification: Notification.Core.Schemas.PushNotification
+  notification: Notification.Core.Schemas.NewNotification
 ) => Notification.Core.Services.Api.pushNotification(notification);

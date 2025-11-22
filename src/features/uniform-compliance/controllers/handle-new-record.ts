@@ -186,8 +186,6 @@ async function notifyInternalError(args: { userId: number; message?: string }) {
   });
 }
 
-async function notify(
-  notification: Notification.Core.Schemas.PushNotification
-) {
+async function notify(notification: Notification.Core.Schemas.NewNotification) {
   return await Notification.Core.Services.Api.pushNotification(notification);
 }
