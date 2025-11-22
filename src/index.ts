@@ -10,6 +10,7 @@ import {
   requestProfiler,
   setHeaderCredentials,
 } from "./middlewares";
+import { Notifications } from "./features/notifications";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.use(requestProfiler); //  * request profiling
 app.use("/auth", Auth.Routes);
 app.use("/uniform-compliance", UniformCompliance.Routes);
 app.use("/violation", Violation.Routes);
+app.use("/notifications", Notifications.Routes);
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {

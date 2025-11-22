@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { HashUtil } from "../../../../../utils";
+import { Notifications } from "../../../../notifications";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 
@@ -52,10 +53,21 @@ export async function handleVerifyCode(
   if (!codeVerification.success) {
     //  ! code verification failed
     const { error } = codeVerification;
-    const message =
-      error.name === "AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR"
-        ? "Something went wrong. Please try again later."
-        : error.message; //  ? either could not find code or code is expired.
+    const isInternalError =
+      error.name === "AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR";
+
+    const message = isInternalError
+      ? "Something went wrong. Please try again later."
+      : error.message; //  ? either could not find code or code is expired.
+
+    isInternalError
+      ? await notifyInternalError({ userId: user.id })
+      : await notify({
+          category: "request_code_not_verified",
+          userId: user.id,
+          title: "Request Code",
+          message,
+        });
 
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -73,6 +85,8 @@ export async function handleVerifyCode(
   if (!codeInvalidation.success) {
     const { error } = codeInvalidation;
     const message = "Something went wrong. Please try again later.";
+
+    await notifyInternalError({ userId: user.id });
 
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -96,6 +110,8 @@ export async function handleVerifyCode(
     const { error } = createAccessPayload;
     const message = "Something went wrong. Please try again later.";
 
+    await notifyInternalError({ userId: user.id });
+
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
@@ -116,6 +132,8 @@ export async function handleVerifyCode(
   if (!tknCreation.success) {
     //  !failed creating tokens
     const { error } = tknCreation;
+
+    await notifyInternalError({ userId: user.id });
 
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -141,6 +159,8 @@ export async function handleVerifyCode(
     //  !failed starting session
     const { error } = sessionResult;
 
+    await notifyInternalError({ userId: user.id });
+
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
@@ -155,6 +175,8 @@ export async function handleVerifyCode(
     //  !failed getting refresh token config
     const { error } = cookieResult;
 
+    await notifyInternalError({ userId: user.id });
+
     res
       .status(Core.Errors.Config.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
@@ -166,6 +188,13 @@ export async function handleVerifyCode(
 
   const { cookieName, persistentCookie, sessionCookie } = cookieResult.result;
 
+  await notify({
+    category: "request_code_verified",
+    userId: user.id,
+    title: "Sign In Request",
+    message: "Sign in success.",
+  });
+
   //  *cookie creation
   res.cookie(
     cookieName,
@@ -174,3 +203,18 @@ export async function handleVerifyCode(
   );
   res.json({ success: true, accessToken, refreshToken });
 }
+
+const notifyInternalError = async (args: {
+  userId: number;
+  message?: string;
+}) =>
+  notify({
+    category: "internal_error",
+    userId: args.userId,
+    title: "Internal error.",
+    message: args.message ?? "Something went wrong. Please try again later.",
+  });
+
+const notify = async (
+  notification: Notifications.Core.Schemas.NewNotification
+) => Notifications.Core.Services.Api.pushNotification(notification);

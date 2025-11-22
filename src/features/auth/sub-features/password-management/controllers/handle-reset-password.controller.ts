@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { execTransaction } from "../../../../../db/create-context";
 import { HashUtil, ResultBuilder } from "../../../../../utils";
+import { Notifications } from "../../../../notifications";
 import { Core } from "../../../core";
 import { ViewModels } from "../../../types";
 import { Schemas } from "../schemas";
@@ -61,6 +62,8 @@ export async function handleResetPassword(
     const { error } = updateOperation;
     const message = "Something went wrong. Please try again later.";
 
+    await notifyInternalError({ userId: codeVerification.result.userId });
+
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
@@ -68,14 +71,18 @@ export async function handleResetPassword(
     logger.log("debug", error.message, error);
     return;
   }
+  const message = "Password changed successfully.";
 
+  await notify({
+    category: "password_change_success",
+    userId: codeVerification.result.userId,
+    title: "Password changed.",
+    message: "Password changed successfully.",
+  });
   //    todo: sign in user
-  res
-    .status(200)
-    .json({ success: true, message: "Password changed successfully." });
+  res.status(200).json({ success: true, message });
 }
 //#region Util
-
 async function execUpdate(args: {
   req: Request<{}, {}, Schemas.ResetPassword>;
   code: ViewModels.PasswordResetCode;
@@ -117,4 +124,19 @@ async function execUpdate(args: {
     );
   }
 }
+
+const notifyInternalError = async (args: {
+  userId: number;
+  message?: string;
+}) =>
+  notify({
+    category: "internal_error",
+    userId: args.userId,
+    title: "Internal error.",
+    message: args.message ?? "Something went wrong. Please try again later.",
+  });
+
+const notify = async (
+  notification: Notifications.Core.Schemas.NewNotification
+) => Notifications.Core.Services.Api.pushNotification(notification);
 //#endregion

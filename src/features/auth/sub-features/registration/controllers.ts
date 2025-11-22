@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { Schemas } from "./schemas";
+import { Notifications } from "../../../notifications";
 
 export namespace Controllers {
   export async function handleRegister(
@@ -35,6 +36,12 @@ export namespace Controllers {
       //  * success register
       const message = "User registration success.";
 
+      if (body.deviceToken)
+        await Notifications.Core.Services.Api.registerDevice({
+          userId: userInsert.result!,
+          deviceToken: body.deviceToken,
+        });
+
       requestLogger.log("debug", message);
       res.status(201).json({ success: true, message });
     } else {
@@ -45,7 +52,5 @@ export namespace Controllers {
       const resMsg = "Database error. Please try again later.";
       res.status(500).json({ success: false, message: resMsg });
     }
-
-    return;
   }
 }

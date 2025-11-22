@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import crypto from "crypto";
 import { ResultBuilder } from "../../../../../../utils";
+import { Notifications } from "../../../../../notifications";
 import { Core } from "../../../../core";
 import { Schemas } from "../../schemas";
 import { getSignInMethod } from "./get-sign-in-method";
@@ -55,6 +56,8 @@ export async function handleRequestSignInCode(
     const { error } = codeCreation;
     const message = "Failed generating sign-in code. Please try again later.";
 
+    await notifyInternalError({ userId: user.id, message });
+
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
@@ -81,6 +84,7 @@ export async function handleRequestSignInCode(
     const { error } = emailTransport;
 
     const message = "Failed sending request code. Please try again later.";
+    await notifyInternalError({ userId: user.id, message });
     res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
@@ -90,9 +94,22 @@ export async function handleRequestSignInCode(
     return;
   }
 
+  if (authDetails.deviceToken)
+    await Notifications.Core.Services.Api.registerDevice({
+      userId: user.id,
+      deviceToken: authDetails.deviceToken,
+    });
+
+  const message = "Request code sent. Please check your email.";
+  await notify({
+    category: "request_code_sent",
+    userId: user.id,
+    title: "Request Code",
+    message,
+  });
   res.status(200).json({
     success: true,
-    message: "Request code sent. Please check your email.",
+    message,
   });
 }
 
@@ -137,3 +154,18 @@ function getSafeId(identifier: string): string {
       return JSON.stringify(identifier).slice(0, 50);
   }
 }
+
+const notifyInternalError = async (args: {
+  userId: number;
+  message?: string;
+}) =>
+  notify({
+    category: "internal_error",
+    userId: args.userId,
+    title: "Internal error.",
+    message: args.message ?? "Something went wrong. Please try again later.",
+  });
+
+const notify = async (
+  notification: Notifications.Core.Schemas.NewNotification
+) => Notifications.Core.Services.Api.pushNotification(notification);

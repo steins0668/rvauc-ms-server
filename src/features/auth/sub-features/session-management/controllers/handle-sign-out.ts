@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { Notifications } from "../../../../notifications";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 
@@ -39,7 +40,7 @@ export async function handleSignOut(
 
   //  * get refresh tkn
   const cookieToken = cookies?.[refresh] as string | undefined;
-  const bodyToken = req.body.refreshToken;
+  const bodyToken = req.body?.refreshToken;
   const refreshTkn = cookieToken ?? bodyToken;
   //  ! refresh tkn not found. just clear cookie
   if (refreshTkn === undefined) return clearCookie(cookieConfig.result);
@@ -53,6 +54,17 @@ export async function handleSignOut(
   const { sessionNumber } = payloadVerification.result;
   await sessionManager.endSession(sessionNumber);
 
+  await notify({
+    category: "sign_out_success",
+    userId: payloadVerification.result.userId,
+    title: "Sign Out",
+    message: "Signed out successfully.",
+  });
+
   //  * clear cookie
   clearCookie(cookieConfig.result);
 }
+
+const notify = async (
+  notification: Notifications.Core.Schemas.NewNotification
+) => Notifications.Core.Services.Api.pushNotification(notification);

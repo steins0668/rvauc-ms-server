@@ -13,16 +13,18 @@ export namespace Schemas {
 
       export type Schema = z.infer<typeof schema>;
 
-      export const schema = z.strictObject({
-        refreshToken: z
-          .string({
-            error: (iss) => {
-              if (iss.code === "invalid_type")
-                return "Refresh token must be a string";
-            },
-          })
-          .optional(),
-      });
+      export const schema = z.optional(
+        z.object({
+          refreshToken: z
+            .string({
+              error: (iss) => {
+                if (iss.code === "invalid_type")
+                  return "Refresh token must be a string";
+              },
+            })
+            .optional(),
+        })
+      );
     }
   }
 
@@ -30,6 +32,8 @@ export namespace Schemas {
     export type Schema = z.infer<typeof schema>;
 
     export const schema = z.object({
+      deviceToken: z.string().optional(),
+
       identifier: z.string({
         error: (iss) => {
           if (iss.code === "invalid_type") return "Identifier must be a string";

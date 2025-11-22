@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@libsql/client": "^0.15.15",
+    "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.4.1",
     "cookie-parser": "^1.4.7",
