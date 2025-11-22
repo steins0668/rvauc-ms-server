@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { execTransaction } from "../../../db/create-context";
 import { ResultBuilder } from "../../../utils";
 import { Auth } from "../../auth";
-import { Notification } from "../../notification";
+import { Notifications } from "../../notifications";
 import { Violation } from "../../violation";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
@@ -186,6 +186,8 @@ async function notifyInternalError(args: { userId: number; message?: string }) {
   });
 }
 
-async function notify(notification: Notification.Core.Schemas.NewNotification) {
-  return await Notification.Core.Services.Api.pushNotification(notification);
+async function notify(
+  notification: Notifications.Core.Schemas.NewNotification
+) {
+  return await Notifications.Core.Services.Api.pushNotification(notification);
 }

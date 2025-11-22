@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { Schemas } from "./schemas";
-import { Notification } from "../../../notification";
+import { Notifications } from "../../../notifications";
 
 export namespace Controllers {
   export async function handleRegister(
@@ -37,7 +37,7 @@ export namespace Controllers {
       const message = "User registration success.";
 
       if (body.deviceToken)
-        await Notification.Core.Services.Api.registerDevice({
+        await Notifications.Core.Services.Api.registerDevice({
           userId: userInsert.result!,
           deviceToken: body.deviceToken,
         });

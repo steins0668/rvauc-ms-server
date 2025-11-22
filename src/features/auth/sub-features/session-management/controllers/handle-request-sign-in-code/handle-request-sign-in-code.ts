@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import crypto from "crypto";
 import { ResultBuilder } from "../../../../../../utils";
-import { Notification } from "../../../../../notification";
+import { Notifications } from "../../../../../notifications";
 import { Core } from "../../../../core";
 import { Schemas } from "../../schemas";
 import { getSignInMethod } from "./get-sign-in-method";
@@ -95,7 +95,7 @@ export async function handleRequestSignInCode(
   }
 
   if (authDetails.deviceToken)
-    await Notification.Core.Services.Api.registerDevice({
+    await Notifications.Core.Services.Api.registerDevice({
       userId: user.id,
       deviceToken: authDetails.deviceToken,
     });
@@ -167,5 +167,5 @@ const notifyInternalError = async (args: {
   });
 
 const notify = async (
-  notification: Notification.Core.Schemas.NewNotification
-) => Notification.Core.Services.Api.pushNotification(notification);
+  notification: Notifications.Core.Schemas.NewNotification
+) => Notifications.Core.Services.Api.pushNotification(notification);

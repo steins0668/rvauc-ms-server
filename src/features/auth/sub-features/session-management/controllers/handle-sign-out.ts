@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { Notification } from "../../../../notification";
+import { Notifications } from "../../../../notifications";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 
@@ -66,5 +66,5 @@ export async function handleSignOut(
 }
 
 const notify = async (
-  notification: Notification.Core.Schemas.NewNotification
-) => Notification.Core.Services.Api.pushNotification(notification);
+  notification: Notifications.Core.Schemas.NewNotification
+) => Notifications.Core.Services.Api.pushNotification(notification);

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { execTransaction } from "../../../../../db/create-context";
 import { HashUtil, ResultBuilder } from "../../../../../utils";
-import { Notification } from "../../../../notification";
+import { Notifications } from "../../../../notifications";
 import { Core } from "../../../core";
 import { ViewModels } from "../../../types";
 import { Schemas } from "../schemas";
@@ -137,6 +137,6 @@ const notifyInternalError = async (args: {
   });
 
 const notify = async (
-  notification: Notification.Core.Schemas.NewNotification
-) => Notification.Core.Services.Api.pushNotification(notification);
+  notification: Notifications.Core.Schemas.NewNotification
+) => Notifications.Core.Services.Api.pushNotification(notification);
 //#endregion
