@@ -36,7 +36,7 @@ export namespace Services {
     export async function getNotifications(args: { userId: number }) {
       const url = "/notifications/get-notifications/" + args.userId;
 
-      type R = Response.Union<Schemas.NewNotification>;
+      type R = Response.Union<Schemas.NotificationDTO[]>;
       try {
         const response = await Utils.notifClient.get<R>(url);
 
