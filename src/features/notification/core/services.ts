@@ -2,17 +2,17 @@ import { Schemas } from "./schemas";
 import { ResultBuilder } from "../../../utils";
 import { Errors } from "./errors";
 import { Utils } from "./utils";
-import { Types } from "./types";
 
 export namespace Services {
   export namespace Api {
     export async function clearNotifications(args: { userId: number }) {
       const url = "/notifications/clear-notifications/" + args.userId;
 
+      type R = Response.Union<null>;
       try {
-        const result = await Utils.notifClient.delete(url);
+        const response = await Utils.notifClient.delete<R>(url);
 
-        const { success, message } = result.data;
+        const { success, message } = response.data;
 
         return success
           ? ResultBuilder.success(message)
@@ -36,15 +36,14 @@ export namespace Services {
     export async function getNotifications(args: { userId: number }) {
       const url = "/notifications/get-notifications/" + args.userId;
 
+      type R = Response.Union<Schemas.PushNotification>;
       try {
-        const result = await Utils.notifClient.get(url);
+        const response = await Utils.notifClient.get<R>(url);
 
-        const { success, message } = result.data;
+        const { success, message } = response.data;
 
         return success
-          ? ResultBuilder.success(
-              result.data.result as Schemas.PushNotification
-            )
+          ? ResultBuilder.success(response.data.result)
           : ResultBuilder.fail(
               new Errors.Notification.ErrorClass({
                 name: "NOTIFICATION_FAILED_GETTING_NOTIFICATIONS_ERROR",
@@ -75,12 +74,13 @@ export namespace Services {
         );
 
       try {
-        const result = await Utils.notifClient.post(
+        type R = Response.Union<null>;
+        const response = await Utils.notifClient.post<R>(
           "/notifications/send-firebase-notification",
           body
         );
 
-        const { success, message } = result.data;
+        const { success, message } = response.data;
 
         return success
           ? ResultBuilder.success(message)
@@ -106,7 +106,8 @@ export namespace Services {
       deviceToken: string;
     }) {
       try {
-        const result = await Utils.notifClient.post(
+        type R = Response.Union<{ userId: number }>;
+        const result = await Utils.notifClient.post<R>(
           "/auth/registration/register",
           args
         );
@@ -132,4 +133,19 @@ export namespace Services {
       }
     }
   }
+}
+
+namespace Response {
+  export type Success<TResult> = {
+    success: true;
+    result: TResult;
+    message?: string;
+  };
+
+  export type Fail = {
+    success: false;
+    message?: string;
+  };
+
+  export type Union<TResult> = Success<TResult> | Fail;
 }
