@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { Auth } from "../auth";
+import { Middlewares } from "../auth/core/middlewares";
 import { Controllers } from "./controllers";
 
 export const Routes = Router();
 
-Routes.use(Auth.Core.Middlewares.validateJwt);
+Routes.use(Middlewares.validateJwt);
 
-Routes.get("/get-notifications/:userId", Controllers.handleGetNotifications);
+Routes.get("/get-notifications", Controllers.handleGetNotifications);
 Routes.delete("/clear-notifications", Controllers.handleClearNotifications);
