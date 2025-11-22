@@ -7,13 +7,10 @@ import { Types } from "./types";
 export namespace Services {
   export namespace Api {
     export async function clearNotifications(args: { userId: number }) {
-      type ResponseType = Types.NotificationMicroservice.Response.Union<null>;
+      const url = "/notifications/clear-notifications/" + args.userId;
 
       try {
-        const result = await Utils.notifClient.post(
-          "/notifications/clear-notifications",
-          args
-        );
+        const result = await Utils.notifClient.delete(url);
 
         const { success, message } = result.data;
 
@@ -37,19 +34,17 @@ export namespace Services {
     }
 
     export async function getNotifications(args: { userId: number }) {
-      type ResponseType =
-        Types.NotificationMicroservice.Response.Union<Schemas.PushNotification>;
+      const url = "/notifications/get-notifications/" + args.userId;
 
       try {
-        const result = await Utils.notifClient.post<ResponseType>(
-          "/notifications/get-notifications",
-          args
-        );
+        const result = await Utils.notifClient.get(url);
 
         const { success, message } = result.data;
 
         return success
-          ? ResultBuilder.success(message)
+          ? ResultBuilder.success(
+              result.data.result as Schemas.PushNotification
+            )
           : ResultBuilder.fail(
               new Errors.Notification.ErrorClass({
                 name: "NOTIFICATION_FAILED_GETTING_NOTIFICATIONS_ERROR",
@@ -79,10 +74,8 @@ export namespace Services {
           })
         );
 
-      type ResponseType = Types.NotificationMicroservice.Response.Union<null>;
-
       try {
-        const result = await Utils.notifClient.post<ResponseType>(
+        const result = await Utils.notifClient.post(
           "/notifications/send-firebase-notification",
           body
         );
@@ -112,12 +105,8 @@ export namespace Services {
       userId: number;
       deviceToken: string;
     }) {
-      type ResponseType = Types.NotificationMicroservice.Response.Union<{
-        userId: number;
-      }>;
-
       try {
-        const result = await Utils.notifClient.post<ResponseType>(
+        const result = await Utils.notifClient.post(
           "/auth/registration/register",
           args
         );
