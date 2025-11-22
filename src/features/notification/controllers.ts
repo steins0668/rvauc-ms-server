@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { Auth } from "../auth";
+import { Core } from "./core";
 
 export namespace Controllers {
   export async function handleGetNotifications(req: Request, res: Response) {
@@ -19,6 +20,26 @@ export namespace Controllers {
       });
     }
 
-    const { payload } = auth;
+    const { id: userId } = auth.payload;
+
+    requestLogger.log("info", "Retrieving notifications...");
+    const retrieved = await Core.Services.Api.getNotifications({ userId });
+
+    if (!retrieved.success) {
+      const { error } = retrieved;
+      requestLogger.log("error", "Failed to get notifications", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed retrieving notifications for user.",
+      });
+    }
+
+    requestLogger.log("info", "Success getting notifications.");
+
+    res.status(200).json({
+      success: true,
+      result: retrieved.result,
+    });
   }
 }
