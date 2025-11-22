@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { validateRequestBody } from "../../../../middlewares";
+import { validateRequest } from "../../../../middlewares";
 import { Controllers } from "./controllers";
 import { Middlewares } from "./middlewares";
 import { Schemas } from "./schemas";
@@ -11,20 +11,20 @@ Routes.use(Middlewares.attachSessionManager);
 Routes.post(
   "/sign-in",
   Middlewares.attachSignInRequestService,
-  validateRequestBody(Schemas.SignIn.schema),
+  validateRequest({ body: Schemas.SignIn.schema }),
   Controllers.handleRequestSignInCode
 );
 
 Routes.post(
   "/verify-code",
   Middlewares.attachSignInRequestService,
-  validateRequestBody(Schemas.verifyCode),
+  validateRequest({ body: Schemas.verifyCode }),
   Controllers.handleVerifyCode
 );
 
 Routes.post(
   "/sign-out",
-  validateRequestBody(Schemas.Payloads.RefreshToken.schema),
+  validateRequest({ body: Schemas.Payloads.RefreshToken.schema }),
   Controllers.handleSignOut
 );
 

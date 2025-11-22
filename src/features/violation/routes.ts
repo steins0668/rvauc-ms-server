@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { Auth } from "../auth";
-import { validateRequestBody } from "../../middlewares";
+import { validateRequest } from "../../middlewares";
 import { Middlewares } from "./middlewares";
 import { Controllers } from "./controllers";
 import { Schemas } from "./schemas";
@@ -19,6 +19,6 @@ Routes.get(
 Routes.post(
   "/new-record",
   Auth.Core.Middlewares.validateJwt,
-  validateRequestBody(Schemas.ViolationData.newRecord),
+  validateRequest({ body: Schemas.ViolationData.newRecord }),
   Controllers.handleNewRecord
 );
