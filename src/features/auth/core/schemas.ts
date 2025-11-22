@@ -5,6 +5,7 @@ export namespace Schemas {
   export namespace Payloads {
     export namespace AccessToken {
       const base = z.strictObject({
+        id: z.number(),
         email: z.string(),
         username: z.string(),
         role: z.string(),
