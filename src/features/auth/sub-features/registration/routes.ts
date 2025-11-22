@@ -7,6 +7,6 @@ export const Routes = Router();
 
 Routes.post(
   "/register",
-  validateRequest(Schemas.Register.roleBased),
+  validateRequest({ body: Schemas.Register.roleBased }),
   Controllers.handleRegister
 );

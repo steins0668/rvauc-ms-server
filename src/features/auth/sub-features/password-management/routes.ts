@@ -10,18 +10,18 @@ Routes.use(Middlewares.attachPasswordManagementService);
 
 Routes.post(
   "/forgot-password",
-  validateRequest(Schemas.forgotPassword),
+  validateRequest({ body: Schemas.forgotPassword }),
   Controllers.handleForgotPassword
 );
 
 Routes.post(
   "/verify-code",
-  validateRequest(Schemas.verifyCode),
+  validateRequest({ body: Schemas.verifyCode }),
   Controllers.handleVerifyCode
 );
 
 Routes.post(
   "/reset-password",
-  validateRequest(Schemas.resetPassword),
+  validateRequest({ body: Schemas.resetPassword }),
   Controllers.handleResetPassword
 );

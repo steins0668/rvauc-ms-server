@@ -11,20 +11,20 @@ Routes.use(Middlewares.attachSessionManager);
 Routes.post(
   "/sign-in",
   Middlewares.attachSignInRequestService,
-  validateRequest(Schemas.SignIn.schema),
+  validateRequest({ body: Schemas.SignIn.schema }),
   Controllers.handleRequestSignInCode
 );
 
 Routes.post(
   "/verify-code",
   Middlewares.attachSignInRequestService,
-  validateRequest(Schemas.verifyCode),
+  validateRequest({ body: Schemas.verifyCode }),
   Controllers.handleVerifyCode
 );
 
 Routes.post(
   "/sign-out",
-  validateRequest(Schemas.Payloads.RefreshToken.schema),
+  validateRequest({ body: Schemas.Payloads.RefreshToken.schema }),
   Controllers.handleSignOut
 );
 

@@ -7,6 +7,6 @@ export const Routes = Router();
 
 Routes.post(
   "/sign-in",
-  validateRequest(Schemas.SignIn.methodsSchema),
+  validateRequest({ body: Schemas.SignIn.methodsSchema }),
   Controllers.handleSignIn
 );

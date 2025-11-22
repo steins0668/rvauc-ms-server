@@ -19,6 +19,6 @@ Routes.get(
 Routes.post(
   "/new-record",
   Auth.Core.Middlewares.validateJwt,
-  validateRequest(Schemas.ViolationData.newRecord),
+  validateRequest({ body: Schemas.ViolationData.newRecord }),
   Controllers.handleNewRecord
 );
