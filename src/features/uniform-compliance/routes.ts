@@ -2,7 +2,7 @@ import { Router } from "express";
 import { Auth } from "../auth";
 import { Middlewares } from "./middlewares";
 import { Controllers } from "./controllers";
-import { validateRequest } from "../../middlewares";
+import { validateRequestBody } from "../../middlewares";
 import { Schemas } from "./schemas";
 import { Violation } from "../violation";
 
@@ -20,7 +20,7 @@ Routes.get(
 Routes.post(
   "/new-record",
   Auth.Core.Middlewares.validateJwt,
-  validateRequest(Schemas.ComplianceData.newRecord),
+  validateRequestBody(Schemas.ComplianceData.newRecord),
   Violation.Middlewares.attachViolationDataService,
   Controllers.handleNewRecord
 );

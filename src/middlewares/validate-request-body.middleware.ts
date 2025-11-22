@@ -11,7 +11,7 @@ import z, { ZodType } from "zod";
  * @param schema - A {@link ZodType} schema that will be used to validate the request body.
  * @returns - A standard express middleware function.
  */
-export function validateRequest(
+export function validateRequestBody(
   schema: ZodType
 ): (req: Request, res: Response, next: NextFunction) => void {
   return (req: Request, res: Response, next: NextFunction) => {
