@@ -98,14 +98,13 @@ export namespace Services {
        * @returns
        */
       public async verifyResetCode(
-        userId: number,
         codeHash: string
       ): Promise<
         | Core.Types.AuthenticationResult.Success<ViewModels.PasswordResetCode>
         | Core.Types.AuthenticationResult.Fail
       > {
         const query = await this.findCodeWhereStrict({
-          filter: { filterType: "and", userId, codeHash },
+          filter: { codeHash },
         });
 
         if (!query.success)

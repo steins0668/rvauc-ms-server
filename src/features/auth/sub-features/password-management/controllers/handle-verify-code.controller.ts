@@ -40,7 +40,6 @@ export async function handleVerifyCode(
   logger.log("debug", "Verifying reset code...");
   const codeHash = HashUtil.byCrypto(code);
   const codeVerification = await req.passwordManagementService.verifyResetCode(
-    user.id,
     codeHash
   );
 
