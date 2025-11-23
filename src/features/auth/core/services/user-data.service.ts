@@ -247,7 +247,11 @@ export namespace UserData {
           if (user) return getResult(true, form.role);
 
           //  * additional checks in extended tables as needed.
-          const hasDuplicate = await this._runDuplicateCheck(form.role, form);
+          const hasDuplicate = await this._runDuplicateCheck(
+            form.role,
+            form,
+            tx
+          );
 
           return getResult(hasDuplicate, form.role);
         });
@@ -292,21 +296,29 @@ export namespace UserData {
 
     private _runDuplicateCheck<R extends Role>(
       role: R,
-      schema: RegisterSchema<R>
+      schema: RegisterSchema<R>,
+      tx: TxContext
     ) {
-      return this._duplicateCheckResolvers[role](schema);
+      return this._duplicateCheckResolvers[role](schema, tx);
     }
 
     /**
      * @description A collection of resolvers for checking duplicates from the
      * the `students` and `professors` tables with the following mapping
+     * todo: this implementation is shit so try to improve it by using repository types query args instead.
      */
     private _duplicateCheckResolvers: DuplicateCheckResolvers = {
       //  * professors table does not need additional checks
-      professor: async (schema: Registration.Schemas.Register.Professor) =>
-        false,
-      student: async (schema: Registration.Schemas.Register.Student) => {
+      professor: async (
+        schema: Registration.Schemas.Register.Professor,
+        tx: TxContext
+      ) => false,
+      student: async (
+        schema: Registration.Schemas.Register.Student,
+        tx: TxContext
+      ) => {
         const student = await this._studentRepository.execQuery({
+          dbOrTx: tx,
           fn: async (query, converter) => {
             return query.findFirst({
               where: converter({
@@ -330,7 +342,7 @@ export namespace UserData {
     { role: R }
   >;
   type DuplicateCheckResolvers = {
-    [R in Role]: (schema: RegisterSchema<R>) => Promise<boolean>;
+    [R in Role]: (schema: RegisterSchema<R>, tx: TxContext) => Promise<boolean>;
   };
 
   type InsertArgs<R extends Role> = {
