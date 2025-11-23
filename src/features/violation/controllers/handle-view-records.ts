@@ -1,10 +1,9 @@
 import { Request, Response } from "express";
 import { Enums } from "../../../data";
-import { execTransaction, TxContext } from "../../../db/create-context";
+import { TxContext } from "../../../db/create-context";
 import { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { Auth } from "../../auth";
-import { Data } from "../data";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Services } from "../services";
@@ -89,35 +88,32 @@ async function resolveRecords(args: {
   }
 }
 
+type StudentPayload = Extract<
+  Auth.Core.Schemas.Payloads.AccessToken.Full,
+  { role: "student" }
+>;
+
+type ProfessorPayload = Extract<
+  Auth.Core.Schemas.Payloads.AccessToken.Full,
+  { role: "professor" }
+>;
+
 const recordsResolver = {
   student: async (args: {
     violationDataService: Services.ViolationData.Service;
     userDataService: Auth.Core.Services.UserData.Service;
-    payload: Extract<
-      Auth.Core.Schemas.Payloads.AccessToken.Full,
-      { role: "student" }
-    >;
+    payload: StudentPayload;
   }) => {
-    const { userDataService, violationDataService, payload } = args;
+    const { violationDataService, payload } = args;
 
-    const transaction = await execTransaction(async (tx) => {
-      const studentQuery = await fetchStudent({ tx, userDataService, payload });
-
-      if (!studentQuery.success) throw studentQuery.error; //  ! propagate error
-
-      const studentId = studentQuery.result;
-      const recordsQuery = await fetchRecords({
-        tx,
-        violationDataService,
-        studentId,
-      });
-
-      if (!recordsQuery.success) throw recordsQuery.error; //  ! propagate error
-
-      return recordsQuery;
+    const queried = await fetchRecords({
+      violationDataService,
+      studentId: payload.id,
     });
 
-    const rawRecords = transaction.result;
+    if (!queried.success) throw queried.error; //  ! propagate error
+
+    const rawRecords = queried.result;
     const conversion = toDTORecord(rawRecords);
 
     return conversion;
@@ -126,36 +122,12 @@ const recordsResolver = {
   professor: async (args: {
     violationDataService: Services.ViolationData.Service;
     userDataService: Auth.Core.Services.UserData.Service;
-    payload: Extract<
-      Auth.Core.Schemas.Payloads.AccessToken.Full,
-      { role: "professor" }
-    >;
+    payload: ProfessorPayload;
   }) => [] as Types.Db.ViewModels.ViolationRecord[], //  todo: do this
 };
 
-async function fetchStudent(args: {
-  tx: TxContext;
-  userDataService: Auth.Core.Services.UserData.Service;
-  payload: Extract<
-    Auth.Core.Schemas.Payloads.AccessToken.Full,
-    { role: "student" }
-  >;
-}) {
-  const { tx, userDataService, payload } = args;
-  return await userDataService.queryStudents({
-    dbOrTx: tx,
-    fn: async (query, converter) =>
-      query
-        .findFirst({
-          where: converter({ studentNumber: payload.studentNumber }),
-          columns: { id: true },
-        })
-        .then((result) => result?.id),
-  });
-}
-
 async function fetchRecords(args: {
-  tx: TxContext;
+  tx?: TxContext;
   violationDataService: Services.ViolationData.Service;
   studentId: number;
 }) {
@@ -166,7 +138,21 @@ async function fetchRecords(args: {
       query.findMany({
         where: converter({ studentId }),
         orderBy: (records, { desc }) => [desc(records.date)],
-        with: { status: true },
+        with: {
+          status: true,
+          student: {
+            columns: { studentNumber: true, block: true, yearLevel: true },
+            with: {
+              user: {
+                columns: { firstName: true, middleName: true, surname: true },
+              },
+              department: {
+                columns: { name: true },
+                with: { college: { columns: { name: true } } },
+              },
+            },
+          },
+        },
         limit: 6,
         columns: {
           studentId: false,
@@ -191,6 +177,7 @@ function toDTORecord(
   | Types.ViolationResult.Fail {
   try {
     const dtoRecord = rawRecords.map((record) => {
+      //  * violation metadata
       const { id, date: isoDate } = record;
       const rawDate = new Date(isoDate);
       const date = isoDate.split("T")[0] as string;
@@ -201,7 +188,27 @@ function toDTORecord(
       const status = record.status.name;
       const reasons = record.reasons;
 
-      const dto = { id, date, day, time, status, reasons };
+      //  * student metadata
+      const { student } = record;
+      const { studentNumber, block, yearLevel } = student;
+      const department = student.department.name;
+      const { surname, firstName, middleName } = student.user;
+
+      const dto = {
+        id,
+        date,
+        day,
+        time,
+        status,
+        reasons,
+        studentNumber,
+        block,
+        yearLevel,
+        department,
+        surname,
+        firstName,
+        middleName,
+      };
       const parsed = Schemas.ViolationData.recordDTO.parse(dto);
 
       return parsed;
