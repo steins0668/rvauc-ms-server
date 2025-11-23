@@ -69,7 +69,7 @@ export namespace SignInRequest {
       | Core.Types.AuthenticationResult.Fail
     > {
       const query = await this.findRequestWhere({
-        filter: { userId, codeHash },
+        filter: { filterType: "and", userId, codeHash },
       });
 
       if (!query.success)
