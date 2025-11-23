@@ -59,22 +59,33 @@ async function resolveRecords(args: {
   payload: Auth.Core.Schemas.Payloads.AccessToken.Full;
 }) {
   const { violationDataService, userDataService, payload } = args;
-  switch (payload.role) {
-    case "student": {
-      const resolver = recordsResolver["student"];
-      return await resolver({
-        violationDataService,
-        userDataService,
-        payload,
-      });
+
+  try {
+    switch (payload.role) {
+      case "student": {
+        const resolver = recordsResolver["student"];
+        return await resolver({
+          violationDataService,
+          userDataService,
+          payload,
+        });
+      }
+      default:
+        return ResultBuilder.fail(
+          new Errors.ViolationData.ErrorClass({
+            name: "VIOLATION_DATA_QUERY_RECORD_ERROR",
+            message: "Role not implemented yet.",
+          })
+        );
     }
-    default:
-      return ResultBuilder.fail(
-        new Errors.ViolationData.ErrorClass({
-          name: "VIOLATION_DATA_QUERY_RECORD_ERROR",
-          message: "Role not implemented yet.",
-        })
-      );
+  } catch (err) {
+    return ResultBuilder.fail(
+      Errors.ViolationData.normalizeError({
+        name: "VIOLATION_DATA_QUERY_RECORD_ERROR",
+        message: "Failed to get records.",
+        err,
+      })
+    );
   }
 }
 
@@ -92,7 +103,7 @@ const recordsResolver = {
     const transaction = await execTransaction(async (tx) => {
       const studentQuery = await fetchStudent({ tx, userDataService, payload });
 
-      if (!studentQuery.success) return studentQuery; //  ! propagate error
+      if (!studentQuery.success) throw studentQuery.error; //  ! propagate error
 
       const studentId = studentQuery.result;
       const recordsQuery = await fetchRecords({
@@ -101,18 +112,10 @@ const recordsResolver = {
         studentId,
       });
 
+      if (!recordsQuery.success) throw recordsQuery.error; //  ! propagate error
+
       return recordsQuery;
     });
-
-    if (!transaction.success)
-      //  ! propagate error
-      return ResultBuilder.fail(
-        Errors.ViolationData.normalizeError({
-          name: "VIOLATION_DATA_QUERY_RECORD_ERROR",
-          message: "Failed to get records.",
-          err: transaction.error,
-        })
-      );
 
     const rawRecords = transaction.result;
     const conversion = toDTORecord(rawRecords);
@@ -141,13 +144,13 @@ async function fetchStudent(args: {
   const { tx, userDataService, payload } = args;
   return await userDataService.queryStudents({
     dbOrTx: tx,
-    fn: async (query, converter) => {
-      return await query
+    fn: async (query, converter) =>
+      query
         .findFirst({
           where: converter({ studentNumber: payload.studentNumber }),
+          columns: { id: true },
         })
-        .then((result) => result?.id);
-    },
+        .then((result) => result?.id),
   });
 }
 
@@ -159,8 +162,8 @@ async function fetchRecords(args: {
   const { tx, violationDataService, studentId } = args;
   return await violationDataService.queryRecord({
     dbOrTx: tx,
-    fn: async (query, converter) => {
-      return await query.findMany({
+    fn: async (query, converter) =>
+      query.findMany({
         where: converter({ studentId }),
         orderBy: (records, { desc }) => [desc(records.date)],
         with: { status: true },
@@ -170,8 +173,7 @@ async function fetchRecords(args: {
           complianceRecordId: false,
           statusId: false,
         },
-      });
-    },
+      }),
   });
 }
 
@@ -181,9 +183,6 @@ type RawRecords = FetchRecordsResult extends
   | BaseResult.Success<infer R>
   ? R
   : never;
-
-type ViolationReasonRecord = typeof Data.Records.ViolationReason;
-type Reasons = ViolationReasonRecord[keyof ViolationReasonRecord][];
 
 function toDTORecord(
   rawRecords: RawRecords
@@ -200,12 +199,12 @@ function toDTORecord(
       const minutes = rawDate.getMinutes().toString().padStart(2, "0");
       const time = hours + ":" + minutes; //  * hh:mm format
       const status = record.status.name;
-      const reasons = record.reasons as Reasons;
+      const reasons = record.reasons;
 
       const dto = { id, date, day, time, status, reasons };
-      Schemas.ViolationData.recordDTO.parse(dto);
+      const parsed = Schemas.ViolationData.recordDTO.parse(dto);
 
-      return dto;
+      return parsed;
     });
 
     return ResultBuilder.success(dtoRecord);
