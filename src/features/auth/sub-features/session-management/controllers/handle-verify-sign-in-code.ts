@@ -18,6 +18,8 @@ export async function handleVerifyCode(
   } = req;
   const { email, code, isPersistentAuth } = body;
 
+  logger.log("info", "Verifying sign-in in code...");
+
   //    * verify user
   logger.log("debug", "Verifying user...");
   const authentication = await authenticationService.authenticate({
@@ -26,18 +28,15 @@ export async function handleVerifyCode(
   });
 
   if (!authentication.success) {
-    //  ! failed verifying user
     const { error } = authentication;
-
-    res
-      .status(Core.Errors.Authentication.getErrStatusCode(error))
-      .json({ success: false, message: error.message });
 
     const safeId = body.email.replace(/^(.{2}).*(@.*)$/, "$1***$2"); //  mask emails
     const logMsg = `Failed verification attempt from user ${safeId}.`;
     logger.log("error", logMsg, error);
 
-    return;
+    return res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message: error.message });
   }
 
   const { result: user } = authentication;
@@ -51,7 +50,6 @@ export async function handleVerifyCode(
   );
 
   if (!codeVerification.success) {
-    //  ! code verification failed
     const { error } = codeVerification;
     const isInternalError =
       error.name === "AUTHENTICATION_SIGN_IN_REQUEST_CODE_QUERY_ERROR";
@@ -69,37 +67,31 @@ export async function handleVerifyCode(
           message,
         });
 
-    res
+    logger.log("error", "Failed verifying code.", error);
+
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", error.message, error);
-    return;
   }
 
-  //  * invalidate request verified request code.
+  logger.log("debug", "Invalidating request code...");
   const codeInvalidation = await signInRequestService.invalidateRequest({
     requestId: codeVerification.result.id,
   });
 
   if (!codeInvalidation.success) {
     const { error } = codeInvalidation;
-    const message = "Something went wrong. Please try again later.";
+    logger.log("error", "Failed to invalidate request code.", error);
 
     await notifyInternalError({ userId: user.id });
 
-    res
+    const message = "Something went wrong. Please try again later.";
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", error.message, error);
-    return;
   }
 
-  //  * start session creation
-  const sessionNumber = sessionManager.generateSessionNumber(user.id);
-
-  //  * create payloads
+  logger.log("debug", "Creating payloads...");
   const createAccessPayload = await Core.Utils.payloadResolver[user.role]({
     type: "full",
     dataService: userDataService,
@@ -108,19 +100,18 @@ export async function handleVerifyCode(
 
   if (!createAccessPayload.success) {
     const { error } = createAccessPayload;
-    const message = "Something went wrong. Please try again later.";
+    logger.log("debug", "Failed creating payload.", error);
 
     await notifyInternalError({ userId: user.id });
 
-    res
+    const message = "Something went wrong. Please try again later.";
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", "Failed creating payload.", error);
-    return;
   }
 
-  //  * create tokens
+  const sessionNumber = sessionManager.generateSessionNumber(user.id);
+  logger.log("debug", "Creating tokens...");
   const tknCreation = Core.Utils.createTokens({
     type: "full",
     access: createAccessPayload.result,
@@ -132,18 +123,16 @@ export async function handleVerifyCode(
   if (!tknCreation.success) {
     //  !failed creating tokens
     const { error } = tknCreation;
+    logger.log("error", "Failed creating tokens.", error);
 
     await notifyInternalError({ userId: user.id });
 
-    res
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
-
-    logger.log("error", "Failed creating tokens.", error);
-
-    return;
   }
-  //  *start session
+
+  logger.log("debug", "Starting session...");
   const { accessToken, refreshToken } = tknCreation.result;
 
   const persistentTokenExpiry = new Date();
@@ -156,17 +145,14 @@ export async function handleVerifyCode(
   });
 
   if (!sessionResult.success) {
-    //  !failed starting session
     const { error } = sessionResult;
+    logger.log("error", "Failed starting session.", error);
 
     await notifyInternalError({ userId: user.id });
 
-    res
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
-
-    logger.log("error", "Failed starting session.", error);
-    return;
   }
 
   const cookieResult = Core.Utils.Config.getRefreshConfig();
@@ -195,7 +181,7 @@ export async function handleVerifyCode(
     message: "Sign in success.",
   });
 
-  //  *cookie creation
+  logger.log("info", "Success verifying code. Signing in...");
   res.cookie(
     cookieName,
     refreshToken,

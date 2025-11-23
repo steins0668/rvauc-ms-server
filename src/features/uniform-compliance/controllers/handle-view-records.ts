@@ -22,19 +22,19 @@ export async function handleViewRecords(req: Request, res: Response) {
 
   if (!validPayload) {
     logger.log(
-      "error",
+      "info",
       "Invalid payload attempted to access `uniform-compliance/view-records`."
     );
 
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
       message: "You are not allowed to access this resource.",
     });
-    return;
   }
 
   const { payload } = auth;
 
+  logger.log("info", "Attempting to retrieve records...");
   const resolution = await resolveRecords({
     complianceDataService,
     userDataService,
@@ -43,16 +43,16 @@ export async function handleViewRecords(req: Request, res: Response) {
 
   if (!resolution.success) {
     const { error } = resolution;
-    const message = "Failed to get records.";
 
-    res
+    logger.log("debug", "Failed to get records.", error);
+
+    const message = "Failed to get records. Please try again later.";
+    return res
       .status(Errors.ComplianceData.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", message, error);
-    return;
   }
 
+  logger.log("info", "Successfully retrieved records.");
   res.status(200).json({ success: true, result: resolution.result });
 }
 

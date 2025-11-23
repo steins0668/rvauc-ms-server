@@ -11,6 +11,8 @@ export async function handleVerifyCode(
   const { body, authenticationService, requestLogger: logger } = req;
   const { email, code } = body;
 
+  logger.log("info", "Verifying code...");
+
   //    * verify user
   logger.log("debug", "Verifying user...");
   const verification = await authenticationService.authenticate({
@@ -22,15 +24,13 @@ export async function handleVerifyCode(
     //  ! failed verifying user
     const { error } = verification;
 
-    res
-      .status(Core.Errors.Authentication.getErrStatusCode(error))
-      .json({ success: false, message: error.message });
-
     const safeId = body.email.replace(/^(.{2}).*(@.*)$/, "$1***$2"); //  mask emails
     const logMsg = `Failed sign-in attempt from user ${safeId}.`;
     logger.log("error", logMsg, error);
 
-    return;
+    return res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message: error.message });
   }
 
   //  todo: verify with user id
@@ -46,6 +46,8 @@ export async function handleVerifyCode(
   if (!codeVerification.success) {
     //  ! code verification failed
     const { error } = codeVerification;
+    logger.log("debug", "Failed verifying code.", error);
+
     const isInternalError =
       error.name === "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR";
     const message = isInternalError
@@ -63,13 +65,12 @@ export async function handleVerifyCode(
 
     await notification;
 
-    res
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", error.message, error);
-    return;
   }
+
+  logger.log("info", "Success verifying code.");
 
   const message = "Code verified.";
 

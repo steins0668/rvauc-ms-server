@@ -12,19 +12,17 @@ export async function handleSignOut(
   const internalErrMsg =
     "An error occured while signing out session. Please try again later.";
 
+  logger.log("info", "Attempting to sign out...");
   //  * get config for refresh token cookie
   const cookieConfig = Core.Utils.Config.getRefreshConfig();
   if (!cookieConfig.success) {
     //  !failed getting refresh token config
     const { error } = cookieConfig;
-
-    res
-      .status(Core.Errors.Config.getErrStatusCode(error))
-      .json({ success: false, message: internalErrMsg });
-
     logger.log("error", "Failed getting refresh token config.", error);
 
-    return;
+    return res
+      .status(Core.Errors.Config.getErrStatusCode(error))
+      .json({ success: false, message: internalErrMsg });
   }
 
   const { cookieName: refresh } = cookieConfig.result;
@@ -32,10 +30,11 @@ export async function handleSignOut(
   //  * helper function for clearing cookie
   const clearCookie = (cookieConfig: Core.Data.Token.CookieConfig) => {
     const { cookieName: refresh, clearCookie } = cookieConfig;
-    res
+    logger.log("info", "Signed out successfully.");
+    return res
       .clearCookie(refresh, clearCookie)
       .status(200)
-      .json({ success: true, message: "Logged out successfully." });
+      .json({ success: true, message: "Signed out successfully." });
   };
 
   //  * get refresh tkn

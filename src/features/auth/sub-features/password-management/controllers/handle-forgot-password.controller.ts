@@ -10,6 +10,9 @@ export async function handleForgotPassword(
   res: Response
 ) {
   const { body, authenticationService, requestLogger: logger } = req;
+
+  logger.log("info", "Attempting to send reset code...");
+
   //  * get user based on POST email
   logger.log("debug", "Verifying user...");
   const verification = await authenticationService.authenticate({
@@ -21,15 +24,13 @@ export async function handleForgotPassword(
     //  ! failed verifying user
     const { error } = verification;
 
-    res
-      .status(Core.Errors.Authentication.getErrStatusCode(error))
-      .json({ success: false, message: error.message });
-
     const safeId = body.email.replace(/^(.{2}).*(@.*)$/, "$1***$2"); //  mask emails
     const logMsg = `Failed sign-in attempt from user ${safeId}.`;
     logger.log("error", logMsg, error);
 
-    return;
+    return res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message: error.message });
   }
 
   const user = verification.result;
@@ -42,30 +43,23 @@ export async function handleForgotPassword(
   if (!activeCodeVerification.success) {
     //  ! failed querying the database
     const { error } = activeCodeVerification;
-    const message = "Something went wrong. Please try again later.";
+    logger.log("error", "Failed verifying active codes", error);
 
     await notifyInternalError({ userId: user.id });
 
-    res
+    const message = "Something went wrong. Please try again later.";
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("error", error.message, error);
-
-    return;
   } else if (!activeCodeVerification.result) {
-    //  ! active reset code exists
-    res
+    logger.log("info", "Active code still exists.");
+    return res
       .status(403) // ! Forbidden. Active code still exists.
       .json({
         success: false,
         message:
           "You still have an active request. Please try again in 10 minutes.",
       });
-
-    logger.log("debug", "Active code still exists.");
-
-    return;
   }
 
   //  * generate random reset code (6 digit)
@@ -82,21 +76,18 @@ export async function handleForgotPassword(
   if (!codeCreation.success) {
     //  ! failed creating code
     const { error } = codeCreation;
+    logger.log("error", "Failed generating reset code.", error);
+
     const message = "Failed generating reset code. Please try again later.";
 
     await notifyInternalError({ userId: user.id, message });
 
-    res
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("error", error.message, error);
-
-    return;
   }
 
-  //  * send reset code to email
-  logger.log("debug", "Sending reset code...");
+  logger.log("debug", "Sending reset code to email...");
   const emailTransport = await sendEmail({
     req,
     resetCode: code,
@@ -104,25 +95,23 @@ export async function handleForgotPassword(
   });
 
   if (!emailTransport.success) {
-    //  ! failed sending email
-    //  * remove reset code from db
+    const { error } = emailTransport;
+    logger.log("error", "Failed sending reset code to email.", error);
+
+    logger.log("debug", "Removing reset code from db...");
     const { id } = codeCreation.result;
     await req.passwordManagementService.deleteCodeWhere({ filter: { id } });
-
-    const { error } = emailTransport;
 
     const message = "Failed sending reset code. Please try again later.";
 
     await notifyInternalError({ userId: user.id, message });
 
-    res
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("error", error.message, error);
-
-    return;
   }
+
+  logger.log("info", "Reset code successfuly sent to email.");
 
   const message = "Reset password code sent. Please check your email.";
 

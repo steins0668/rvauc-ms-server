@@ -13,20 +13,19 @@ export async function handleResetPassword(
   const { body, requestLogger: logger } = req;
   const { code, password, confirmPassword } = body;
 
-  logger.log("debug", "Resetting password...");
+  logger.log("info", "Resetting password...");
 
   //    get password and confirm password from req body
   if (password !== confirmPassword) {
-    res
+    logger.log("info", "Password and confirm password mismatch.");
+
+    return res
       .status(403) // * forbidden
       .json({
         success: false,
         message:
           "Password and confirm password fields do not match. Please try again.",
       });
-
-    logger.log("debug", "Password and confirm password mismatch.");
-    return;
   }
 
   //    *   find non-expired reset code with code (encrypt first) from req params
@@ -38,20 +37,20 @@ export async function handleResetPassword(
 
   if (!codeVerification.success) {
     const { error } = codeVerification;
+    logger.log("debug", "Failed verifying code...", error);
+
     const message =
       error.name === "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR"
         ? "Something went wrong. Please try again later"
         : error.message; //  ? either could not find code or code is expired.
 
-    res
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", error.message, error);
-    return;
   }
 
   //    *   update user password and set reset code is_used to true
+  logger.log("debug", "Updating user passsword and invalidating code...");
   const updateOperation = await execUpdate({
     req,
     code: codeVerification.result,
@@ -60,17 +59,17 @@ export async function handleResetPassword(
 
   if (!updateOperation.success) {
     const { error } = updateOperation;
-    const message = "Something went wrong. Please try again later.";
+    logger.log("error", "Update transaction failed.", error);
 
     await notifyInternalError({ userId: codeVerification.result.userId });
 
-    res
+    const message = "Something went wrong. Please try again later.";
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", error.message, error);
-    return;
   }
+  logger.log("info", "Succeess resetting password.");
+
   const message = "Password changed successfully.";
 
   await notify({

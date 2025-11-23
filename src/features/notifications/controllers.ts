@@ -10,7 +10,7 @@ export namespace Controllers {
 
     if (!isAllowed) {
       requestLogger.log(
-        "error",
+        "info",
         "Invalid payload attempted to access `notifications/get-notifications`."
       );
 
@@ -50,7 +50,7 @@ export namespace Controllers {
 
     if (!isAllowed) {
       requestLogger.log(
-        "error",
+        "info",
         "Invalid payload attempted to access `notifications/get-notifications`."
       );
 

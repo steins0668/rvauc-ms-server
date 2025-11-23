@@ -22,15 +22,14 @@ export async function handleViewRecords(req: Request, res: Response) {
 
   if (!isAllowedPayload) {
     logger.log(
-      "error",
+      "info",
       "Invalid payload attempted to access `violation/view-records`."
     );
 
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
       message: "You are not allowed to access this resource.",
     });
-    return;
   }
 
   const { payload } = auth;
@@ -43,14 +42,12 @@ export async function handleViewRecords(req: Request, res: Response) {
 
   if (!resolution.success) {
     const { error } = resolution;
-    const message = "Failed to get records.";
+    const message = "Failed to get records. Please try again later.";
 
-    res
+    logger.log("error", "Failed to get records.", error);
+    return res
       .status(Errors.ViolationData.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", message, error);
-    return;
   }
 
   res.status(200).json({ success: true, result: resolution.result });

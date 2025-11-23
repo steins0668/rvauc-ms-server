@@ -20,19 +20,18 @@ export async function handleRefresh(
   const internalErrMsg =
     "An error occured while refreshing session. Please try again later.";
 
+  logger.log("info", "Refreshing tokens...");
+
   //  * get config for refresh cookie
   const cookieConfig = getRefreshConfig();
   if (!cookieConfig.success) {
     //  !failed getting refresh token config
     const { error } = cookieConfig;
-
-    res
-      .status(Core.Errors.Config.getErrStatusCode(error))
-      .json({ success: false, message: internalErrMsg });
-
     logger.log("error", "Failed getting refresh token config.", error);
 
-    return;
+    return res
+      .status(Core.Errors.Config.getErrStatusCode(error))
+      .json({ success: false, message: internalErrMsg });
   }
 
   const { cookieName: refreshTknCookie } = cookieConfig.result;
@@ -48,19 +47,16 @@ export async function handleRefresh(
     return;
   }
 
-  //  * verify payload
+  logger.log("debug", "Verifying payload...");
   const payloadVerification = Core.Utils.verifyRefreshTkn(req, oldRefreshTkn);
   if (!payloadVerification.success) {
     //  !failed payload verification
     const { error } = payloadVerification;
-
-    res
-      .status(Core.Errors.Authentication.getErrStatusCode(error))
-      .json({ success: false, message: error.message });
-
     logger.log("error", "Failed verifying refresh token.", error);
 
-    return;
+    return res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message: error.message });
   }
 
   //  * get user with user id from payload
@@ -71,17 +67,16 @@ export async function handleRefresh(
 
   if (!authentication.success) {
     //  ! could not get user from db.
-    res.status(500).json({ success: false, message: internalErrMsg });
-
     const { error } = authentication;
     logger.log("error", "Failed retrieving user", error);
-    return;
+
+    return res.status(500).json({ success: false, message: internalErrMsg });
   }
 
   const { sessionNumber, isPersistentAuth } = payloadVerification.result;
   const { result: user } = authentication;
 
-  //  * create payloads
+  logger.log("debug", "Creating payloads...");
   const createAccessPayload = await Core.Utils.payloadResolver[user.role]({
     type: "full",
     dataService: userDataService,
@@ -90,17 +85,15 @@ export async function handleRefresh(
 
   if (!createAccessPayload.success) {
     const { error } = createAccessPayload;
-    const message = "Something went wrong. Please try again later.";
+    logger.log("debug", "Failed creating payload", error);
 
-    res
+    const message = "Something went wrong. Please try again later.";
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", "Failed creating payload", error);
-    return;
   }
 
-  //  * create new tokens
+  logger.log("debug", "Creating new tokens...");
   const tknCreation = Core.Utils.createTokens({
     type: "full",
     access: createAccessPayload.result,
@@ -108,22 +101,18 @@ export async function handleRefresh(
   });
 
   if (!tknCreation.success) {
-    //  !failed creating tokens
     const { error } = tknCreation;
-
-    res
-      .status(Core.Errors.Authentication.getErrStatusCode(error))
-      .json({ success: false, message: internalErrMsg });
-
     logger.log("error", "Failed creating tokens.", error);
 
-    return;
+    return res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message: internalErrMsg });
   }
 
   //  * token creation result
   const { accessToken, refreshToken } = tknCreation.result;
 
-  //  * rotate tokens in session.
+  logger.log("debug", "Rotating tokens...");
   const tknRotation = await sessionManager.rotateTokens({
     sessionNumber,
     oldToken: oldRefreshTkn,
@@ -131,21 +120,18 @@ export async function handleRefresh(
   });
 
   if (!tknRotation.success) {
-    //  !failed rotating tokens
     const { error } = tknRotation;
-
-    res
-      .status(Core.Errors.Authentication.getErrStatusCode(error))
-      .json({ success: false, message: internalErrMsg });
 
     logger.log("error", "Failed rotating tokens.", error);
 
-    return;
+    return res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message: internalErrMsg });
   }
 
   const { cookieName, persistentCookie, sessionCookie } = cookieConfig.result;
 
-  //  * create cookie and json for access token
+  logger.log("info", "Success refreshing tokens.");
   res.cookie(
     cookieName,
     refreshToken,

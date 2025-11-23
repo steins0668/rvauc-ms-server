@@ -23,18 +23,17 @@ export async function handleNewRecord(
 
   if (!isAllowedPayload) {
     logger.log(
-      "error",
+      "info",
       "Invalid payload attempted to access `violation/new-record`."
     );
 
-    res.status(401).json({
+    return res.status(401).json({
       success: false,
       message: "You are not allowed to access this resource.",
     });
-    return;
   }
 
-  logger.log("debug", "Storing new compliance record...");
+  logger.log("info", "Storing new compliance record...");
   const store = await storeRecord({
     userDataService,
     violationDataService,
@@ -45,13 +44,10 @@ export async function handleNewRecord(
     const { error } = store;
     const message = "Failed storing new record. Please try again later.";
 
-    res
+    logger.log("error", "Failed storing new record.", error);
+    return res
       .status(Errors.ViolationData.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("debug", message, error);
-
-    return;
   }
 
   logger.log("debug", "Success storing new record.");

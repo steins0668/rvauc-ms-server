@@ -17,25 +17,24 @@ export async function handleRequestSignInCode(
     requestLogger: logger,
   } = req;
 
+  logger.log("info", "Requesting sign-in code...");
+
   //  *validate and verify user credentials
+  logger.log("debug", "Verifying user...");
   const verificationResult = await authenticationService.authenticate({
     type: "password",
     ...authDetails,
   });
 
   if (!verificationResult.success) {
-    //  !authentication failed
     const { error } = verificationResult;
-
-    res
-      .status(Core.Errors.Authentication.getErrStatusCode(error))
-      .json({ success: false, message: error.message });
-
     const safeId = getSafeId(authDetails.identifier);
     const logMsg = `Failed sign-in attempt from user ${safeId}.`;
     logger.log("error", logMsg, error);
 
-    return;
+    return res
+      .status(Core.Errors.Authentication.getErrStatusCode(error))
+      .json({ success: false, message: error.message });
   }
 
   const { result: user } = verificationResult;
@@ -54,21 +53,18 @@ export async function handleRequestSignInCode(
   if (!codeCreation.success) {
     //  ! failed creating code
     const { error } = codeCreation;
+    logger.log("error", "Failed generating sign-in code.", error);
+
     const message = "Failed generating sign-in code. Please try again later.";
 
     await notifyInternalError({ userId: user.id, message });
 
-    res
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("error", error.message, error);
-
-    return;
   }
 
-  //  * send request code to email
-  logger.log("debug", "Sending sign-in code...");
+  logger.log("debug", "Sending sign-in code to email...");
   const emailTransport = await sendEmail({
     req,
     requestCode: code,
@@ -77,28 +73,29 @@ export async function handleRequestSignInCode(
 
   if (!emailTransport.success) {
     //  ! failed sending email
-    //  * remove sign-in code from db
+    const { error } = emailTransport;
+    logger.log("error", "Failed sending email.", error);
+
+    logger.log("debug", "Removing sign-in code from db...");
     const { id } = codeCreation.result;
     await signInRequestService.deleteRequestWhere({ filter: { id } });
 
-    const { error } = emailTransport;
-
     const message = "Failed sending request code. Please try again later.";
     await notifyInternalError({ userId: user.id, message });
-    res
+    return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
-
-    logger.log("error", error.message, error);
-
-    return;
   }
 
-  if (authDetails.deviceToken)
+  if (authDetails.deviceToken) {
+    logger.log("debug", "Registering device token...");
     await Notifications.Core.Services.Api.registerDevice({
       userId: user.id,
       deviceToken: authDetails.deviceToken,
     });
+  }
+
+  logger.log("info", "Successs sending code to email.");
 
   const message = "Request code sent. Please check your email.";
   await notify({

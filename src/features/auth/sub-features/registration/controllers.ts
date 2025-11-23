@@ -9,23 +9,25 @@ export namespace Controllers {
   ) {
     const { body, requestLogger, userDataService } = req;
 
+    requestLogger.log("info", "Attempting to register new user...");
     //  * check duplicates
     const duplicateCheck = await userDataService.ensureNoDuplicates(body);
-
     if (duplicateCheck.success && duplicateCheck.result.hasDuplicate) {
       const message = "User already exists.";
 
-      requestLogger.log("debug", message);
-      res.status(409).json({ success: false, message });
-      return;
+      requestLogger.log("info", message);
+      return res.status(409).json({ success: false, message });
     }
 
     if (!duplicateCheck.success) {
-      const { message: logMsg } = duplicateCheck.error;
-      requestLogger.log("error", logMsg, duplicateCheck.error);
+      requestLogger.log(
+        "error",
+        "Failed checking for duplicates.",
+        duplicateCheck.error
+      );
 
-      const resMsg = "Error adding user. Please try again later.";
-      res.status(500).json({ success: false, message: resMsg });
+      const message = "Error adding user. Please try again later.";
+      return res.status(500).json({ success: false, message });
     }
 
     // * inserting user
@@ -33,7 +35,6 @@ export namespace Controllers {
     const userInsert = await userDataService.insertUser(body);
 
     if (userInsert.success) {
-      //  * success register
       const message = "User registration success.";
 
       if (body.deviceToken)
@@ -42,15 +43,14 @@ export namespace Controllers {
           deviceToken: body.deviceToken,
         });
 
-      requestLogger.log("debug", message);
+      requestLogger.log("info", message);
       res.status(201).json({ success: true, message });
     } else {
       //  ! fail register
-      const { message: logMsg } = userInsert.error;
-      requestLogger.log("error", logMsg, userInsert.error);
+      requestLogger.log("error", "Registration failed.", userInsert.error);
 
-      const resMsg = "Database error. Please try again later.";
-      res.status(500).json({ success: false, message: resMsg });
+      const message = "Something unexpected happened. Please try again later.";
+      res.status(500).json({ success: false, message });
     }
   }
 }
