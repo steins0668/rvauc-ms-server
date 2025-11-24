@@ -20,7 +20,11 @@ export async function handleNewRecord(
     requestLogger: logger,
   } = req;
 
-  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
+  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
+    auth,
+    "full",
+    "minimal"
+  );
 
   if (!isAllowedPayload) {
     logger.log(

@@ -32,13 +32,15 @@ export namespace Schemas {
           iss.input === undefined ? "Role is required." : "Invalid role.",
       });
 
-      export const minimalStudent = z.strictObject({
-        role: z.literal(Data.Records.roles.student),
-        studentNumber: z.string(),
-        department: z.string(),
-        yearLevel: z.number(),
-        block: z.string(),
-      });
+      export const minimalStudent = z
+        .strictObject({
+          role: z.literal(Data.Records.roles.student),
+          studentNumber: z.string(),
+          department: z.string(),
+          yearLevel: z.number(),
+          block: z.string(),
+        })
+        .strip();
 
       export const minimal = z.discriminatedUnion("role", [
         professor, //  ! temporary. a `minimalProfessor` payload should be added once needed.

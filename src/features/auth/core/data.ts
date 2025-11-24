@@ -78,7 +78,7 @@ export namespace Data {
 
       UserId: /^\d+$/,
 
-      RfidUid: /^[0-9A-Fa-f]{8,14}$/,
+      RfidUid: /^([0-9A-Fa-f]{1,2}\s*){4,10}$/,
     } as const;
   }
 

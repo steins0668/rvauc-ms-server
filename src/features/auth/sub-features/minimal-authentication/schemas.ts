@@ -3,8 +3,8 @@ import z from "zod";
 export namespace Schemas {
   export namespace SignIn {
     export const rfidUidMethod = z.strictObject({
-      identifier: z.literal("rfidUid"),
-      rfidUid: z.string({
+      method: z.literal("rfidUid"),
+      identifier: z.string({
         error: (iss) => {
           if (iss.code === "invalid_type")
             return "Student number must be a string";
@@ -14,8 +14,8 @@ export namespace Schemas {
     });
 
     export const studentNumberMethod = z.strictObject({
-      identifier: z.literal("studentNumber"),
-      studentNumber: z.string({
+      method: z.literal("studentNumber"),
+      identifier: z.string({
         error: (iss) => {
           if (iss.code === "invalid_type")
             return "Student number must be a string";
@@ -24,7 +24,7 @@ export namespace Schemas {
       }),
     });
 
-    export const methodsSchema = z.discriminatedUnion("identifier", [
+    export const methodsSchema = z.discriminatedUnion("method", [
       rfidUidMethod,
       studentNumberMethod,
     ]);
