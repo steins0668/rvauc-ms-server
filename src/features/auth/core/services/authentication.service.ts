@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { BaseResult } from "../../../../types";
-import { ResultBuilder } from "../../../../utils";
+import { HashUtil, ResultBuilder } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Types as SharedTypes } from "../../types";
 import { Types } from "../types";
@@ -84,31 +84,37 @@ export namespace Authentication {
       | Types.AuthenticationResult.Success<Schemas.UserData.AuthenticationDTO>
       | Types.AuthenticationResult.Fail
     > {
-      const isPasswordFlow = args.type === "password";
+      const { type, identifier, field } = args;
+      const isPasswordFlow = type === "password";
       const isNotEmailOrUsernameField =
-        args.field !== "email" && args.field !== "username";
+        field !== "email" && field !== "username";
       if (isPasswordFlow && isNotEmailOrUsernameField)
         return this.invalidCredentialsResult; //  ! email or username only for password mode/type.
 
-      const isIdField = args.field === "id";
-      const value = isIdField ? Number(args.identifier) : args.identifier; //  * cast values as needed.
+      const isIdField = field === "id";
+      const isRfidUid = field === "rfidUidHash";
+      const value = isIdField
+        ? Number(identifier)
+        : isRfidUid
+        ? HashUtil.byCrypto(identifier)
+        : identifier; //  * cast values as needed.
 
-      const userQuery = await this.findUserWhere({
-        filter: { [args.field]: value },
+      const queried = await this.findUserWhere({
+        filter: { [field]: value },
       });
 
-      if (!userQuery.success)
+      if (!queried.success)
         return ResultBuilder.fail({
           name: "AUTHENTICATION_SYSTEM_ERROR",
           message:
             "An error occured while authenticating. Please try again later.",
         });
 
-      const { result: userRecord } = userQuery;
+      const { result: user } = queried;
 
-      if (!userRecord) return this.invalidCredentialsResult;
+      if (!user) return this.invalidCredentialsResult;
 
-      const { passwordHash, role, ...profileData } = userRecord;
+      const { passwordHash, role, ...profileData } = user;
 
       if (args.type === "password") {
         const { password } = args;
@@ -117,7 +123,7 @@ export namespace Authentication {
         if (!isAuthenticated) return this.invalidCredentialsResult;
       }
 
-      return this.recordToDTO(userRecord);
+      return this.recordToDTO(user);
     }
 
     private getIdentifierField(identifier: string) {
@@ -149,7 +155,7 @@ export namespace Authentication {
         : isId
         ? "id"
         : isRfidUid
-        ? "rfidUid"
+        ? "rfidUidHash"
         : null;
     }
 
@@ -165,7 +171,7 @@ export namespace Authentication {
               columns: {}, //  * no need for columns. only user
               with: {
                 user: {
-                  columns: { roleId: false, rfidUid: false },
+                  columns: { roleId: false, rfidUidHash: false },
                   with: { role: true },
                 },
               },
@@ -194,7 +200,7 @@ export namespace Authentication {
           try {
             const result = await query.findFirst({
               where: converter(args.filter),
-              columns: { roleId: false, rfidUid: false },
+              columns: { roleId: false, rfidUidHash: false },
               with: { role: true },
             });
 

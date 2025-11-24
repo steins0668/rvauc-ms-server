@@ -68,13 +68,13 @@ export class UserRepository extends Repository<Types.Tables.Users> {
     const conditions = [];
 
     if (filter) {
-      const { filterType = "or", id, email, username, rfidUid } = filter;
+      const { filterType = "or", id, email, username, rfidUidHash } = filter;
       if (id !== undefined) {
         conditions.push(eq(users.id, id));
       }
 
-      if (rfidUid && rfidUid.trim())
-        conditions.push(eq(users.rfidUid, rfidUid));
+      if (rfidUidHash && rfidUidHash.trim())
+        conditions.push(eq(users.rfidUidHash, rfidUidHash));
 
       if (email && email.trim()) {
         conditions.push(eq(users.email, email));

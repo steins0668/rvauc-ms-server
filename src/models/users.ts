@@ -7,7 +7,7 @@ import { passwordResetCodes } from "./password-reset-codes";
 
 export const users = sqliteTable("users", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  rfidUid: text("rfid_uid").unique(),
+  rfidUidHash: text("rfid_uid_hash").unique(),
   roleId: integer("role_id")
     .notNull()
     .references(() => roles.id, { onDelete: "restrict" }),
