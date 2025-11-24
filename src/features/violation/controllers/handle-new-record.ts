@@ -62,36 +62,38 @@ async function storeRecord(args: {
   | Types.ViolationResult.Success<Types.Db.ViewModels.ViolationRecord[]>
   | Types.ViolationResult.Fail
 > {
-  const insertion = await execTransaction(async (tx) => {
-    const studentQuery = await args.userDataService.findStudentWhere({
-      dbOrTx: tx,
-      filter: { studentNumber: args.body.studentNumber },
+  try {
+    return await execTransaction(async (tx) => {
+      const studentQuery = await args.userDataService.findStudentWhere({
+        dbOrTx: tx,
+        filter: { studentNumber: args.body.studentNumber },
+      });
+
+      if (!studentQuery.success) throw studentQuery.error; //  ! propagate error
+
+      const now = new Date().toISOString();
+      const stored = await args.violationDataService.storeRecords({
+        dbOrTx: tx,
+        values: [
+          {
+            studentId: studentQuery.result.id,
+            ...args.body,
+            date: now,
+          },
+        ],
+      });
+
+      if (!stored.success) throw stored.error; //  ! propagate error
+
+      return stored;
     });
-
-    if (!studentQuery.success) return studentQuery; //  ! propagate error
-
-    const now = new Date().toISOString();
-    return await args.violationDataService.storeRecords({
-      dbOrTx: tx,
-      values: [
-        {
-          studentId: studentQuery.result.id,
-          ...args.body,
-          date: now,
-        },
-      ],
-    });
-  });
-
-  if (!insertion.success)
-    //  ! propagate error
+  } catch (err) {
     return ResultBuilder.fail(
       Errors.ViolationData.normalizeError({
         name: "VIOLATION_DATA_STORE_RECORD_ERROR",
         message: "Failed storing record",
-        err: insertion.error,
+        err,
       })
     );
-
-  return insertion;
+  }
 }

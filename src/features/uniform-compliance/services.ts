@@ -19,8 +19,18 @@ export namespace Services {
         this._complianceRecordRepo = complianceRecordRepo;
       }
 
+      public async storeRecord(args: {
+        dbOrTx?: DbOrTx | undefined;
+        value: Types.Db.InsertModels.ComplianceRecord;
+      }) {
+        return await this.storeRecords({
+          dbOrTx: args.dbOrTx,
+          values: [args.value],
+        });
+      }
+
       public async storeRecords(args: {
-        dbOrTx?: DbOrTx;
+        dbOrTx?: DbOrTx | undefined;
         values: Types.Db.InsertModels.ComplianceRecord[];
       }) {
         return await this.insertRecord({

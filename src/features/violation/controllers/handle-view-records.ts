@@ -1,10 +1,9 @@
 import { Request, Response } from "express";
 import { Enums } from "../../../data";
-import { execTransaction, TxContext } from "../../../db/create-context";
+import { TxContext } from "../../../db/create-context";
 import { BaseResult } from "../../../types";
 import { ResultBuilder } from "../../../utils";
 import { Auth } from "../../auth";
-import { Data } from "../data";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Services } from "../services";
@@ -34,6 +33,7 @@ export async function handleViewRecords(req: Request, res: Response) {
 
   const { payload } = auth;
 
+  logger.log("info", "Attempting to retrieve records...");
   const resolution = await resolveRecords({
     violationDataService,
     userDataService,
@@ -50,6 +50,7 @@ export async function handleViewRecords(req: Request, res: Response) {
       .json({ success: false, message });
   }
 
+  logger.log("info", "Successfully retrieved records.");
   res.status(200).json({ success: true, result: resolution.result });
 }
 
@@ -59,62 +60,62 @@ async function resolveRecords(args: {
   payload: Auth.Core.Schemas.Payloads.AccessToken.Full;
 }) {
   const { violationDataService, userDataService, payload } = args;
-  switch (payload.role) {
-    case "student": {
-      const resolver = recordsResolver["student"];
-      return await resolver({
-        violationDataService,
-        userDataService,
-        payload,
-      });
+
+  try {
+    switch (payload.role) {
+      case "student": {
+        const resolver = recordsResolver["student"];
+        return await resolver({
+          violationDataService,
+          userDataService,
+          payload,
+        });
+      }
+      default:
+        return ResultBuilder.fail(
+          new Errors.ViolationData.ErrorClass({
+            name: "VIOLATION_DATA_QUERY_RECORD_ERROR",
+            message: "Role not implemented yet.",
+          })
+        );
     }
-    default:
-      return ResultBuilder.fail(
-        new Errors.ViolationData.ErrorClass({
-          name: "VIOLATION_DATA_QUERY_RECORD_ERROR",
-          message: "Role not implemented yet.",
-        })
-      );
+  } catch (err) {
+    return ResultBuilder.fail(
+      Errors.ViolationData.normalizeError({
+        name: "VIOLATION_DATA_QUERY_RECORD_ERROR",
+        message: "Failed to get records.",
+        err,
+      })
+    );
   }
 }
+
+type StudentPayload = Extract<
+  Auth.Core.Schemas.Payloads.AccessToken.Full,
+  { role: "student" }
+>;
+
+type ProfessorPayload = Extract<
+  Auth.Core.Schemas.Payloads.AccessToken.Full,
+  { role: "professor" }
+>;
 
 const recordsResolver = {
   student: async (args: {
     violationDataService: Services.ViolationData.Service;
     userDataService: Auth.Core.Services.UserData.Service;
-    payload: Extract<
-      Auth.Core.Schemas.Payloads.AccessToken.Full,
-      { role: "student" }
-    >;
+    payload: StudentPayload;
   }) => {
-    const { userDataService, violationDataService, payload } = args;
+    const { violationDataService, payload } = args;
 
-    const transaction = await execTransaction(async (tx) => {
-      const studentQuery = await fetchStudent({ tx, userDataService, payload });
-
-      if (!studentQuery.success) return studentQuery; //  ! propagate error
-
-      const studentId = studentQuery.result;
-      const recordsQuery = await fetchRecords({
-        tx,
-        violationDataService,
-        studentId,
-      });
-
-      return recordsQuery;
+    const queried = await fetchRecords({
+      violationDataService,
+      studentId: payload.id,
     });
 
-    if (!transaction.success)
-      //  ! propagate error
-      return ResultBuilder.fail(
-        Errors.ViolationData.normalizeError({
-          name: "VIOLATION_DATA_QUERY_RECORD_ERROR",
-          message: "Failed to get records.",
-          err: transaction.error,
-        })
-      );
+    if (!queried.success) throw queried.error; //  ! propagate error
 
-    const rawRecords = transaction.result;
+    const rawRecords = queried.result;
     const conversion = toDTORecord(rawRecords);
 
     return conversion;
@@ -123,55 +124,44 @@ const recordsResolver = {
   professor: async (args: {
     violationDataService: Services.ViolationData.Service;
     userDataService: Auth.Core.Services.UserData.Service;
-    payload: Extract<
-      Auth.Core.Schemas.Payloads.AccessToken.Full,
-      { role: "professor" }
-    >;
+    payload: ProfessorPayload;
   }) => [] as Types.Db.ViewModels.ViolationRecord[], //  todo: do this
 };
 
-async function fetchStudent(args: {
-  tx: TxContext;
-  userDataService: Auth.Core.Services.UserData.Service;
-  payload: Extract<
-    Auth.Core.Schemas.Payloads.AccessToken.Full,
-    { role: "student" }
-  >;
-}) {
-  const { tx, userDataService, payload } = args;
-  return await userDataService.queryStudents({
-    dbOrTx: tx,
-    fn: async (query, converter) => {
-      return await query
-        .findFirst({
-          where: converter({ studentNumber: payload.studentNumber }),
-        })
-        .then((result) => result?.id);
-    },
-  });
-}
-
 async function fetchRecords(args: {
-  tx: TxContext;
+  tx?: TxContext;
   violationDataService: Services.ViolationData.Service;
   studentId: number;
 }) {
   const { tx, violationDataService, studentId } = args;
   return await violationDataService.queryRecord({
     dbOrTx: tx,
-    fn: async (query, converter) => {
-      return await query.findMany({
+    fn: async (query, converter) =>
+      query.findMany({
         where: converter({ studentId }),
         orderBy: (records, { desc }) => [desc(records.date)],
-        with: { status: true },
+        with: {
+          status: true,
+          student: {
+            columns: { studentNumber: true, block: true, yearLevel: true },
+            with: {
+              user: {
+                columns: { firstName: true, middleName: true, surname: true },
+              },
+              department: {
+                columns: { name: true },
+                with: { college: { columns: { name: true } } },
+              },
+            },
+          },
+        },
         limit: 6,
         columns: {
           studentId: false,
           complianceRecordId: false,
           statusId: false,
         },
-      });
-    },
+      }),
   });
 }
 
@@ -182,9 +172,6 @@ type RawRecords = FetchRecordsResult extends
   ? R
   : never;
 
-type ViolationReasonRecord = typeof Data.Records.ViolationReason;
-type Reasons = ViolationReasonRecord[keyof ViolationReasonRecord][];
-
 function toDTORecord(
   rawRecords: RawRecords
 ):
@@ -192,6 +179,7 @@ function toDTORecord(
   | Types.ViolationResult.Fail {
   try {
     const dtoRecord = rawRecords.map((record) => {
+      //  * violation metadata
       const { id, date: isoDate } = record;
       const rawDate = new Date(isoDate);
       const date = isoDate.split("T")[0] as string;
@@ -200,12 +188,32 @@ function toDTORecord(
       const minutes = rawDate.getMinutes().toString().padStart(2, "0");
       const time = hours + ":" + minutes; //  * hh:mm format
       const status = record.status.name;
-      const reasons = record.reasons as Reasons;
+      const reasons = record.reasons;
 
-      const dto = { id, date, day, time, status, reasons };
-      Schemas.ViolationData.recordDTO.parse(dto);
+      //  * student metadata
+      const { student } = record;
+      const { studentNumber, block, yearLevel } = student;
+      const department = student.department.name;
+      const { surname, firstName, middleName } = student.user;
 
-      return dto;
+      const dto = {
+        id,
+        date,
+        day,
+        time,
+        status,
+        reasons,
+        studentNumber,
+        block,
+        yearLevel,
+        department,
+        surname,
+        firstName,
+        middleName,
+      };
+      const parsed = Schemas.ViolationData.recordDTO.parse(dto);
+
+      return parsed;
     });
 
     return ResultBuilder.success(dtoRecord);

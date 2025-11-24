@@ -89,7 +89,6 @@ export async function handleForgotPassword(
 
   logger.log("debug", "Sending reset code to email...");
   const emailTransport = await sendEmail({
-    req,
     resetCode: code,
     email: user.email,
   });
@@ -125,7 +124,6 @@ export async function handleForgotPassword(
 }
 //#region Utils
 async function sendEmail(args: {
-  req: Request<{}, {}, Schemas.ForgotPassword>;
   resetCode: string;
   email: string;
 }): Promise<
