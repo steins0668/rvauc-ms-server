@@ -62,22 +62,33 @@ async function resolveRecords(args: {
   payload: Auth.Core.Schemas.Payloads.AccessToken.Full;
 }) {
   const { complianceDataService, userDataService, payload } = args;
-  switch (payload.role) {
-    case "student": {
-      const resolver = recordsResolver["student"];
-      return await resolver({
-        complianceDataService,
-        userDataService,
-        payload,
-      });
+
+  try {
+    switch (payload.role) {
+      case "student": {
+        const resolver = recordsResolver["student"];
+        return await resolver({
+          complianceDataService,
+          userDataService,
+          payload,
+        });
+      }
+      default:
+        return ResultBuilder.fail(
+          new Errors.ComplianceData.ErrorClass({
+            name: "COMPLIANCE_DATA_QUERY_RECORD_ERROR",
+            message: "Role not implemented yet.",
+          })
+        );
     }
-    default:
-      return ResultBuilder.fail(
-        new Errors.ComplianceData.ErrorClass({
-          name: "COMPLIANCE_DATA_QUERY_RECORD_ERROR",
-          message: "Role not implemented yet.",
-        })
-      );
+  } catch (err) {
+    return ResultBuilder.fail(
+      Errors.ComplianceData.normalizeError({
+        name: "COMPLIANCE_DATA_QUERY_RECORD_ERROR",
+        message: "Failed to get records.",
+        err,
+      })
+    );
   }
 }
 
@@ -90,34 +101,16 @@ const recordsResolver = {
       { role: "student" }
     >;
   }) => {
-    const { complianceDataService, userDataService, payload } = args;
+    const { complianceDataService, payload } = args;
 
-    const transaction = await execTransaction(async (tx) => {
-      const studentQuery = await fetchStudent({ tx, userDataService, payload });
-
-      if (!studentQuery.success) return studentQuery; //  ! propagate error
-
-      const studentId = studentQuery.result;
-      const recordsQuery = await fetchRecords({
-        tx,
-        complianceDataService,
-        studentId,
-      });
-
-      return recordsQuery;
+    const queried = await fetchRecords({
+      complianceDataService,
+      studentId: payload.id,
     });
 
-    if (!transaction.success)
-      //  ! propagate error
-      return ResultBuilder.fail(
-        Errors.ComplianceData.normalizeError({
-          name: "COMPLIANCE_DATA_QUERY_RECORD_ERROR",
-          message: "Failed to get records",
-          err: transaction.error,
-        })
-      );
+    if (!queried.success) throw queried.error; //  ! propagate error
 
-    const rawRecords = transaction.result;
+    const rawRecords = queried.result;
     const conversion = toDTORecord(rawRecords);
 
     return conversion;
@@ -133,52 +126,43 @@ const recordsResolver = {
   }) => [] as Types.Db.ViewModels.ComplianceRecord[], //  todo: do this
 };
 
-async function fetchStudent(args: {
-  tx: TxContext;
-  userDataService: Auth.Core.Services.UserData.Service;
-  payload: Extract<
-    Auth.Core.Schemas.Payloads.AccessToken.Full,
-    { role: "student" }
-  >;
-}) {
-  const { tx, userDataService, payload } = args;
-  return await userDataService.queryStudents({
-    dbOrTx: tx,
-    fn: async (query, converter) => {
-      return await query
-        .findFirst({
-          where: converter({ studentNumber: payload.studentNumber }),
-        })
-        .then((result) => result?.id);
-    },
-  });
-}
-
 async function fetchRecords(args: {
-  tx: TxContext;
+  tx?: TxContext;
   complianceDataService: Services.ComplianceData.Service;
   studentId: number;
 }) {
   const { tx, complianceDataService, studentId } = args;
   return await complianceDataService.queryRecord({
     dbOrTx: tx,
-    fn: async (query, converter) => {
-      return await query.findMany({
+    fn: async (query, converter) =>
+      query.findMany({
         where: converter({ studentId }),
         orderBy: (records, { desc }) => [
           desc(records.termId),
           desc(records.createdAt),
         ],
-        with: { uniformType: true },
+        with: {
+          uniformType: true,
+          student: {
+            columns: { studentNumber: true, block: true, yearLevel: true },
+            with: {
+              user: {
+                columns: { firstName: true, middleName: true, surname: true },
+              },
+              department: {
+                columns: { name: true },
+                with: { college: { columns: { name: true } } },
+              },
+            },
+          },
+        },
         limit: 6,
         columns: {
-          id: false,
           studentId: false,
           uniformTypeId: false,
           termId: false,
         },
-      });
-    },
+      }),
   });
 }
 
@@ -194,10 +178,13 @@ function toDTORecord(
 ):
   | Types.ComplianceResult.Success<Schemas.ComplianceData.RecordDTO[]>
   | Types.ComplianceResult.Fail {
+  const { ComplianceStatus } = Data.Records;
+
   try {
     const dtoRecord = rawRecords.map((record) => {
-      const { uniformType, createdAt, ...flags } = record;
+      const { id, student, uniformType, createdAt, ...flags } = record;
 
+      //  * record metadata
       const rawDate = new Date(createdAt);
       const date = createdAt.split("T")[0] as string;
       const day = Enums.Days[rawDate.getDay()] as string;
@@ -207,13 +194,31 @@ function toDTORecord(
 
       const hasViolation = Object.values(flags).some((value) => !value);
       const status = hasViolation
-        ? Data.Records.ComplianceStatus.nonCompliant
-        : Data.Records.ComplianceStatus.compliant;
+        ? ComplianceStatus.nonCompliant
+        : ComplianceStatus.compliant;
 
-      const dto = { date, day, time, status };
-      Schemas.ComplianceData.recordDTO.parse(dto);
+      //  * student metadata
+      const { studentNumber, block, yearLevel } = student;
+      const department = student.department.name;
+      const { surname, firstName, middleName } = student.user;
 
-      return dto;
+      const dto = {
+        id,
+        date,
+        day,
+        time,
+        status,
+        studentNumber,
+        block,
+        yearLevel,
+        department,
+        surname,
+        firstName,
+        middleName,
+      };
+      const parsed = Schemas.ComplianceData.recordDTO.parse(dto);
+
+      return parsed;
     });
 
     return ResultBuilder.success(dtoRecord);
