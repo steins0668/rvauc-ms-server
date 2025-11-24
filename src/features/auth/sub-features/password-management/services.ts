@@ -76,7 +76,7 @@ export namespace Services {
         const update = await this.updateCodeWhere({
           dbOrTx: args.dbOrTx,
           values: { isUsed: true, expiresAt: new Date().toISOString() },
-          filter: { id: args.codeId, isUsed: false },
+          filter: { filterType: "and", id: args.codeId, isUsed: false },
         });
 
         if (!update.success)
@@ -141,7 +141,7 @@ export namespace Services {
 
       public async verifyNoActiveCode(userId: number) {
         const query = await this.findCodeWhere({
-          filter: { userId, isUsed: false },
+          filter: { filterType: "and", userId, isUsed: false },
         });
 
         if (!query.success)
