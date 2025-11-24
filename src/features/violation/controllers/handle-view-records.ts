@@ -33,6 +33,7 @@ export async function handleViewRecords(req: Request, res: Response) {
 
   const { payload } = auth;
 
+  logger.log("info", "Attempting to retrieve records...");
   const resolution = await resolveRecords({
     violationDataService,
     userDataService,
@@ -49,6 +50,7 @@ export async function handleViewRecords(req: Request, res: Response) {
       .json({ success: false, message });
   }
 
+  logger.log("info", "Successfully retrieved records.");
   res.status(200).json({ success: true, result: resolution.result });
 }
 
