@@ -1,11 +1,8 @@
 import { Request, Response } from "express";
 import { execTransaction } from "../../../db/create-context";
-import { ResultBuilder } from "../../../utils";
 import { Auth } from "../../auth";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
-import { Services } from "../services";
-import { Types } from "../types";
 
 export async function handleNewRecord(
   req: Request<{}, {}, Schemas.ViolationData.NewRecord>,
@@ -34,64 +31,50 @@ export async function handleNewRecord(
   }
 
   logger.log("info", "Storing new compliance record...");
-  const store = await storeRecord({
-    userDataService,
-    violationDataService,
-    body,
-  });
 
-  if (!store.success) {
-    const { error } = store;
-    const message = "Failed storing new record. Please try again later.";
+  try {
+    const transaction = await execTransaction(async (tx) => {
+      logger.log("debug", " Finding student...");
+      const queried = await userDataService.findStudentWhere({
+        dbOrTx: tx,
+        filter: { studentNumber: body.studentNumber },
+      });
+
+      if (!queried.success) throw queried.error; //  ! propagate error
+
+      const now = new Date().toISOString();
+
+      logger.log("debug", "Storing record...");
+      const stored = await violationDataService.storeRecords({
+        dbOrTx: tx,
+        values: [
+          {
+            studentId: queried.result.id,
+            ...body,
+            date: now,
+          },
+        ],
+      });
+
+      if (!stored.success) throw stored.error; //  ! propagate error
+
+      return stored;
+    });
+
+    logger.log("info", "Success storing new record.");
+    return res.status(200).json({ success: true, result: transaction.result });
+  } catch (err) {
+    const error = Errors.ViolationData.normalizeError({
+      name: "VIOLATION_DATA_STORE_RECORD_ERROR",
+      message: "Failed storing violation.",
+      err,
+    });
 
     logger.log("error", "Failed storing new record.", error);
+
+    const message = "Failed storing new record. Please try again later.";
     return res
       .status(Errors.ViolationData.getErrStatusCode(error))
       .json({ success: false, message });
   }
-
-  logger.log("debug", "Success storing new record.");
-  res.status(200).json({ success: true, result: store.result });
-}
-
-async function storeRecord(args: {
-  userDataService: Auth.Core.Services.UserData.Service;
-  violationDataService: Services.ViolationData.Service;
-  body: Schemas.ViolationData.NewRecord;
-}): Promise<
-  | Types.ViolationResult.Success<Types.Db.ViewModels.ViolationRecord[]>
-  | Types.ViolationResult.Fail
-> {
-  const insertion = await execTransaction(async (tx) => {
-    const studentQuery = await args.userDataService.findStudentWhere({
-      dbOrTx: tx,
-      filter: { studentNumber: args.body.studentNumber },
-    });
-
-    if (!studentQuery.success) return studentQuery; //  ! propagate error
-
-    const now = new Date().toISOString();
-    return await args.violationDataService.storeRecords({
-      dbOrTx: tx,
-      values: [
-        {
-          studentId: studentQuery.result.id,
-          ...args.body,
-          date: now,
-        },
-      ],
-    });
-  });
-
-  if (!insertion.success)
-    //  ! propagate error
-    return ResultBuilder.fail(
-      Errors.ViolationData.normalizeError({
-        name: "VIOLATION_DATA_STORE_RECORD_ERROR",
-        message: "Failed storing record",
-        err: insertion.error,
-      })
-    );
-
-  return insertion;
 }

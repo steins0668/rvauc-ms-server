@@ -69,7 +69,7 @@ export namespace SignInRequest {
       | Core.Types.AuthenticationResult.Fail
     > {
       const query = await this.findRequestWhere({
-        filter: { userId, codeHash },
+        filter: { filterType: "and", userId, codeHash },
       });
 
       if (!query.success)
@@ -120,7 +120,7 @@ export namespace SignInRequest {
       const update = await this.updateRequestWhere({
         dbOrTx: args.dbOrTx,
         values: { isUsed: true, expiresAt: new Date().toISOString() },
-        filter: { id: args.requestId, isUsed: false },
+        filter: { filterType: "and", id: args.requestId, isUsed: false },
       });
 
       if (!update.success)

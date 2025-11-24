@@ -41,10 +41,8 @@ export async function handleRefresh(
 
   if (!oldRefreshTkn) {
     const message = "Refresh token is missing.";
-    res.status(401).json({ success: false, message });
-
-    req.requestLogger.log("debug", message);
-    return;
+    logger.log("debug", message);
+    return res.status(401).json({ success: false, message });
   }
 
   logger.log("debug", "Verifying payload...");
