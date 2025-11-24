@@ -46,7 +46,7 @@ export async function handleVerifyCode(
   if (!codeVerification.success) {
     //  ! code verification failed
     const { error } = codeVerification;
-    logger.log("debug", "Failed verifying code.", error);
+    logger.log("error", "Failed verifying code.", error);
 
     const isInternalError =
       error.name === "AUTHENTICATION_PASSWORD_RESET_CODE_QUERY_ERROR";
