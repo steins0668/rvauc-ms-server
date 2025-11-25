@@ -66,6 +66,12 @@ export namespace Schemas {
         { type: "microservice", schema: microservice },
       ] as const; //  ! add all future access token payload types here.
 
+      export const schemaRecord = {
+        full,
+        minimal,
+        microservice,
+      } as const;
+
       export type AnySchema = (typeof schemas)[number];
 
       export type AnySchemaType = AnySchema extends infer S

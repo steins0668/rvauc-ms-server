@@ -9,26 +9,13 @@ export async function handleSignOut(
 ) {
   const { requestLogger: logger, cookies, sessionManager } = req;
 
-  const internalErrMsg =
-    "An error occured while signing out session. Please try again later.";
-
   logger.log("info", "Attempting to sign out...");
-  //  * get config for refresh token cookie
-  const cookieConfig = Core.Utils.Config.getRefreshConfig();
-  if (!cookieConfig.success) {
-    //  !failed getting refresh token config
-    const { error } = cookieConfig;
-    logger.log("error", "Failed getting refresh token config.", error);
 
-    return res
-      .status(Core.Errors.Config.getErrStatusCode(error))
-      .json({ success: false, message: internalErrMsg });
-  }
-
-  const { cookieName: refresh } = cookieConfig.result;
+  const { refresh } = Core.Data.Cookie.config;
+  const { cookieName: refreshCookie } = refresh;
 
   //  * helper function for clearing cookie
-  const clearCookie = (cookieConfig: Core.Data.Token.CookieConfig) => {
+  const clearCookie = (cookieConfig: Core.Data.Cookie.Config) => {
     const { cookieName: refresh, clearCookie } = cookieConfig;
     logger.log("info", "Signed out successfully.");
     return res
@@ -38,16 +25,16 @@ export async function handleSignOut(
   };
 
   //  * get refresh tkn
-  const cookieToken = cookies?.[refresh] as string | undefined;
+  const cookieToken = cookies?.[refreshCookie] as string | undefined;
   const bodyToken = req.body?.refreshToken;
   const refreshTkn = cookieToken ?? bodyToken;
   //  ! refresh tkn not found. just clear cookie
-  if (refreshTkn === undefined) return clearCookie(cookieConfig.result);
+  if (refreshTkn === undefined) return clearCookie(refresh);
 
   //  * verify payload
   const payloadVerification = Core.Utils.verifyRefreshTkn(req, refreshTkn);
   //  ! payload not found, just clear cookie
-  if (!payloadVerification.success) return clearCookie(cookieConfig.result);
+  if (!payloadVerification.success) return clearCookie(refresh);
 
   //  * delete session
   const { sessionNumber } = payloadVerification.result;
@@ -61,7 +48,7 @@ export async function handleSignOut(
   });
 
   //  * clear cookie
-  clearCookie(cookieConfig.result);
+  clearCookie(refresh);
 }
 
 const notify = async (

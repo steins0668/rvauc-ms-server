@@ -155,24 +155,8 @@ export async function handleVerifyCode(
       .json({ success: false, message: internalErrMsg });
   }
 
-  const cookieResult = Core.Utils.Config.getRefreshConfig();
-
-  if (!cookieResult.success) {
-    //  !failed getting refresh token config
-    const { error } = cookieResult;
-
-    await notifyInternalError({ userId: user.id });
-
-    res
-      .status(Core.Errors.Config.getErrStatusCode(error))
-      .json({ success: false, message: internalErrMsg });
-
-    logger.log("error", "Failed getting refresh token config.", error);
-
-    return;
-  }
-
-  const { cookieName, persistentCookie, sessionCookie } = cookieResult.result;
+  const { refresh } = Core.Data.Cookie.config;
+  const { cookieName, persistentCookie, sessionCookie } = refresh;
 
   await notify({
     category: "request_code_verified",

@@ -22,19 +22,8 @@ export async function handleRefresh(
 
   logger.log("info", "Refreshing tokens...");
 
-  //  * get config for refresh cookie
-  const cookieConfig = getRefreshConfig();
-  if (!cookieConfig.success) {
-    //  !failed getting refresh token config
-    const { error } = cookieConfig;
-    logger.log("error", "Failed getting refresh token config.", error);
-
-    return res
-      .status(Core.Errors.Config.getErrStatusCode(error))
-      .json({ success: false, message: internalErrMsg });
-  }
-
-  const { cookieName: refreshTknCookie } = cookieConfig.result;
+  const { refresh } = Core.Data.Cookie.config;
+  const { cookieName: refreshTknCookie } = refresh;
   const cookieToken = cookies[refreshTknCookie] as string | undefined;
   const bodyToken = req.body?.refreshToken;
   const oldRefreshTkn = cookieToken ?? bodyToken;
@@ -127,7 +116,7 @@ export async function handleRefresh(
       .json({ success: false, message: internalErrMsg });
   }
 
-  const { cookieName, persistentCookie, sessionCookie } = cookieConfig.result;
+  const { cookieName, persistentCookie, sessionCookie } = refresh;
 
   logger.log("info", "Success refreshing tokens.");
   res.cookie(
@@ -136,50 +125,4 @@ export async function handleRefresh(
     isPersistentAuth ? persistentCookie : sessionCookie
   );
   res.json({ success: true, accessToken, refreshToken }); //  ! refresh token is for demo only
-}
-
-function getRefreshConfig():
-  | BaseResult.Success<Core.Data.Token.CookieConfig>
-  | BaseResult.Fail<Core.Errors.Config.ErrorClass> {
-  const { cookieConfig: refreshCookie } = Core.Data.Token.configuration.refresh;
-
-  if (!refreshCookie)
-    //  cookie config not set
-    return ResultBuilder.fail({
-      name: "AUTH_CONFIG_COOKIE_CONFIG_ERROR",
-      message: "Refresh token cookie is not configured properly.",
-    });
-
-  return ResultBuilder.success(refreshCookie);
-}
-
-async function resolveUser(
-  req: Request,
-  id: number
-): Promise<
-  | Core.Types.AuthenticationResult.Success<ViewModels.User>
-  | Core.Types.AuthenticationResult.Fail
-> {
-  const { userDataService } = req;
-
-  const userQuery = await userDataService.queryUsers({
-    fn: async (query, converter) => {
-      return await query.findFirst({ where: converter({ id }) });
-    },
-  });
-
-  if (userQuery.success && userQuery.result)
-    return ResultBuilder.success(
-      userQuery.result,
-      "AUTHENTICATION_SESSION_TOKEN_VERIFY"
-    );
-
-  //  !user query fails or user query result is undefined
-  return ResultBuilder.fail(
-    Core.Errors.Authentication.normalizeError({
-      name: "AUTHENTICATION_SESSION_TOKEN_MALFORMED_ERROR",
-      message: "Failed retrieving user details.",
-      err: !userQuery.success ? userQuery.error : undefined,
-    })
-  );
 }
