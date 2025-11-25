@@ -8,7 +8,7 @@ export namespace SessionBroker {
     accessToken: string
   ) {
     try {
-      const expirySeconds = 60;
+      const expirySeconds = 180;
       await RedisService.set(stationIdentifier, accessToken, expirySeconds);
       return ResultBuilder.success(null);
     } catch (err) {
