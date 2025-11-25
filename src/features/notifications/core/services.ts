@@ -1,5 +1,6 @@
 import { Schemas } from "./schemas";
 import { ResultBuilder } from "../../../utils";
+import { BaseResponse } from "../../../types";
 import { Errors } from "./errors";
 import { Utils } from "./utils";
 
@@ -8,7 +9,7 @@ export namespace Services {
     export async function clearNotifications(args: { userId: number }) {
       const url = "/notifications/clear-notifications/" + args.userId;
 
-      type R = Response.Union<null>;
+      type R = BaseResponse.Union<null>;
       try {
         const response = await Utils.notifClient.delete<R>(url);
 
@@ -36,7 +37,7 @@ export namespace Services {
     export async function getNotifications(args: { userId: number }) {
       const url = "/notifications/get-notifications/" + args.userId;
 
-      type R = Response.Union<Schemas.NotificationDTO[]>;
+      type R = BaseResponse.Union<Schemas.NotificationDTO[]>;
       try {
         const response = await Utils.notifClient.get<R>(url);
 
@@ -74,7 +75,7 @@ export namespace Services {
         );
 
       try {
-        type R = Response.Union<null>;
+        type R = BaseResponse.Union<null>;
         const response = await Utils.notifClient.post<R>(
           "/notifications/send-firebase-notification",
           body
@@ -106,7 +107,7 @@ export namespace Services {
       deviceToken: string;
     }) {
       try {
-        type R = Response.Union<{ userId: number }>;
+        type R = BaseResponse.Union<{ userId: number }>;
         const result = await Utils.notifClient.post<R>(
           "/auth/registration/register",
           args
@@ -133,19 +134,4 @@ export namespace Services {
       }
     }
   }
-}
-
-namespace Response {
-  export type Success<TResult> = {
-    success: true;
-    result: TResult;
-    message?: string;
-  };
-
-  export type Fail = {
-    success: false;
-    message?: string;
-  };
-
-  export type Union<TResult> = Success<TResult> | Fail;
 }
