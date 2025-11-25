@@ -126,6 +126,16 @@ export namespace Data {
 
       return { accessSecret, refreshSecret };
     }
+
+    export function getMicroserviceSecret() {
+      const tokenSecret: string | undefined =
+        process.env.JWT_ACCESS_MICROSERVICE_SECRET;
+
+      if (!tokenSecret)
+        throw new Error("JWT_ACCESS_MICROSERVICE_SECRET not configured.");
+
+      return tokenSecret;
+    }
   }
 
   export namespace Token {
