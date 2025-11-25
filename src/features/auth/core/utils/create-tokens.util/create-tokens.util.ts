@@ -24,6 +24,7 @@ export function createTokens(
 
     const accessToken = createJwt({
       tokenType: "access",
+      payloadType: payloads.type,
       payload: payloads.access,
     });
 
@@ -59,9 +60,8 @@ function validatePayloads(payloads: Payloads) {
       err,
     });
 
-  const accessSchema = Schemas.Payloads.AccessToken.schemas.find(
-    (value) => value.type === payloads.type
-  )?.schema;
+  const { schemaRecord } = Schemas.Payloads.AccessToken;
+  const accessSchema = schemaRecord[payloads.type];
 
   if (!accessSchema)
     throw validationErr(`Invalid schema type ${payloads.type}`);

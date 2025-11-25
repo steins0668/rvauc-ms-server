@@ -12,13 +12,13 @@ Routes.use(Middlewares.attachViolationDataService);
 
 Routes.get(
   "/view-records",
-  Auth.Core.Middlewares.validateJwt,
+  Auth.Core.Middlewares.validateJwt("full"),
   Controllers.handleViewRecords
 );
 
 Routes.post(
   "/new-record",
-  Auth.Core.Middlewares.validateJwt,
+  Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({ body: Schemas.ViolationData.newRecord }),
   Controllers.handleNewRecord
 );

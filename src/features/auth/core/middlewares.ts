@@ -1,8 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { ResultBuilder } from "../../../utils";
 import { Data } from "./data";
-import { Errors } from "./errors";
 import { Schemas } from "./schemas";
 import { Services } from "./services";
 
@@ -25,87 +23,61 @@ export namespace Middlewares {
     next();
   }
 
-  export function validateJwt(req: Request, res: Response, next: NextFunction) {
-    const { headers, requestLogger } = req;
+  export function validateJwt(
+    ...types: Schemas.Payloads.AccessToken.AnySchemaType[]
+  ) {
+    return (req: Request, res: Response, next: NextFunction) => {
+      const { headers, requestLogger } = req;
 
-    const authHeader = headers["authorization"];
+      const authHeader = headers["authorization"];
 
-    if (!authHeader?.startsWith("Bearer ")) {
-      const message = "Missing or malformed token.";
-      requestLogger.log("debug", message);
+      if (!authHeader?.startsWith("Bearer ")) {
+        const message = "Missing or malformed token.";
+        requestLogger.log("debug", message);
 
-      res.status(401).json({ success: false, message });
-      return;
-    }
-
-    const token = authHeader.split(" ")[1] ?? ""; //  * token itself is at index 1
-
-    const retrieveEnv = accessTknSecret();
-
-    if (!retrieveEnv.success) {
-      const { error } = retrieveEnv;
-      const logMessage = "Jwt validation failed.";
-      requestLogger.log("debug", logMessage, error);
-
-      const message = "Something went wrong. Please try again later.";
-      res.status(500).json({ success: false, message });
-      return;
-    }
-
-    try {
-      requestLogger.log("debug", "Validating access token...");
-
-      const payload = jwt.verify(token, retrieveEnv.result);
-
-      for (const arg of Object.values(Schemas.Payloads.AccessToken.schemas)) {
-        requestLogger.log("debug", `Parsing payload with schema ${arg.type}`);
-        const parse = arg.schema.safeParse(payload);
-
-        if (parse.success) {
-          req.auth = {
-            type: arg.type,
-            payload: parse.data,
-          } as Schemas.Payloads.AccessToken.AnyPayload;
-          requestLogger.log("debug", "Access token validated.");
-          return next();
-        }
-
-        requestLogger.log(
-          "debug",
-          `Failed parsing schema ${arg.type}`,
-          parse.error
-        );
+        res.status(401).json({ success: false, message });
+        return;
       }
 
-      throw new Error("Payload does not match any schema.");
-    } catch (err) {
-      const error = Errors.Authentication.normalizeError({
-        name: "AUTHENTICATION_SESSION_TOKEN_EXPIRED_OR_INVALID_ERROR",
-        message: "Access token verification failed.",
-        err,
-      });
+      const token = authHeader.split(" ")[1] ?? ""; //  * token itself is at index 1
 
-      requestLogger.log("debug", "Failed validating Jwt.", error);
+      requestLogger.log("debug", "Validating access token...");
 
-      const message = "Invalid or expired token.";
-      res.status(401).json({ success: false, message });
-      return;
-    }
-  }
+      for (const type of types) {
+        try {
+          const secret = Data.Env.getAccessSecrets()[type];
+          const payload = jwt.verify(token, secret);
+          requestLogger.log("debug", `Parsing payload with schema: ${type}...`);
 
-  function accessTknSecret() {
-    try {
-      const secret = Data.Env.getTknSecrets().accessSecret;
-      return ResultBuilder.success(secret);
-    } catch (err) {
-      return ResultBuilder.fail(
-        Errors.Config.normalizeError({
-          name: "AUTH_CONFIG_ENV_TKN_SECRET_ERROR",
-          message: "ACCESS_TOKEN_SECRET not configured",
-          err,
-        })
+          const { schemaRecord } = Schemas.Payloads.AccessToken;
+          const parsed = schemaRecord[type].parse(payload);
+
+          req.auth = {
+            type,
+            payload: parsed,
+          } as Schemas.Payloads.AccessToken.AnyPayload;
+
+          requestLogger.log("info", "Access token payload validated.");
+
+          return next();
+        } catch (err) {
+          requestLogger.log(
+            "debug",
+            `Failed with secret/schema for type ${type}`,
+            err
+          );
+        }
+      }
+
+      requestLogger.log(
+        "info",
+        `Failed authentication attempt by unauthorized payload type. The only types allowed are ${types.toString()}`
       );
-    }
+
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid or expired token." });
+    };
   }
 }
 

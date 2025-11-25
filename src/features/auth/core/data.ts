@@ -1,8 +1,7 @@
 import { CookieOptions } from "express";
 import "dotenv/config";
-import jwt from "jsonwebtoken";
-import { Types } from "../types";
 import { Errors } from "./errors";
+import z from "zod";
 
 export namespace Data {
   export namespace Records {
@@ -106,78 +105,98 @@ export namespace Data {
       return { ...config, port: Number(config.port) } as MailTrapTransport;
     }
 
+    export function getAccessSecrets() {
+      const full = process.env.JWT_ACCESS_SECRET_FULL;
+      const refresh = process.env.JWT_ACCESS_SECRET_REFRESH;
+      const minimal = process.env.JWT_ACCESS_SECRET_MINIMAL;
+      const microservice = process.env.JWT_ACCESS_SECRET_MICROSERVICE;
+
+      const secrets = { full, refresh, minimal, microservice };
+
+      const parsed = z
+        .strictObject({
+          full: z.string(),
+          refresh: z.string(),
+          minimal: z.string(),
+          microservice: z.string(),
+        })
+        .strip()
+        .parse(secrets);
+
+      return parsed;
+    }
+
     export function getTknSecrets(): {
       accessSecret: string;
       refreshSecret: string;
     } {
-      const accessSecret: string | undefined = process.env.ACCESS_TOKEN_SECRET;
+      const accessSecret: string | undefined =
+        process.env.JWT_ACCESS_SECRET_USER;
       const refreshSecret: string | undefined =
-        process.env.REFRESH_TOKEN_SECRET;
+        process.env.JWT_ACCESS_SECRET_REFRESH;
       if (!accessSecret)
         throw new Errors.Config.ErrorClass({
           name: "AUTH_CONFIG_ENV_TKN_SECRET_ERROR",
-          message: "ACCESS_TOKEN_SECRET not configured.",
+          message: "JWT_ACCESS_SECRET_USER not configured.",
         });
       if (!refreshSecret)
         throw new Errors.Config.ErrorClass({
           name: "AUTH_CONFIG_ENV_TKN_SECRET_ERROR",
-          message: "REFRESH_TOKEN_SECRET not configured.",
+          message: "JWT_ACCESS_SECRET_REFRESH not configured.",
         });
 
       return { accessSecret, refreshSecret };
     }
+
+    export function getMicroserviceSecret() {
+      const tokenSecret: string | undefined =
+        process.env.JWT_ACCESS_MICROSERVICE_SECRET;
+
+      if (!tokenSecret)
+        throw new Errors.Config.ErrorClass({
+          name: "AUTH_CONFIG_ENV_TKN_SECRET_ERROR",
+          message: "JWT_ACCESS_MICROSERVICE_SECRET not configured.",
+        });
+
+      return tokenSecret;
+    }
   }
 
   export namespace Token {
-    export type CookieConfig = {
+    export const signOptions = {
+      full: { expiresIn: "5m" },
+      minimal: { expiresIn: "2m" },
+      refresh: { expiresIn: "30d" },
+      microservice: { expiresIn: "1m" },
+    };
+  }
+
+  export namespace Cookie {
+    export type Config = {
       cookieName: string;
       clearCookie: CookieOptions;
       persistentCookie: CookieOptions;
       sessionCookie: CookieOptions;
     };
-    type TokenConfig = {
-      secret: string;
-      signOptions: jwt.SignOptions;
-      cookieConfig?: CookieConfig;
-    };
-    type Configuration = Record<Types.AuthToken, TokenConfig>;
-
-    /**
-     * @constant tokenConfigRecord
-     * @description A {@link Configuration} object containing config details about different
-     * token types. It's key is of type {@link TokenType}.
-     */
-    export const configuration: Configuration = {
-      access: {
-        secret: Env.getTknSecrets().accessSecret,
-        signOptions: {
-          expiresIn: "5m",
-        } as jwt.SignOptions,
-      },
+    export const config = {
       refresh: {
-        secret: Env.getTknSecrets().refreshSecret,
-        signOptions: {
-          expiresIn: "30d",
-        } as jwt.SignOptions,
-        cookieConfig: {
-          cookieName: "refresh_token",
-          clearCookie: {
-            httpOnly: true,
-            sameSite: "none",
-            secure: false, // *change to true in production/when not using thunderclient
-          },
-          persistentCookie: {
-            httpOnly: true,
-            sameSite: "none",
-            secure: false,
-            maxAge: 24 * 60 * 60 * 1000, // 1 day
-          },
-          sessionCookie: {
-            httpOnly: true,
-            sameSite: "none",
-            secure: false,
-          },
-        },
+        cookieName: "refresh_token",
+        clearCookie: {
+          httpOnly: true,
+          sameSite: "none",
+          secure: false, // *change to true in production/when not using thunderclient
+        } as CookieOptions,
+        persistentCookie: {
+          httpOnly: true,
+          sameSite: "none",
+          secure: false,
+          maxAge: 24 * 60 * 60 * 1000, // 1 day
+        } as CookieOptions,
+        sessionCookie: {
+          httpOnly: true,
+          sameSite: "none",
+          secure: false,
+        } as CookieOptions,
       },
     } as const;
   }
