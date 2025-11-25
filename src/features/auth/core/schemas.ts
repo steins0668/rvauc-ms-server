@@ -47,15 +47,23 @@ export namespace Schemas {
         minimalStudent,
       ]);
 
+      export const microservice = z
+        .strictObject({
+          microservice: z.enum(["sessionBroker"]),
+        })
+        .strip();
+
       export type Professor = z.infer<typeof professor>;
       export type Student = z.infer<typeof student>;
       export type Full = z.infer<typeof full>;
       export type MinimalStudent = z.infer<typeof minimalStudent>;
       export type Minimal = z.infer<typeof minimal>;
+      export type Microservice = z.infer<typeof microservice>;
 
       export const schemas = [
         { type: "full", schema: full },
         { type: "minimal", schema: minimal },
+        { type: "microservice", schema: microservice },
       ] as const; //  ! add all future access token payload types here.
 
       export type AnySchema = (typeof schemas)[number];
