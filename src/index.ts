@@ -11,6 +11,7 @@ import {
   setHeaderCredentials,
 } from "./middlewares";
 import { Notifications } from "./features/notifications";
+import { SessionBroker } from "./features/session-broker";
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.use("/auth", Auth.Routes);
 app.use("/uniform-compliance", UniformCompliance.Routes);
 app.use("/violation", Violation.Routes);
 app.use("/notifications", Notifications.Routes);
+app.use("/session-broker", SessionBroker.Routes);
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {
