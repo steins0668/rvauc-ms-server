@@ -29,7 +29,7 @@ export function verifyRefreshTkn(
 
   let payload;
   try {
-    payload = jwt.verify(refreshToken, Data.Env.getTknSecrets().refreshSecret);
+    payload = jwt.verify(refreshToken, Data.Env.getAccessSecrets().refresh);
   } catch (err) {
     requestLogger.log("error", "Invalid or expired refresh token.", err);
     return ResultBuilder.fail(

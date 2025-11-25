@@ -13,13 +13,13 @@ Routes.use(Middlewares.attachComplianceDataService);
 
 Routes.get(
   "/view-records",
-  Auth.Core.Middlewares.validateJwt,
+  Auth.Core.Middlewares.validateJwt("full"),
   Controllers.handleViewRecords
 );
 
 Routes.post(
   "/new-record",
-  Auth.Core.Middlewares.validateJwt,
+  Auth.Core.Middlewares.validateJwt("full", "microservice", "microservice"),
   validateRequest({ body: Schemas.ComplianceData.newRecord }),
   Violation.Middlewares.attachViolationDataService,
   Controllers.handleNewRecord

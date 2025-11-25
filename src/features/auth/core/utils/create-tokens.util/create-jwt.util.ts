@@ -5,6 +5,7 @@ import { Types } from "../../types";
 
 type AccessOptions = {
   tokenType: Types.Token.Access;
+  payloadType: Schemas.Payloads.AccessToken.AnySchemaType;
   payload: Schemas.Payloads.AccessToken.AnyPayloadObject;
 };
 
@@ -29,10 +30,15 @@ type JwtOptions = AccessOptions | RefreshOptions;
  * ! this change was done in favor of allowing the method to accept different payload types
  * ! depending on the token type.
  */
-export function createJwt({ tokenType, payload }: JwtOptions): string {
-  const { secret, signOptions } = Data.Token.configuration[tokenType];
+export function createJwt(jwtOptions: JwtOptions): string {
+  if (jwtOptions.tokenType === "refresh") {
+    return jwt.sign(jwtOptions.payload, Data.Env.getAccessSecrets().refresh, {
+      expiresIn: "30d",
+    });
+  }
 
-  const token: string = jwt.sign(payload, secret, signOptions);
+  const secret = Data.Env.getAccessSecrets()[jwtOptions.payloadType];
+  const signOptions = Data.Token.signOptions[jwtOptions.payloadType];
 
-  return token;
+  return jwt.sign(jwtOptions.payload, secret, signOptions as jwt.SignOptions);
 }
