@@ -28,9 +28,13 @@ export namespace Utils {
   export namespace Jwt {
     export function createToken() {
       const secret = Data.Env.getRvaucMsSecret();
-      const token: string = jwt.sign({ stationName: "station1" }, secret, {
-        expiresIn: "1m",
-      });
+      const token: string = jwt.sign(
+        { microservice: "sessionBroker" },
+        secret,
+        {
+          expiresIn: "1m",
+        }
+      );
 
       return token;
     }
