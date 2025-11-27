@@ -32,12 +32,11 @@ export class SessionTokenRotator {
           //  updated last used for session
           const updatedId = await this.updateLastUsed({ tx, sessionNumber });
 
-          //  invalidate old token
-          await this.invalidateToken({ tx, oldToken });
-
+          const oldTknHash = HashUtil.byCrypto(oldToken);
           const newTknHash = HashUtil.byCrypto(newToken);
 
-          await this.ensureTokenUnused({ tx, tokenHash: newTknHash });
+          await this.ensureTokenUnused({ tx, tokenHash: oldTknHash });
+          await this.invalidateToken({ tx, tokenHash: oldTknHash });
 
           //  add new token
           await this.storeNewTkn({
@@ -108,14 +107,14 @@ export class SessionTokenRotator {
    */
   private async invalidateToken(args: {
     tx: TxContext;
-    oldToken: string;
+    tokenHash: string;
   }): Promise<void> {
     try {
       await this._sessionTokenRepository.execUpdate({
         dbOrTx: args.tx,
         fn: async (update, converter) => {
           const where = converter({
-            tokenHash: HashUtil.byCrypto(args.oldToken),
+            tokenHash: args.tokenHash,
           });
           return await update.set({ isUsed: true }).where(where);
         },
@@ -139,6 +138,7 @@ export class SessionTokenRotator {
     tokenHash: string;
   }): Promise<void> {
     const usedToken = await this._sessionTokenRepository.execQuery({
+      dbOrTx: args.tx,
       fn: async (query, converter) => {
         const where = converter({
           filterType: "and",

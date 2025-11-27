@@ -26,7 +26,7 @@ export async function handleRefresh(
   const { cookieName: refreshTknCookie } = refresh;
   const cookieToken = cookies[refreshTknCookie] as string | undefined;
   const bodyToken = req.body?.refreshToken;
-  const oldRefreshTkn = cookieToken ?? bodyToken;
+  const oldRefreshTkn = bodyToken ?? cookieToken;
 
   if (!oldRefreshTkn) {
     const message = "Refresh token is missing.";

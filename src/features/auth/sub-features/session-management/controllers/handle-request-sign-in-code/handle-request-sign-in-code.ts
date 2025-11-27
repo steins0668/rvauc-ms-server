@@ -63,29 +63,29 @@ export async function handleRequestSignInCode(
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
   }
+  console.log(code);
+  // logger.log("debug", "Sending sign-in code to email...");
+  // const emailTransport = await sendEmail({
+  //   req,
+  //   requestCode: code,
+  //   email: user.email,
+  // });
 
-  logger.log("debug", "Sending sign-in code to email...");
-  const emailTransport = await sendEmail({
-    req,
-    requestCode: code,
-    email: user.email,
-  });
+  // if (!emailTransport.success) {
+  //   //  ! failed sending email
+  //   const { error } = emailTransport;
+  //   logger.log("error", "Failed sending email.", error);
 
-  if (!emailTransport.success) {
-    //  ! failed sending email
-    const { error } = emailTransport;
-    logger.log("error", "Failed sending email.", error);
+  //   logger.log("debug", "Removing sign-in code from db...");
+  //   const { id } = codeCreation.result;
+  //   await signInRequestService.deleteRequestWhere({ filter: { id } });
 
-    logger.log("debug", "Removing sign-in code from db...");
-    const { id } = codeCreation.result;
-    await signInRequestService.deleteRequestWhere({ filter: { id } });
-
-    const message = "Failed sending request code. Please try again later.";
-    await notifyInternalError({ userId: user.id, message });
-    return res
-      .status(Core.Errors.Authentication.getErrStatusCode(error))
-      .json({ success: false, message });
-  }
+  //   const message = "Failed sending request code. Please try again later.";
+  //   await notifyInternalError({ userId: user.id, message });
+  //   return res
+  //     .status(Core.Errors.Authentication.getErrStatusCode(error))
+  //     .json({ success: false, message });
+  // }
 
   if (authDetails.deviceToken) {
     logger.log("debug", "Registering device token...");
