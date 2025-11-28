@@ -171,7 +171,7 @@ export async function handleVerifyCode(
     refreshToken,
     isPersistentAuth ? persistentCookie : sessionCookie
   );
-  res.json({ success: true, accessToken, refreshToken });
+  res.json({ success: true, result: { accessToken, refreshToken } });
 }
 
 const notifyInternalError = async (args: {

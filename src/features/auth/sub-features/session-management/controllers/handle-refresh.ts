@@ -26,7 +26,7 @@ export async function handleRefresh(
   const { cookieName: refreshTknCookie } = refresh;
   const cookieToken = cookies[refreshTknCookie] as string | undefined;
   const bodyToken = req.body?.refreshToken;
-  const oldRefreshTkn = cookieToken ?? bodyToken;
+  const oldRefreshTkn = bodyToken ?? cookieToken;
 
   if (!oldRefreshTkn) {
     const message = "Refresh token is missing.";
@@ -124,5 +124,5 @@ export async function handleRefresh(
     refreshToken,
     isPersistentAuth ? persistentCookie : sessionCookie
   );
-  res.json({ success: true, accessToken, refreshToken }); //  ! refresh token is for demo only
+  res.json({ success: true, result: { accessToken, refreshToken } }); //  ! refresh token is for demo only
 }

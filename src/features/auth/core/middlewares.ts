@@ -71,7 +71,7 @@ export namespace Middlewares {
 
       requestLogger.log(
         "info",
-        `Failed authentication attempt by unauthorized payload type. The only types allowed are ${types.toString()}`
+        `Failed authentication attempt by unauthorized payload type. The only types allowed are: ${types.toString()}`
       );
 
       return res
