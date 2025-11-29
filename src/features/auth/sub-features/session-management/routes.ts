@@ -28,4 +28,8 @@ Routes.post(
   Controllers.handleSignOut
 );
 
-Routes.post("/refresh", Controllers.handleRefresh);
+Routes.post(
+  "/refresh",
+  validateRequest({ body: Schemas.Payloads.RefreshToken.schema }),
+  Controllers.handleRefresh
+);
