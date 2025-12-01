@@ -19,7 +19,7 @@ Routes.get(
 
 Routes.post(
   "/new-record",
-  Auth.Core.Middlewares.validateJwt("full", "minimal", "microservice"),
+  Auth.Core.Middlewares.validateJwt("full", "minimal"),
   validateRequest({ body: Schemas.ComplianceData.newRecord }),
   Violation.Middlewares.attachViolationDataService,
   Controllers.handleNewRecord
