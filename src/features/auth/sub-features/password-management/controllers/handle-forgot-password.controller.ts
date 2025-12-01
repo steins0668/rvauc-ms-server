@@ -58,7 +58,7 @@ export async function handleForgotPassword(
       .json({
         success: false,
         message:
-          "You still have an active request. Please try again in 10 minutes.",
+          "You still have an active request. Please try again in 1 minute.",
       });
   }
 

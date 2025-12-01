@@ -187,7 +187,7 @@ export namespace Services {
       > {
         const now = new Date();
         const expiry = new Date();
-        expiry.setMinutes(now.getMinutes() + 10);
+        expiry.setMinutes(now.getMinutes() + 1);
 
         const insertion = await this.insertResetCode({
           fn: async (insert) => {
