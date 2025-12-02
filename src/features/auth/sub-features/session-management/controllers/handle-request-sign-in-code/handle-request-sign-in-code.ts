@@ -106,6 +106,7 @@ export async function handleRequestSignInCode(
   });
   res.status(200).json({
     success: true,
+    result: { email: user.email },
     message,
   });
 }
