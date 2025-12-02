@@ -122,8 +122,8 @@ async function sendEmail(args: {
   try {
     const { requestCode, email } = args;
     const subject = "Sign-in request received.";
-    const text = `We have received a sign-in request. Please use the code below to sign-in.\n\n${requestCode}\n\nThis code will be valid for 10 minutes only.`;
-    await Core.Utils.EmailTransports.sendEmail({
+    const text = `We have received a sign-in request. Please use the code below to sign-in.\n\n${requestCode}\n\nThis code will be valid for 1 minute only.`;
+    await Core.Utils.Mailer.send({
       to: email,
       subject,
       text,

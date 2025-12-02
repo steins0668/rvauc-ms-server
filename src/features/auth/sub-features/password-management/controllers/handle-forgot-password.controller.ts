@@ -133,8 +133,8 @@ async function sendEmail(args: {
   try {
     const { resetCode, email } = args;
     const subject = "Password change request received.";
-    const text = `We have received a password reset request. Please use the code below to reset your password\n\n${resetCode}\n\nThis code will be valid for 10 minutes only.`;
-    await Core.Utils.EmailTransports.sendEmail({
+    const text = `We have received a password reset request. Please use the code below to reset your password\n\n${resetCode}\n\nThis code will be valid for 1 minute only.`;
+    await Core.Utils.Mailer.send({
       to: email,
       subject,
       text,
