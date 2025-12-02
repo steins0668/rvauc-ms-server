@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from "express";
+import { ENV } from "../data";
 
 export function setHeaderCredentials(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  const whitelist = ["http://localhost:5173"];
+  const whitelist = ENV.getWhiteList();
   const origin = req.headers.origin;
   if (origin && whitelist.includes(origin)) {
     res.header("Access-Control-Allow-Credentials", "true");

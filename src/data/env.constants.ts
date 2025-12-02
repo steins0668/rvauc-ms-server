@@ -16,3 +16,14 @@ export function getEnvironment(): Schemas.Environment {
 
   return parsed.data;
 }
+
+export function getWhiteList(): string[] {
+  const whitelist = process.env.WHITELIST;
+
+  const parsed = Schemas.whitelist.safeParse(whitelist?.split(","));
+
+  if (!parsed.success)
+    throw new Error("WHITELIST not configured: " + parsed.error);
+
+  return parsed.data;
+}
