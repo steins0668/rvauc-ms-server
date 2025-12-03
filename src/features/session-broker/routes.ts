@@ -13,6 +13,13 @@ Routes.post(
   Controllers.handleSignIn
 );
 
+Routes.post(
+  "/sign-out/:stationName",
+  Middlewares.validateJwt,
+  validateRequest({ params: Schemas.RequestParams.stationName }),
+  Controllers.handleSignOut
+);
+
 Routes.get(
   "/get-active-session/:stationName",
   Middlewares.validateJwt,

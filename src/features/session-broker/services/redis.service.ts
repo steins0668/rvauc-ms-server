@@ -33,6 +33,12 @@ export namespace RedisService {
     });
   }
 
+  export async function del(key: string) {
+    const client = await getClient();
+
+    return await client.del(key);
+  }
+
   type Record = { [key: string]: any };
   export async function hSet(key: string, value: Record) {
     const client = await getClient();

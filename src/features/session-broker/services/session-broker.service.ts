@@ -35,4 +35,19 @@ export namespace SessionBroker {
       );
     }
   }
+
+  export async function deleteToken(stationIdentifier: string) {
+    try {
+      return ResultBuilder.success(await RedisService.del(stationIdentifier));
+    } catch (err) {
+      return ResultBuilder.fail(
+        Errors.Session.normalizeError({
+          name: "SESSION_RETRIEVE_TOKEN_ERROR",
+          message:
+            "Failed deleting active token for station" + stationIdentifier,
+          err,
+        })
+      );
+    }
+  }
 }
