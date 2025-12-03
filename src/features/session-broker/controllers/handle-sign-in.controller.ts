@@ -2,10 +2,11 @@ import { Request, Response } from "express";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Services } from "../services";
+import { BaseResponse } from "../../../types";
 
 export async function handleSignIn(
   req: Request<{}, {}, Schemas.RequestBody.StationSignIn>,
-  res: Response
+  res: Response<BaseResponse.Union<string>>
 ) {
   const { stationAuth, body, requestLogger: logger } = req;
 
@@ -35,7 +36,13 @@ export async function handleSignIn(
 
     logger.log("info", "Successfully signed in.");
 
-    res.status(200).json({ success: true, message: "Successfully signed in." });
+    res
+      .status(200)
+      .json({
+        success: true,
+        result: token,
+        message: "Successfully signed in.",
+      });
   } catch (err) {
     const error = Errors.Session.normalizeError({
       name: "SESSION_SIGN_IN_ERROR",
