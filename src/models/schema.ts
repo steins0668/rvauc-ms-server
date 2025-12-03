@@ -1,5 +1,3 @@
-import e from "express";
-
 export * from "./attendance-records";
 export * from "./attendance-statuses";
 export * from "./class-offerings";
