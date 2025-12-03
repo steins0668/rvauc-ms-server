@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { students } from "./students";
+import { terms } from "./terms";
 import { uniformTypes } from "./uniform-types";
 
 export const complianceRecords = sqliteTable("compliance_records", {
@@ -21,7 +22,12 @@ export const complianceRecords = sqliteTable("compliance_records", {
   hasId: integer("has_id", { mode: "boolean" }).notNull(),
   validUpperwear: integer("valid_upperwear", { mode: "boolean" }).notNull(),
   validBottoms: integer("valid_bottoms", { mode: "boolean" }).notNull(),
-  termId: integer("term_id").notNull(),
+  termId: integer("term_id")
+    .notNull()
+    .references(() => terms.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
   createdAt: text("created_at").notNull(),
 });
 
@@ -31,6 +37,10 @@ export const complianceRecordsRelations = relations(
     student: one(students, {
       fields: [complianceRecords.studentId],
       references: [students.id],
+    }),
+    term: one(terms, {
+      fields: [complianceRecords.termId],
+      references: [terms.id],
     }),
     uniformType: one(uniformTypes, {
       fields: [complianceRecords.uniformTypeId],
