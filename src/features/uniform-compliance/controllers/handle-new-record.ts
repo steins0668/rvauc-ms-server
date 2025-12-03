@@ -40,10 +40,15 @@ export async function handleNewRecord(
 
   let notifications = [] as ReturnType<typeof notify>[];
 
+  const result = {
+    isCompliant: false,
+    reasons: [] as string[],
+  };
+
   logger.log("info", "Attempting to store new compliance record...");
 
   try {
-    const transaction = await execTransaction(async (tx) => {
+    await execTransaction(async (tx) => {
       logger.log("debug", "Attempting to find student...");
       const queried = await userDataService.findStudentWhere({
         dbOrTx: tx,
@@ -74,10 +79,12 @@ export async function handleNewRecord(
 
       const { studentNumber, termId, uniformTypeId, ...flags } = body;
       const hasViolation = Object.values(flags).some((value) => !value);
+      result.isCompliant = !hasViolation;
 
       if (hasViolation) {
         logger.log("info", "Notification detected.");
         const reasons = getViolationReasons(body);
+        result.reasons = reasons;
 
         logger.log("debug", "Storing violation...");
         const storedViolation = await violationDataService.storeRecord({
@@ -105,7 +112,7 @@ export async function handleNewRecord(
     await Promise.all(notifications);
 
     logger.log("info", "Success storing new record.");
-    return res.status(200).json({ success: true, result: transaction.result });
+    return res.status(200).json({ success: true, result });
   } catch (err) {
     const error = Errors.ComplianceData.normalizeError({
       name: "COMPLIANCE_DATA_STORE_RECORD_ERROR",
