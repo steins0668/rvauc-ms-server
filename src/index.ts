@@ -13,6 +13,7 @@ import {
   requestProfiler,
   setHeaderCredentials,
 } from "./middlewares";
+import { Enrollments } from "./features/enrollments";
 
 dotenv.config();
 
@@ -42,6 +43,7 @@ app.use("/uniform-compliance", UniformCompliance.Routes);
 app.use("/violation", Violation.Routes);
 app.use("/notifications", Notifications.Routes);
 app.use("/session-broker", SessionBroker.Routes);
+app.use("/enrollments", Enrollments.Routes);
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {
