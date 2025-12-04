@@ -142,6 +142,22 @@ export namespace Repository {
     >;
   }
 
+  export namespace ContextArgs {
+    export type ClassOffering<T> = BaseRepositoryType.ContextArgs<
+      Tables.ClassOffering,
+      BaseRepositoryType.BuildWhereClause<Tables.ClassOffering>,
+      BaseRepositoryType.BuildOrder<Tables.ClassOffering>,
+      T
+    >;
+
+    export type Enrollment<T> = BaseRepositoryType.ContextArgs<
+      Tables.Enrollment,
+      BaseRepositoryType.BuildWhereClause<Tables.Enrollment>,
+      BaseRepositoryType.BuildOrder<Tables.Enrollment>,
+      T
+    >;
+  }
+
   export namespace SubQueryArgs {
     export type ClassOffering<T> = BaseRepositoryType.SubQueryArgs<
       Tables.ClassOffering,

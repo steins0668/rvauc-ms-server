@@ -20,6 +20,18 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     });
   }
 
+  public getContext<T>(args: Types.Repository.ContextArgs.Enrollment<T>) {
+    const context = args.dbOrTx ?? this._dbContext;
+
+    return args.fn({
+      table: enrollments,
+      context,
+      converter: Enrollment.buildWhereClause,
+      order: Enrollment.buildOrder,
+      sql,
+    });
+  }
+
   public getSubQuery<T>(args: Types.Repository.SubQueryArgs.Enrollment<T>) {
     const selectBase = (args.dbOrTx ?? this._dbContext)
       .select()

@@ -22,6 +22,18 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     });
   }
 
+  public getContext<T>(args: Types.Repository.ContextArgs.ClassOffering<T>) {
+    const context = args.dbOrTx ?? this._dbContext;
+
+    return args.fn({
+      table: classOfferings,
+      context,
+      converter: ClassOffering.buildWhereClause,
+      order: ClassOffering.buildOrder,
+      sql,
+    });
+  }
+
   public getSubQuery<T>(args: Types.Repository.SubQueryArgs.ClassOffering<T>) {
     const selectBase = (args.dbOrTx ?? this._dbContext)
       .select()

@@ -1,7 +1,8 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import cors, { type CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
+import sinon from "sinon";
 import { ENV } from "./data";
 import { Auth } from "./features/auth";
 import { Notifications } from "./features/notifications";
@@ -44,6 +45,21 @@ app.use("/violation", Violation.Routes);
 app.use("/notifications", Notifications.Routes);
 app.use("/session-broker", SessionBroker.Routes);
 app.use("/enrollments", Enrollments.Routes);
+
+let now = () => Date.now();
+
+app.post("/set-time", (req: Request, res: Response) => {
+  const { timestamp } = req.body;
+  if (timestamp) {
+    now = () => timestamp;
+    res.send(`Time overriden to ${new Date().toISOString()}`);
+  }
+});
+
+app.post("/reset-time", (req, res) => {
+  now = () => Date.now();
+  res.send("Time reset to real system time");
+});
 
 const port = 2620; //  can be anything
 app.listen(port, "0.0.0.0", () => {

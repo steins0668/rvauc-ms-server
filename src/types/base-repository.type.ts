@@ -44,6 +44,22 @@ export namespace BaseRepositoryType {
     ) => Promise<TResult>;
   };
 
+  export type ContextArgs<
+    TTable extends SQLiteTable,
+    TFilterConverter extends AnyFunc,
+    TOrderConfigurator extends AnyFunc,
+    TResult
+  > = {
+    dbOrTx?: DbOrTx | undefined;
+    fn: (args: {
+      table: TTable;
+      context: DbOrTx;
+      converter: TFilterConverter;
+      order: TOrderConfigurator;
+      sql: typeof sql;
+    }) => TResult;
+  };
+
   export type SubQueryArgs<
     TTable extends SQLiteTable,
     TSelectBase extends object,
