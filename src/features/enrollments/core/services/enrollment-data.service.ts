@@ -1,6 +1,7 @@
 import { Enums } from "../../../../data";
 import { createContext, TxContext } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
+import { terms } from "../../../../models";
 import { ResultBuilder, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Data } from "../data";
@@ -77,71 +78,65 @@ export namespace EnrollmentData {
       offsetDate.setMinutes(offsetDate.getMinutes() + 30);
       const offsetSeconds = TimeUtil.secondsSinceMidnightPh(offsetDate);
 
-      return await this._enrollmentRepo.execQuery({
+      return await this._classOfferingRepo.execQuery({
         dbOrTx: tx,
-        fn: async (query, converter) =>
+        fn: async (query) =>
           query.findFirst({
-            where: converter({
-              filterType: "and",
-              studentId,
-              termId,
-              custom: ({ classOfferingId }, { eq, exists }) => {
-                //  * subquery for matching timestamp classes
-                const subQuery = this._classOfferingRepo.getSubQuery({
-                  dbOrTx: tx,
-                  fn: ({ selectBase, converter, order }) =>
-                    selectBase
-                      .where(
-                        converter({
-                          filterType: "and",
-                          weekDay: day,
-                          custom: (t, { and, or, lte, gt }) => [
-                            eq(t.id, classOfferingId),
-                            or(
-                              //  ! class currently in session
-                              and(
-                                lte(t.startTime, seconds),
-                                gt(t.endTime, seconds)
-                              ),
-                              //  ! class starts in 30 minutes
-                              and(
-                                gt(t.startTime, seconds),
-                                lte(t.startTime, offsetSeconds)
-                              )
-                            ),
-                          ],
-                        })
-                      )
-                      .orderBy(order((t, { asc }) => asc(t.startTime))) //  ! ascending order starting from the earliest start time
-                      .limit(1)
-                      .as("class_sq"),
-                });
-                return [exists(subQuery)];
-              },
-            }),
-            columns: {
-              classOfferingId: false,
-              studentId: false,
-              termId: false,
+            where: (co, { eq, and, or, lte, gt, exists }) => {
+              const subQuery = this._enrollmentRepo.getContext({
+                dbOrTx: tx,
+                fn: ({ table: e, context, converter }) =>
+                  context
+                    .select({ id: e.id })
+                    .from(e)
+                    .where(
+                      converter({
+                        custom: (e, { eq, and }) => [
+                          and(
+                            eq(e.classOfferingId, co.id),
+                            eq(e.studentId, studentId),
+                            eq(e.termId, termId)
+                          ),
+                        ],
+                      })
+                    ),
+              });
+
+              return and(
+                eq(co.weekDay, day),
+                or(
+                  //  ! class currently in session
+                  and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
+                  //  ! class starts in 30 minutes
+                  and(
+                    gt(co.startTime, seconds),
+                    lte(co.startTime, offsetSeconds)
+                  )
+                ),
+                exists(subQuery)
+              );
             },
+            columns: { classId: false },
             with: {
-              classOffering: {
-                columns: { classId: false },
+              enrollment: {
+                columns: {
+                  classOfferingId: false,
+                  studentId: false,
+                  termId: false,
+                },
+              },
+              class: {
+                columns: {},
                 with: {
-                  class: {
+                  course: { columns: { code: true, name: true } },
+                  professor: {
                     columns: {},
                     with: {
-                      course: { columns: { code: true, name: true } },
-                      professor: {
-                        columns: {},
-                        with: {
-                          user: {
-                            columns: {
-                              firstName: true,
-                              middleName: true,
-                              surname: true,
-                            },
-                          },
+                      user: {
+                        columns: {
+                          firstName: true,
+                          middleName: true,
+                          surname: true,
                         },
                       },
                     },
@@ -151,22 +146,95 @@ export namespace EnrollmentData {
             },
           }),
       });
+
+      // return await this._enrollmentRepo.execQuery({
+      //   dbOrTx: tx,
+      //   fn: async (query, converter) =>
+      //     query.findFirst({
+      //       where: converter({
+      //         filterType: "and",
+      //         studentId,
+      //         termId,
+      //         custom: (e, { eq, exists }) => {
+      //           //  * subquery for matching timestamp classes
+      //           const subQuery = this._classOfferingRepo.getContext({
+      //             dbOrTx: tx,
+      //             fn: ({ table: co, context, converter, order }) =>
+      //               context
+      //                 .select({ id: co.id })
+      //                 .from(co)
+      //                 .where(
+      //                   converter({
+      //                     filterType: "and",
+      //                     weekDay: day,
+      //                     custom: (co, { and, or, lte, gt }) => [
+      //                       eq(co.id, e.classOfferingId),
+      //                       or(
+      //                         //  ! class currently in session
+      //                         and(
+      //                           lte(co.startTime, seconds),
+      //                           gt(co.endTime, seconds)
+      //                         ),
+      //                         //  ! class starts in 30 minutes
+      //                         and(
+      //                           gt(co.startTime, seconds),
+      //                           lte(co.startTime, offsetSeconds)
+      //                         )
+      //                       ),
+      //                     ],
+      //                   })
+      //                 ),
+      //           });
+      //           return [exists(subQuery)];
+      //         },
+      //       }),
+      //       columns: {
+      //         classOfferingId: false,
+      //         studentId: false,
+      //         termId: false,
+      //       },
+      //       with: {
+      //         classOffering: {
+      //           columns: { classId: false },
+      //           with: {
+      //             class: {
+      //               columns: {},
+      //               with: {
+      //                 course: { columns: { code: true, name: true } },
+      //                 professor: {
+      //                   columns: {},
+      //                   with: {
+      //                     user: {
+      //                       columns: {
+      //                         firstName: true,
+      //                         middleName: true,
+      //                         surname: true,
+      //                       },
+      //                     },
+      //                   },
+      //                 },
+      //               },
+      //             },
+      //           },
+      //         },
+      //       },
+      //     }),
+      // });
     }
 
     private toEnrollmentDto(
       raw: NonNullable<Awaited<ReturnType<typeof this.queryActiveEnrollment>>>
     ) {
-      const { classOffering } = raw;
-      const { course, professor } = classOffering.class;
+      const { course, professor } = raw.class;
 
       const dto: Schemas.Dto.EnrollmentDTO = {
         id: raw.id,
-        weekDay: classOffering.weekDay,
-        startTimeText: classOffering.startTimeText,
-        endTimeText: classOffering.endTimeText,
-        startTime: classOffering.startTime,
-        endTime: classOffering.endTime,
-        classNumber: classOffering.classNumber,
+        weekDay: raw.weekDay,
+        startTimeText: raw.startTimeText,
+        endTimeText: raw.endTimeText,
+        startTime: raw.startTime,
+        endTime: raw.endTime,
+        classNumber: raw.classNumber,
         courseCode: course.code,
         courseName: course.name,
         professor: professor.user,
@@ -198,7 +266,10 @@ export namespace EnrollmentData {
                 yearEnd,
                 semester,
               })
-              .onConflictDoNothing()
+              .onConflictDoUpdate({
+                target: [terms.yearStart, terms.yearEnd, terms.semester],
+                set: { yearEnd },
+              })
               .returning()
               .then((result) => result[0]),
         });

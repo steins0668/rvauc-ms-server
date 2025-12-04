@@ -52,7 +52,7 @@ app.post("/set-time", (req: Request, res: Response) => {
   const { timestamp } = req.body;
   if (timestamp) {
     now = () => timestamp;
-    res.send(`Time overriden to ${new Date().toISOString()}`);
+    res.send(`Time overriden to ${new Date(timestamp).toISOString()}`);
   }
 });
 
