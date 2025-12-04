@@ -1,4 +1,4 @@
-import { and, eq, or, SQL } from "drizzle-orm";
+import { and, eq, or, sql, SQL } from "drizzle-orm";
 import { DbContext } from "../../../db/create-context";
 import { terms } from "../../../models";
 import { Repository } from "../../../services";
@@ -11,7 +11,7 @@ export class Term extends Repository<Types.Tables.Term> {
 
   public async execInsert<T>(args: Types.Repository.InsertArgs.Term<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(terms);
-    return await args.fn(insert, Term.buildWhereClause);
+    return await args.fn({ insert, converter: Term.buildWhereClause, sql });
   }
 
   public async execQuery<T>(args: Types.Repository.QueryArgs.Term<T>) {

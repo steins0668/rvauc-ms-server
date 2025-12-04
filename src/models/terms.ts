@@ -1,4 +1,4 @@
-import { sqliteTable, integer, unique } from "drizzle-orm/sqlite-core";
+import { sqliteTable, integer, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const terms = sqliteTable(
   "terms",
@@ -9,7 +9,7 @@ export const terms = sqliteTable(
     semester: integer("semester").notNull(),
   },
   (table) => [
-    unique("uidx_terms_start_end_semester").on(
+    uniqueIndex("uidx_terms_start_end_semester").on(
       table.yearStart,
       table.yearEnd,
       table.semester

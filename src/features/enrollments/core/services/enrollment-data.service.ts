@@ -162,7 +162,7 @@ export namespace EnrollmentData {
       try {
         const inserted = await this._termRepo.execInsert({
           dbOrTx: args?.tx,
-          fn: async (insert, converter) =>
+          fn: async ({ insert }) =>
             insert
               .values({
                 yearStart,

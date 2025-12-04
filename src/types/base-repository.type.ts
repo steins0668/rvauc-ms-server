@@ -1,5 +1,5 @@
 import { ResultSet } from "@libsql/client/.";
-import { InferSelectModel, SQL } from "drizzle-orm";
+import { InferSelectModel, sql, SQL } from "drizzle-orm";
 import { SQLiteTable } from "drizzle-orm/sqlite-core";
 import { DbOrTx } from "../db/create-context";
 import { RepositoryUtil } from "../utils";
@@ -15,7 +15,7 @@ export namespace BaseRepositoryType {
     dbOrTx?: DbOrTx | undefined;
     fn: (
       deleteBase: TDeleteBuilder,
-      filterConverter: TFilterConverter
+      converter: TFilterConverter
     ) => Promise<TResult>;
   };
 
@@ -25,10 +25,11 @@ export namespace BaseRepositoryType {
     TResult = ResultSet
   > = {
     dbOrTx?: DbOrTx | undefined;
-    fn: (
-      insert: TInsertBuilder,
-      filterConverter: TFilterConverter
-    ) => Promise<TResult>;
+    fn: (args: {
+      insert: TInsertBuilder;
+      converter: TFilterConverter;
+      sql: typeof sql;
+    }) => Promise<TResult>;
   };
 
   export type UpdateArgs<
@@ -39,7 +40,7 @@ export namespace BaseRepositoryType {
     dbOrTx?: DbOrTx | undefined;
     fn: (
       update: TUpdateBuilder,
-      filterConverter: TFilterConverter
+      converter: TFilterConverter
     ) => Promise<TResult>;
   };
 
@@ -71,7 +72,7 @@ export namespace BaseRepositoryType {
     dbOrTx?: DbOrTx | undefined;
     fn: (
       query: TRelationalQueryBuilder,
-      filterConverter: TFilterConverter
+      converter: TFilterConverter
     ) => Promise<TResult>;
   };
 
