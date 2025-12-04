@@ -3,9 +3,9 @@ import { createContext, TxContext } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { ResultBuilder, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
-import { Types } from "../../types";
 import { Data } from "../data";
 import { Errors } from "../errors";
+import { Schemas } from "../schemas";
 
 export namespace EnrollmentData {
   export async function createService() {
@@ -37,8 +37,39 @@ export namespace EnrollmentData {
       termId: number;
       studentId: number;
     }) {
+      let result;
+      try {
+        result = await this.queryActiveEnrollment(args);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_QUERY_ENROLLMENT_ERROR",
+            message: "Failed querying the `enrollments` table.",
+            err,
+          })
+        );
+      }
+
+      if (!result)
+        return ResultBuilder.fail(
+          new Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
+            message:
+              "This student has neither an ongoing class or a class that starts in 30 minutes.",
+          })
+        );
+
+      return this.toEnrollmentDto(result);
+    }
+
+    private async queryActiveEnrollment(args: {
+      tx?: TxContext | undefined;
+      date: Date;
+      termId: number;
+      studentId: number;
+    }) {
       const { tx, date, termId, studentId } = args;
-      const day = Enums.Days[date.getDay()] as string;
+      const day = Enums.Days[TimeUtil.getDayPh(date)] as string;
       const seconds = TimeUtil.secondsSinceMidnightPh(date);
 
       //  ! for allowing attendance 30 minutes before class
@@ -46,7 +77,7 @@ export namespace EnrollmentData {
       offsetDate.setMinutes(offsetDate.getMinutes() + 30);
       const offsetSeconds = TimeUtil.secondsSinceMidnightPh(offsetDate);
 
-      const queried = await this.queryEnrollments({
+      return await this._enrollmentRepo.execQuery({
         dbOrTx: tx,
         fn: async (query, converter) =>
           query.findFirst({
@@ -81,14 +112,18 @@ export namespace EnrollmentData {
                           ],
                         })
                       )
-                      .orderBy(order((t, { asc }) => asc(t.startTime)))
+                      .orderBy(order((t, { asc }) => asc(t.startTime))) //  ! ascending order starting from the earliest start time
                       .limit(1)
                       .as("class_sq"),
                 });
                 return [exists(subQuery)];
               },
             }),
-            columns: { classOfferingId: false },
+            columns: {
+              classOfferingId: false,
+              studentId: false,
+              termId: false,
+            },
             with: {
               classOffering: {
                 columns: { classId: false },
@@ -116,44 +151,38 @@ export namespace EnrollmentData {
             },
           }),
       });
-
-      if (queried.success) {
-        const { result } = queried;
-
-        if (result) return ResultBuilder.success(result);
-
-        return ResultBuilder.fail(
-          new Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-            message: "No active class found for student.",
-          })
-        );
-      }
-
-      return ResultBuilder.fail(
-        Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ENROLLMENT_ERROR",
-          message: "Failed querying enrollments",
-          err: queried.error,
-        })
-      );
     }
 
-    public async queryEnrollments<T>(
-      args: Types.Repository.QueryArgs.Enrollment<T>
+    private toEnrollmentDto(
+      raw: NonNullable<Awaited<ReturnType<typeof this.queryActiveEnrollment>>>
     ) {
-      try {
-        const queried = await this._enrollmentRepo.execQuery(args);
-        return ResultBuilder.success(queried);
-      } catch (err) {
-        return ResultBuilder.fail(
-          DbAccess.normalizeError({
-            name: "DB_ACCESS_QUERY_ERROR",
-            message: "Failed querying `enrollments` table.",
-            err,
-          })
-        );
-      }
+      const { classOffering } = raw;
+      const { course, professor } = classOffering.class;
+
+      const dto: Schemas.Dto.EnrollmentDTO = {
+        id: raw.id,
+        weekDay: classOffering.weekDay,
+        startTimeText: classOffering.startTimeText,
+        endTimeText: classOffering.endTimeText,
+        startTime: classOffering.startTime,
+        endTime: classOffering.endTime,
+        classNumber: classOffering.classNumber,
+        courseCode: course.code,
+        courseName: course.name,
+        professor: professor.user,
+      };
+
+      const parsed = Schemas.Dto.enrollmentDTO.safeParse(dto);
+
+      return parsed.success
+        ? ResultBuilder.success(parsed.data)
+        : ResultBuilder.fail(
+            Errors.EnrollmentData.normalizeError({
+              name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+              message: "Failed converting raw query data into enrollment DTO",
+              err: parsed.error,
+            })
+          );
     }
 
     public async getCurrentTerm(args?: { tx?: TxContext | undefined }) {
