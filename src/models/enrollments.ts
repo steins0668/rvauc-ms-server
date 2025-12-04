@@ -7,7 +7,7 @@ export const enrollments = sqliteTable("enrollments", {
   studentId: integer("student_id")
     .notNull()
     .references(() => students.id),
-  classId: integer("class_id")
+  classOfferingId: integer("class_offering_id")
     .notNull()
     .references(() => classOfferings.id),
   termId: integer("term_id")
@@ -22,8 +22,8 @@ export const enrollmentsRelations = relations(enrollments, ({ one, many }) => ({
     references: [students.id],
   }),
   attendanceRecords: many(attendanceRecords),
-  class: one(classOfferings, {
-    fields: [enrollments.classId],
+  classOffering: one(classOfferings, {
+    fields: [enrollments.classOfferingId],
     references: [classOfferings.id],
   }),
   term: one(terms, {
