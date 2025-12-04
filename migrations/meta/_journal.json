@@ -134,6 +134,13 @@
       "when": 1764827585916,
       "tag": "0018_left_meggan",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1764828307781,
+      "tag": "0019_sparkling_iron_monger",
+      "breakpoints": true
     }
   ]
 }
