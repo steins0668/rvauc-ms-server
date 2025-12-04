@@ -1,0 +1,53 @@
+import {
+  eq,
+  ne,
+  gt,
+  gte,
+  lt,
+  lte,
+  exists,
+  notExists,
+  isNull,
+  isNotNull,
+  inArray,
+  notInArray,
+  like,
+  ilike,
+  notIlike,
+  not,
+  and,
+  or,
+  arrayContains,
+  arrayContained,
+  arrayOverlaps,
+  asc,
+  desc,
+} from "drizzle-orm";
+
+export namespace RepositoryUtil {
+  export const filters = {
+    eq,
+    ne,
+    gt,
+    gte,
+    lt,
+    lte,
+    exists,
+    notExists,
+    isNull,
+    isNotNull,
+    inArray,
+    notInArray,
+    like,
+    ilike,
+    notIlike,
+    not,
+    and,
+    or,
+    arrayContains,
+    arrayContained,
+    arrayOverlaps,
+  } as const;
+
+  export const orderOperators = { asc, desc } as const;
+}
