@@ -12,8 +12,10 @@ export const classOfferings = sqliteTable("class_offerings", {
     }),
   classNumber: text("class_number").notNull(),
   weekDay: text("week_day").notNull(),
-  startTime: text("start_time").notNull(),
-  endTime: text("end_time").notNull(),
+  startTime: integer("start_time").notNull(),
+  endTime: integer("end_time").notNull(),
+  startTimeText: text("start_time_text").notNull(),
+  endTimeText: text("end_time_text").notNull(),
 });
 
 export const classOfferingsRelations = relations(classOfferings, ({ one }) => ({
