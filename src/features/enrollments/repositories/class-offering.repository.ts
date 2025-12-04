@@ -2,9 +2,9 @@ import { and, eq, or, SQL, Table } from "drizzle-orm";
 import { DbContext } from "../../../db/create-context";
 import { classOfferings } from "../../../models";
 import { Repository } from "../../../services";
+import { BaseRepositoryType } from "../../../types";
 import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
-import { BaseRepositoryType } from "../../../types";
 
 export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
   public constructor(context: DbContext) {
