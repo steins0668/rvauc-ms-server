@@ -33,7 +33,7 @@ export namespace TimeUtil {
    * @returns
    */
   export const toPhTime = (date: Date) =>
-    new Intl.DateTimeFormat("sv-SE", {
+    new Intl.DateTimeFormat("en-PH", {
       timeZone: "Asia/Manila",
       hour: "2-digit",
       minute: "2-digit",
