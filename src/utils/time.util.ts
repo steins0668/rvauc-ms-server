@@ -1,4 +1,8 @@
 export namespace TimeUtil {
+  export function getDatePh(date: Date) {
+    return new Date(date.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
+  }
+
   export function getDayPh(date: Date) {
     const ph = new Date(
       date.toLocaleString("en-US", { timeZone: "Asia/Manila" })
