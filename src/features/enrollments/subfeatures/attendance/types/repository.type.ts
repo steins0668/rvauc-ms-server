@@ -19,6 +19,7 @@ export namespace Repository {
 
   export namespace InsertArgs {
     export type AttendanceRecord<T> = BaseRepositoryType.InsertArgs<
+      Tables.AttendanceRecord,
       SQLiteInsertBuilder<Tables.AttendanceRecord, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.AttendanceRecord>,
       T

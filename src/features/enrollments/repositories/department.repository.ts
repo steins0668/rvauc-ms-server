@@ -12,6 +12,7 @@ export class Department extends Repository<Types.Tables.Department> {
   public async execInsert<T>(args: Types.Repository.InsertArgs.Department<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(departments);
     return await args.fn({
+      table: departments,
       insert,
       converter: Department.buildWhereClause,
       sql,

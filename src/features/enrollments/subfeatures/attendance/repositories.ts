@@ -16,6 +16,7 @@ export namespace Repositories {
     ) {
       const insert = (args.dbOrTx ?? this._dbContext).insert(attendanceRecords);
       return await args.fn({
+        table: attendanceRecords,
         insert,
         converter: AttendanceRecord.buildWhereClause,
         sql,

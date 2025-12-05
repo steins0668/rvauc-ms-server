@@ -11,7 +11,12 @@ export class Term extends Repository<Types.Tables.Term> {
 
   public async execInsert<T>(args: Types.Repository.InsertArgs.Term<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(terms);
-    return await args.fn({ insert, converter: Term.buildWhereClause, sql });
+    return await args.fn({
+      table: terms,
+      insert,
+      converter: Term.buildWhereClause,
+      sql,
+    });
   }
 
   public async execQuery<T>(args: Types.Repository.QueryArgs.Term<T>) {

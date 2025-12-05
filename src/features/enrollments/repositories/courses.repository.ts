@@ -14,6 +14,7 @@ export class Course extends Repository<Types.Tables.Course> {
   public async execInsert<T>(args: Types.Repository.InsertArgs.Course<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(courses);
     return await args.fn({
+      table: courses,
       insert,
       converter: Course.buildWhereClause,
       sql,

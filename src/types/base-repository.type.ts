@@ -20,12 +20,14 @@ export namespace BaseRepositoryType {
   };
 
   export type InsertArgs<
+    TTable extends SQLiteTable,
     TInsertBuilder extends object,
     TFilterConverter extends AnyFunc,
     TResult = ResultSet
   > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (args: {
+      table: TTable;
       insert: TInsertBuilder;
       converter: TFilterConverter;
       sql: typeof sql;

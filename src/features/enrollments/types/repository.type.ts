@@ -56,42 +56,49 @@ export namespace Repository {
 
   export namespace InsertArgs {
     export type Class<T> = BaseRepositoryType.InsertArgs<
+      Tables.Class,
       SQLiteInsertBuilder<Tables.Class, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.Class>,
       T
     >;
 
     export type ClassOffering<T> = BaseRepositoryType.InsertArgs<
+      Tables.ClassOffering,
       SQLiteInsertBuilder<Tables.ClassOffering, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.ClassOffering>,
       T
     >;
 
     export type College<T> = BaseRepositoryType.InsertArgs<
+      Tables.College,
       SQLiteInsertBuilder<Tables.College, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.College>,
       T
     >;
 
     export type Course<T> = BaseRepositoryType.InsertArgs<
+      Tables.Course,
       SQLiteInsertBuilder<Tables.Course, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.Course>,
       T
     >;
 
     export type Department<T> = BaseRepositoryType.InsertArgs<
+      Tables.Department,
       SQLiteInsertBuilder<Tables.Department, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.Department>,
       T
     >;
 
     export type Enrollment<T> = BaseRepositoryType.InsertArgs<
+      Tables.Enrollment,
       SQLiteInsertBuilder<Tables.Enrollment, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.Enrollment>,
       T
     >;
 
     export type Term<T> = BaseRepositoryType.InsertArgs<
+      Tables.Term,
       SQLiteInsertBuilder<Tables.Term, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.Term>,
       T
