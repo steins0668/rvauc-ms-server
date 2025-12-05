@@ -1,6 +1,6 @@
+import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { Enums } from "../../../../data";
 import { createContext, DbOrTx } from "../../../../db/create-context";
-import { Schema } from "../../../../models";
 import { ResultBuilder, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
@@ -103,12 +103,14 @@ export namespace ActiveClass {
       offsetDate.setMinutes(offsetDate.getMinutes() + 30);
       const offsetSeconds = TimeUtil.secondsSinceMidnightPh(offsetDate);
 
-      const subquery = this.getSubquery({ dbOrTx, studentId, termId });
+      const subquery = (classOfferingId: SQLiteColumn) =>
+        this.getSubquery({ dbOrTx, classOfferingId, studentId, termId });
 
       return await this._classOfferingRepo.execQuery({
-        dbOrTx: dbOrTx,
+        dbOrTx,
         fn: async (query) =>
           query.findFirst({
+            orderBy: (co, { asc }) => asc(co.startTime),
             where: (co, { eq, and, or, lte, gt, exists }) =>
               and(
                 eq(co.weekDay, weekDay),
@@ -121,7 +123,7 @@ export namespace ActiveClass {
                     lte(co.startTime, offsetSeconds)
                   )
                 ),
-                exists(subquery)
+                exists(subquery(co.id))
               ),
             columns: { classId: false },
             with: {
@@ -153,10 +155,11 @@ export namespace ActiveClass {
 
     private getSubquery(args: {
       dbOrTx?: DbOrTx | undefined;
+      classOfferingId: SQLiteColumn;
       studentId: number;
       termId: number;
     }) {
-      const { dbOrTx, studentId, termId } = args;
+      const { dbOrTx, classOfferingId, studentId, termId } = args;
       return this._enrollmentRepo.getContext({
         dbOrTx,
         fn: ({ table: e, context, converter }) =>
@@ -167,7 +170,7 @@ export namespace ActiveClass {
               converter({
                 custom: (e, { eq, and }) => [
                   and(
-                    eq(e.classOfferingId, Schema.classOfferings.id),
+                    eq(e.classOfferingId, classOfferingId),
                     eq(e.studentId, studentId),
                     eq(e.termId, termId)
                   ),
