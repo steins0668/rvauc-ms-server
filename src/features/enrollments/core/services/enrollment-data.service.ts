@@ -1,7 +1,6 @@
 import { Enums } from "../../../../data";
 import { createContext, TxContext } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
-import { terms } from "../../../../models";
 import { ResultBuilder, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Data } from "../data";
@@ -182,7 +181,7 @@ export namespace EnrollmentData {
       try {
         const inserted = await this._termRepo.execInsert({
           dbOrTx: args?.tx,
-          fn: async ({ insert }) =>
+          fn: async ({ table: t, insert }) =>
             insert
               .values({
                 yearStart,
@@ -190,7 +189,7 @@ export namespace EnrollmentData {
                 semester,
               })
               .onConflictDoUpdate({
-                target: [terms.yearStart, terms.yearEnd, terms.semester],
+                target: [t.yearStart, t.yearEnd, t.semester],
                 set: { yearEnd },
               })
               .returning()
