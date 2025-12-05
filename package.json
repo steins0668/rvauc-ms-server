@@ -17,6 +17,7 @@
     "zod": "^4.1.11"
   },
   "scripts": {
+    "watch": "tsc --watch --incremental",
     "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/index.js",

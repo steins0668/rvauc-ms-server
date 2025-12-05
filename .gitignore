@@ -12,5 +12,11 @@ node_modules/
 demo_sqlite.db
 demo_sqlite.db.**
 
+#backup configs
+nodemon.json.**
+
+#compilation
+.tsbuildinfo
+
 #logs
 logs/
