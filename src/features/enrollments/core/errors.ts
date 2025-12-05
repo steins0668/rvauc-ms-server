@@ -7,16 +7,16 @@ export namespace Errors {
     export type ErrorName =
       | "ENROLLMENT_DATA_DTO_CONVERSION_ERROR"
       | "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR"
-      | "ENROLLMENT_DATA_QUERY_ENROLLMENT_ERROR"
-      | "ENROLLMENT_DATA_STORE_ENROLLMENT_ERROR";
+      | "ENROLLMENT_DATA_QUERY_ERROR"
+      | "ENROLLMENT_DATA_STORE_ERROR";
 
     export class ErrorClass extends BaseError<ErrorName> {}
 
     export const statusCodeMap: Exhaustive<ErrorName> = {
       ENROLLMENT_DATA_DTO_CONVERSION_ERROR: 500,
       ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR: 404,
-      ENROLLMENT_DATA_QUERY_ENROLLMENT_ERROR: 500,
-      ENROLLMENT_DATA_STORE_ENROLLMENT_ERROR: 500,
+      ENROLLMENT_DATA_QUERY_ERROR: 500,
+      ENROLLMENT_DATA_STORE_ERROR: 500,
     };
 
     export function normalizeError<E extends ErrorName>({

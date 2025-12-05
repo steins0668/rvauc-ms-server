@@ -44,7 +44,7 @@ export namespace EnrollmentData {
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ENROLLMENT_ERROR",
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
             message: "Failed querying the `enrollments` table.",
             err,
           })
