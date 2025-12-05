@@ -25,7 +25,8 @@
     "db:migrate": "drizzle-kit migrate --config=./config/drizzle.config.ts",
     "db:studio": "drizzle-kit studio --config=./config/drizzle.config.ts",
     "db:push": "drizzle-kit push --config=./config/drizzle.config.ts",
-    "db:seed": "tsc && node ./build/scripts/seeders/seed-all.seeder.js"
+    "db:seed": "tsc && node ./build/scripts/seeders/seed-all.seeder.js",
+    "test:enrollments": "tsc && node ./build/tests/enrollments.test.js"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
