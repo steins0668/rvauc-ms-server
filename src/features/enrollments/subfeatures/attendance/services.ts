@@ -24,10 +24,14 @@ export namespace Services {
         onConflict?: "doNothing" | "doUpdate" | undefined;
         value: Types.InsertModels.AttendanceRecord;
       }) {
-        return await this.storeAttendanceRecords({
+        const stored = await this.storeAttendanceRecords({
           ...args,
           values: [args.value],
         });
+
+        return stored.success
+          ? ResultBuilder.success(stored.result[0])
+          : ResultBuilder.fail(stored.error);
       }
 
       public async storeAttendanceRecords(args: {
