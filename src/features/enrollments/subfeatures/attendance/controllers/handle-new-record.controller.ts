@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
-import { FakeClock, TimeUtil } from "../../../../../utils";
+import { Clock } from "../../../../../utils";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
@@ -55,7 +55,7 @@ export async function handleNewRecord(
     });
   }
 
-  const serverDate = FakeClock.now();
+  const serverDate = Clock.now();
   const clientDate = body.date;
 
   const MAX_DRIFT_MS = 30 * 1000; //  30 seconds max time drift
