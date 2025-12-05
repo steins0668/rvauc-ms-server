@@ -1,7 +1,7 @@
 import { Enums } from "../data";
 import { createContext, TxContext } from "../db/create-context";
 import { Enrollments } from "../features/enrollments";
-import { TimeUtil } from "../utils";
+import { FakeClock, TimeUtil } from "../utils";
 
 const testActiveEnrollment = async (args: {
   tx?: TxContext | undefined;
@@ -100,4 +100,4 @@ const testActiveEnrollment = async (args: {
   console.log(JSON.stringify(result));
 };
 
-testActiveEnrollment({ date: new Date(), studentId: 7, termId: 1 });
+testActiveEnrollment({ date: FakeClock.now(), studentId: 7, termId: 1 });
