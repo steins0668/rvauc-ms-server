@@ -4,5 +4,5 @@ export namespace Data {
     late: "late",
     absent: "absent",
     excused: "excused",
-  };
+  } as const;
 }

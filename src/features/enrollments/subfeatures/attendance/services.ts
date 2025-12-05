@@ -1,8 +1,10 @@
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { DbAccess } from "../../../../error";
 import { Schema } from "../../../../models";
-import { ResultBuilder } from "../../../../utils";
+import { ResultBuilder, TimeUtil } from "../../../../utils";
+import { Core } from "../../core";
 import { Repositories } from "./repositories";
+import { Schemas } from "./schemas";
 import { Types } from "./types";
 
 export namespace Services {
@@ -39,8 +41,66 @@ export namespace Services {
         onConflict?: "doNothing" | "doUpdate" | undefined;
         values: Types.InsertModels.AttendanceRecord[];
       }) {
+        let inserted;
+
+        try {
+          inserted = await this.insertRecords(args);
+        } catch (err) {
+          return ResultBuilder.fail(
+            Core.Errors.EnrollmentData.normalizeError({
+              name: "ENROLLMENT_DATA_STORE_ERROR",
+              message: `Failed storing ${args.values.length} new attendance records`,
+              err,
+            })
+          );
+        }
+
+        try {
+          const dtoList = inserted.map((raw) => this.toAttendanceDto(raw));
+          return ResultBuilder.success(dtoList);
+        } catch (err) {
+          return ResultBuilder.fail(
+            Core.Errors.EnrollmentData.normalizeError({
+              name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+              message: "Failed converting raw attendance to dto",
+              err,
+            })
+          );
+        }
+      }
+
+      private toAttendanceDto(
+        raw: NonNullable<Awaited<ReturnType<typeof this.insertRecord>>>
+      ) {
+        const dto = {
+          id: raw.id,
+          status: raw.status,
+          date: raw.datePh,
+          time: TimeUtil.toPhTime(new Date(raw.recordedAt)),
+        };
+
+        return Schemas.Dto.attendance.parse(dto);
+      }
+
+      private async insertRecord(args: {
+        dbOrTx?: DbOrTx | undefined;
+        onConflict?: "doNothing" | "doUpdate" | undefined;
+        value: Types.InsertModels.AttendanceRecord;
+      }) {
+        return await this.insertRecords({
+          dbOrTx: args.dbOrTx,
+          onConflict: args.onConflict,
+          values: [args.value],
+        }).then((result) => result[0]);
+      }
+
+      private async insertRecords(args: {
+        dbOrTx?: DbOrTx | undefined;
+        onConflict?: "doNothing" | "doUpdate" | undefined;
+        values: Types.InsertModels.AttendanceRecord[];
+      }) {
         const { dbOrTx, onConflict = "doNothing", values } = args;
-        return await this.insertAttendance({
+        return await this._attendanceRecordRepo.execInsert({
           dbOrTx,
           fn: async ({ insert, sql }) => {
             let insertion = insert.values(values);
@@ -58,60 +118,9 @@ export namespace Services {
                     },
                   });
 
-            return await insertion.returning();
+            return insertion.returning();
           },
         });
-      }
-
-      public async insertAttendance<T>(
-        args: Types.Repository.InsertArgs.AttendanceRecord<T>
-      ) {
-        try {
-          const inserted = await this._attendanceRecordRepo.execInsert(args);
-          return ResultBuilder.success(inserted);
-        } catch (err) {
-          return ResultBuilder.fail(
-            DbAccess.normalizeError({
-              name: "DB_ACCESS_INSERT_ERROR",
-              message: "Failed inserting into `attendance_records` table.",
-              err,
-            })
-          );
-        }
-      }
-
-      public async queryAttendance<T>(
-        args: Types.Repository.QueryArgs.AttendanceRecord<T>
-      ) {
-        try {
-          const queried = await this._attendanceRecordRepo.execQuery(args);
-          return ResultBuilder.success(queried);
-        } catch (err) {
-          return ResultBuilder.fail(
-            DbAccess.normalizeError({
-              name: "DB_ACCESS_QUERY_ERROR",
-              message: "Failed querying `attendance_records` table.",
-              err,
-            })
-          );
-        }
-      }
-
-      public async updateAttendance<T>(
-        args: Types.Repository.UpdateArgs.AttendanceRecord<T>
-      ) {
-        try {
-          const updated = await this._attendanceRecordRepo.execUpdate(args);
-          return ResultBuilder.success(updated);
-        } catch (err) {
-          return ResultBuilder.fail(
-            DbAccess.normalizeError({
-              name: "DB_ACCESS_UPDATE_ERROR",
-              message: "Failed updating `attendance_records` table.",
-              err,
-            })
-          );
-        }
       }
     }
   }
