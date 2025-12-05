@@ -58,6 +58,7 @@ export namespace Repositories {
           studentId,
           enrollmentId,
           status,
+          recordCount,
           recordedAt,
           recordedMs,
           datePh,
@@ -71,6 +72,8 @@ export namespace Repositories {
           conditions.push(eq(attendanceRecords.enrollmentId, enrollmentId));
         if (status && status.trim())
           conditions.push(eq(attendanceRecords.status, status));
+        if (recordCount !== undefined)
+          conditions.push(eq(attendanceRecords.recordCount, recordCount));
         if (recordedAt && recordedAt.trim())
           conditions.push(eq(attendanceRecords.recordedAt, recordedAt));
         if (recordedMs !== undefined)
