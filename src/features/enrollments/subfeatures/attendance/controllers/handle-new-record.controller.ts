@@ -101,7 +101,7 @@ export async function handleNewRecord(
 
   logger.log("debug", "Recording attendance...");
   const recorded = await registrationService.newRecord({
-    onConflict: "doNothing",
+    onConflict: "doUpdate",
     value: {
       studentId: student.id,
       enrollmentId: enrollment.id,
@@ -130,20 +130,22 @@ export async function handleNewRecord(
   const { result: attendance } = recorded;
 
   if (!attendance) {
-    logger.log("info", "An attendance record already exists.");
+    logger.log("info", "Returning clause of attendance record insert failed.");
 
-    return res.status(409).json({
-      success: false,
-      result: { enrollment },
-      message: "The student has already taken an attendance",
-    });
+    return res
+      .status(500)
+      .json({ success: false, message: internalErrMessage });
   }
 
-  logger.log("info", "Successfully recorded new attendance.");
+  const message = attendance.isNew
+    ? "Successfully recorded new attendance."
+    : "An attendance was already recorded.";
+
+  logger.log("info", message);
   return res.status(200).json({
     success: true,
     result: { enrollment, attendance },
-    message: "Success recording attendance",
+    message,
   });
 }
 
