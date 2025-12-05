@@ -2,12 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import { Services } from "./services";
 
 export namespace Middlewares {
-  export async function attachAttendanceDataService(
+  export async function attachAttendanceRegistrationService(
     req: Request,
     res: Response,
     next: NextFunction
   ) {
-    req.attendanceDataService = await Services.AttendanceData.createService();
+    req.attendanceRegistrationService =
+      await Services.AttendanceRegistration.create();
     next();
   }
 }
@@ -15,7 +16,7 @@ export namespace Middlewares {
 declare global {
   namespace Express {
     interface Request {
-      attendanceDataService: Services.AttendanceData.Service;
+      attendanceRegistrationService: Services.AttendanceRegistration.Service;
     }
   }
 }

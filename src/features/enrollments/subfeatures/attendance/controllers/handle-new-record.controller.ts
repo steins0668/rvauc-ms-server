@@ -15,7 +15,7 @@ export async function handleNewRecord(
     body,
     auth,
     activeClassService,
-    attendanceDataService,
+    attendanceRegistrationService: registrationService,
     termDataService,
     requestLogger: logger,
   } = req;
@@ -100,7 +100,7 @@ export async function handleNewRecord(
   const { result: enrollment } = queriedEnrollment;
 
   logger.log("debug", "Recording attendance...");
-  const recorded = await attendanceDataService.storeAttendanceRecord({
+  const recorded = await registrationService.newRecord({
     onConflict: "doNothing",
     value: {
       studentId: student.id,

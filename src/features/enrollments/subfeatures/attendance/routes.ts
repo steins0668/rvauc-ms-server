@@ -7,7 +7,7 @@ import { Middlewares } from "./middlewares";
 
 export const Routes = Router();
 
-Routes.use(Middlewares.attachAttendanceDataService);
+Routes.use(Middlewares.attachAttendanceRegistrationService);
 
 Routes.get("/view-records", Auth.Core.Middlewares.validateJwt("full"));
 

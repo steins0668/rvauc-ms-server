@@ -6,8 +6,8 @@ import { Schemas } from "./schemas";
 import { Types } from "./types";
 
 export namespace Services {
-  export namespace AttendanceData {
-    export async function createService() {
+  export namespace AttendanceRegistration {
+    export async function create() {
       const context = await createContext();
       const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
       return new Service(attendanceRecordRepo);
@@ -19,12 +19,12 @@ export namespace Services {
         this._attendanceRecordRepo = attendanceRecordRepo;
       }
 
-      public async storeAttendanceRecord(args: {
+      public async newRecord(args: {
         dbOrTx?: DbOrTx | undefined;
         onConflict?: "doNothing" | "doUpdate" | undefined;
         value: Types.InsertModels.AttendanceRecord;
       }) {
-        const stored = await this.storeAttendanceRecords({
+        const stored = await this.newRecords({
           ...args,
           values: [args.value],
         });
@@ -34,7 +34,7 @@ export namespace Services {
           : ResultBuilder.fail(stored.error);
       }
 
-      public async storeAttendanceRecords(args: {
+      public async newRecords(args: {
         dbOrTx?: DbOrTx | undefined;
         onConflict?: "doNothing" | "doUpdate" | undefined;
         values: Types.InsertModels.AttendanceRecord[];
@@ -54,7 +54,7 @@ export namespace Services {
         }
 
         try {
-          const dtoList = inserted.map((raw) => this.toAttendanceDto(raw));
+          const dtoList = inserted.map((raw) => this.toDto(raw));
           return ResultBuilder.success(dtoList);
         } catch (err) {
           return ResultBuilder.fail(
@@ -67,7 +67,7 @@ export namespace Services {
         }
       }
 
-      private toAttendanceDto(
+      private toDto(
         raw: NonNullable<Awaited<ReturnType<typeof this.insertRecord>>>
       ) {
         const dto = {
