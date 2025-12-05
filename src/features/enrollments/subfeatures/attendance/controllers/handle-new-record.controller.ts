@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
+import { FakeClock, TimeUtil } from "../../../../../utils";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
@@ -17,6 +18,7 @@ export async function handleNewRecord(
     requestLogger: logger,
   } = req;
 
+  logger.log("info", "Attempting to create new attendance record...");
   //  * authorize user
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
     auth,
@@ -37,13 +39,13 @@ export async function handleNewRecord(
 
   let term;
 
-  //  * get current term from system config
+  logger.log("debug", "Attempting to get current term from system config...");
   try {
     const queried = await enrollmentDataService.getCurrentTerm();
     if (!queried.success) throw queried.error;
 
-    logger.log("debug", "Success getting term config: " + JSON.stringify(term));
     term = queried.result;
+    logger.log("debug", "Success getting term config: " + JSON.stringify(term));
   } catch (err) {
     logger.log("error", "Failed getting current term from system config.", err);
 
@@ -53,8 +55,8 @@ export async function handleNewRecord(
     });
   }
 
-  const serverDate = new Date();
-  const clientDate = new Date(body.date);
+  const serverDate = TimeUtil.getDatePh(FakeClock.now());
+  const clientDate = TimeUtil.getDatePh(body.date);
 
   const MAX_DRIFT_MS = 30 * 1000; //  30 seconds max time drift
   const drift = Math.abs(serverDate.getTime() - clientDate.getTime());
@@ -70,7 +72,7 @@ export async function handleNewRecord(
   const finalDate = isInvalidTime ? serverDate : clientDate;
   const { payload: student } = auth;
 
-  //  * get ongoing class
+  logger.log("debug", "Attempting to get student's ongoing classs...");
   const queriedEnrollment = await enrollmentDataService.getActiveEnrollment({
     studentId: student.id,
     date: finalDate,
@@ -95,7 +97,7 @@ export async function handleNewRecord(
 
   const { result: enrollment } = queriedEnrollment;
 
-  //  * record attendance
+  logger.log("debug", "Recording attendance...");
   const recorded = await attendanceDataService.storeAttendanceRecord({
     onConflict: "doNothing",
     value: {
@@ -119,9 +121,9 @@ export async function handleNewRecord(
     });
   }
 
-  const { result } = recorded;
+  const { result: attendance } = recorded;
 
-  if (!result) {
+  if (!attendance) {
     logger.log("info", "An attendance record already exists.");
 
     return res.status(409).json({
@@ -130,4 +132,11 @@ export async function handleNewRecord(
       message: "The student has already taken an attendance",
     });
   }
+
+  logger.log("info", "Successfully recorded new attendance.");
+  return res.status(200).json({
+    success: true,
+    result: { enrollment, attendance },
+    message: "Success recording attendance",
+  });
 }
