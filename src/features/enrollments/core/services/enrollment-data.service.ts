@@ -71,6 +71,7 @@ export namespace EnrollmentData {
     }) {
       const { tx, date, termId, studentId } = args;
       const day = Enums.Days[TimeUtil.getDayPh(date)] as string;
+      const weekDay = day.substring(0, 3);
       const seconds = TimeUtil.secondsSinceMidnightPh(date);
 
       //  ! for allowing attendance 30 minutes before class
@@ -103,7 +104,7 @@ export namespace EnrollmentData {
               });
 
               return and(
-                eq(co.weekDay, day),
+                eq(co.weekDay, weekDay),
                 or(
                   //  ! class currently in session
                   and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
@@ -146,80 +147,6 @@ export namespace EnrollmentData {
             },
           }),
       });
-
-      // return await this._enrollmentRepo.execQuery({
-      //   dbOrTx: tx,
-      //   fn: async (query, converter) =>
-      //     query.findFirst({
-      //       where: converter({
-      //         filterType: "and",
-      //         studentId,
-      //         termId,
-      //         custom: (e, { eq, exists }) => {
-      //           //  * subquery for matching timestamp classes
-      //           const subQuery = this._classOfferingRepo.getContext({
-      //             dbOrTx: tx,
-      //             fn: ({ table: co, context, converter, order }) =>
-      //               context
-      //                 .select({ id: co.id })
-      //                 .from(co)
-      //                 .where(
-      //                   converter({
-      //                     filterType: "and",
-      //                     weekDay: day,
-      //                     custom: (co, { and, or, lte, gt }) => [
-      //                       eq(co.id, e.classOfferingId),
-      //                       or(
-      //                         //  ! class currently in session
-      //                         and(
-      //                           lte(co.startTime, seconds),
-      //                           gt(co.endTime, seconds)
-      //                         ),
-      //                         //  ! class starts in 30 minutes
-      //                         and(
-      //                           gt(co.startTime, seconds),
-      //                           lte(co.startTime, offsetSeconds)
-      //                         )
-      //                       ),
-      //                     ],
-      //                   })
-      //                 ),
-      //           });
-      //           return [exists(subQuery)];
-      //         },
-      //       }),
-      //       columns: {
-      //         classOfferingId: false,
-      //         studentId: false,
-      //         termId: false,
-      //       },
-      //       with: {
-      //         classOffering: {
-      //           columns: { classId: false },
-      //           with: {
-      //             class: {
-      //               columns: {},
-      //               with: {
-      //                 course: { columns: { code: true, name: true } },
-      //                 professor: {
-      //                   columns: {},
-      //                   with: {
-      //                     user: {
-      //                       columns: {
-      //                         firstName: true,
-      //                         middleName: true,
-      //                         surname: true,
-      //                       },
-      //                     },
-      //                   },
-      //                 },
-      //               },
-      //             },
-      //           },
-      //         },
-      //       },
-      //     }),
-      // });
     }
 
     private toEnrollmentDto(
