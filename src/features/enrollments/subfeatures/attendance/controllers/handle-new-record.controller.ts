@@ -55,8 +55,8 @@ export async function handleNewRecord(
     });
   }
 
-  const serverDate = TimeUtil.getDatePh(FakeClock.now());
-  const clientDate = TimeUtil.getDatePh(body.date);
+  const serverDate = FakeClock.now();
+  const clientDate = body.date;
 
   const MAX_DRIFT_MS = 30 * 1000; //  30 seconds max time drift
   const drift = Math.abs(serverDate.getTime() - clientDate.getTime());

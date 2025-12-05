@@ -1,22 +1,6 @@
 export namespace TimeUtil {
-  export function getDatePh(date: Date) {
-    return new Date(date.toLocaleString("en-US", { timeZone: "Asia/Manila" }));
-  }
-
-  export function getDayPh(date: Date) {
-    const ph = new Date(
-      date.toLocaleString("en-US", { timeZone: "Asia/Manila" })
-    );
-
-    return ph.getDay();
-  }
-
   export function secondsSinceMidnightPh(date: Date) {
-    const ph = new Date(
-      date.toLocaleString("en-US", { timeZone: "Asia/Manila" })
-    );
-
-    return ph.getHours() * 3600 + ph.getMinutes() * 60 + ph.getSeconds();
+    return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
   }
 
   export function toLocaleTimeStringPh(date: Date) {

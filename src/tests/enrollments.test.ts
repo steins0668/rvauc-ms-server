@@ -14,7 +14,7 @@ const testActiveEnrollment = async (args: {
   const enrollmentRepo = new Enrollments.Repositories.Enrollment(context);
 
   const { tx, date, termId, studentId } = args;
-  const day = Enums.Days[TimeUtil.getDayPh(date)] as string;
+  const day = Enums.Days[date.getDay()] as string;
   const weekDay = day.substring(0, 3);
   const seconds = TimeUtil.secondsSinceMidnightPh(date);
 
