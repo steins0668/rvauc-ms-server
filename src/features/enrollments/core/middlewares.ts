@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { Services } from "./services";
 
 export namespace Middlewares {
-  export async function attachEnrollmentDataService(
+  export async function attachActiveClassService(
     req: Request,
     res: Response,
     next: NextFunction
