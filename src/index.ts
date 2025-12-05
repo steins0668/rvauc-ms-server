@@ -2,7 +2,6 @@ import express, { Request, Response } from "express";
 import cors, { type CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import sinon from "sinon";
 import { ENV } from "./data";
 import { Auth } from "./features/auth";
 import { Notifications } from "./features/notifications";
