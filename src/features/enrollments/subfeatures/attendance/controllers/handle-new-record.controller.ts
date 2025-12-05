@@ -16,6 +16,7 @@ export async function handleNewRecord(
     auth,
     activeClassService,
     attendanceDataService,
+    termDataService,
     requestLogger: logger,
   } = req;
 
@@ -42,7 +43,7 @@ export async function handleNewRecord(
 
   logger.log("debug", "Attempting to get current term from system config...");
   try {
-    const queried = await activeClassService.getCurrentTerm();
+    const queried = await termDataService.getCurrentTerm();
     if (!queried.success) throw queried.error;
 
     term = queried.result;

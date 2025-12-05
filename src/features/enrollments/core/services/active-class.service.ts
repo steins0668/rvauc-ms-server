@@ -1,10 +1,8 @@
 import { Enums } from "../../../../data";
 import { createContext, DbOrTx } from "../../../../db/create-context";
-import { DbAccess } from "../../../../error";
 import { Schema } from "../../../../models";
 import { ResultBuilder, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
-import { Data } from "../data";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 
@@ -13,58 +11,20 @@ export namespace ActiveClass {
     const context = await createContext();
     const classOfferingRepo = new Repositories.ClassOffering(context);
     const enrollmentRepo = new Repositories.Enrollment(context);
-    const termRepo = new Repositories.Term(context);
-    return new Service({ classOfferingRepo, enrollmentRepo, termRepo });
+
+    return new Service({ classOfferingRepo, enrollmentRepo });
   }
 
   export class Service {
     private readonly _enrollmentRepo: Repositories.Enrollment;
     private readonly _classOfferingRepo: Repositories.ClassOffering;
-    private readonly _termRepo: Repositories.Term;
 
     public constructor(args: {
       classOfferingRepo: Repositories.ClassOffering;
       enrollmentRepo: Repositories.Enrollment;
-      termRepo: Repositories.Term;
     }) {
       this._classOfferingRepo = args.classOfferingRepo;
       this._enrollmentRepo = args.enrollmentRepo;
-      this._termRepo = args.termRepo;
-    }
-
-    public async getCurrentTerm(args?: { dbOrTx?: DbOrTx | undefined }) {
-      const { yearStart, yearEnd, semester } = Data.Env.getAcademicYearConfig();
-
-      try {
-        const inserted = await this._termRepo.execInsert({
-          dbOrTx: args?.dbOrTx,
-          fn: async ({ table: t, insert }) =>
-            insert
-              .values({
-                yearStart,
-                yearEnd,
-                semester,
-              })
-              .onConflictDoUpdate({
-                target: [t.yearStart, t.yearEnd, t.semester],
-                set: { yearEnd },
-              })
-              .returning()
-              .then((result) => result[0]),
-        });
-
-        if (!inserted) throw Error("The returning value is undefined");
-
-        return ResultBuilder.success(inserted);
-      } catch (err) {
-        return ResultBuilder.fail(
-          DbAccess.normalizeError({
-            name: "DB_ACCESS_INSERT_ERROR",
-            message: "Failed inserting in `terms` table.",
-            err,
-          })
-        );
-      }
     }
 
     public async getFor(args: {

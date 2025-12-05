@@ -10,12 +10,22 @@ export namespace Middlewares {
     req.activeClassService = await Services.ActiveClass.createService();
     next();
   }
+
+  export async function attachTermDataService(
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) {
+    req.termDataService = await Services.TermData.create();
+    next();
+  }
 }
 
 declare global {
   namespace Express {
     interface Request {
       activeClassService: Services.ActiveClass.Service;
+      termDataService: Services.TermData.Service;
     }
   }
 }
