@@ -53,8 +53,8 @@ export namespace Services {
                     set: {
                       status: sql`excluded.status`,
                       recordedAt: sql`excluded.recorded_at`,
-                      recordedDate: sql`excluded.recorded_date`,
-                      recordedTime: sql`excluded.recorded_time`,
+                      recordedMs: sql`excluded.recorded_ms`,
+                      datePh: sql`excluded.date_ph`,
                     },
                   });
 

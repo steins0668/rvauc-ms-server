@@ -25,13 +25,15 @@ export const attendanceRecords = sqliteTable(
       }),
     status: text("status").notNull(),
     recordedAt: text("recorded_at").notNull(), //  ! complete ISO date
-    recordedDate: text("recorded_date").notNull(), //  ! date only ISO (time is 0)
-    recordedTime: integer("recorded_time").notNull(), //  ! time stamp
+    recordedMs: integer("recorded_ms").notNull(), //  ! epoch ms
+    datePh: text("date_ph").notNull(), //  ! Ph date (yyyy-mm-dd)
   },
   (t) => [
-    uniqueIndex(
-      "uidx_attendance_records_student_id_enrollment_id_recorded_date"
-    ).on(t.studentId, t.enrollmentId, t.recordedDate),
+    uniqueIndex("uidx_attendance_records_student_id_enrollment_id_date_ph").on(
+      t.studentId,
+      t.enrollmentId,
+      t.datePh
+    ),
   ]
 );
 

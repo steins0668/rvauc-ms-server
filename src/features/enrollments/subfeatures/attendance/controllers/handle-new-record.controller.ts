@@ -105,8 +105,8 @@ export async function handleNewRecord(
       enrollmentId: enrollment.id,
       status: "",
       recordedAt: finalDate.toISOString(),
-      recordedDate: "",
-      recordedTime: 1,
+      recordedMs: 1,
+      datePh: "",
     },
   });
 

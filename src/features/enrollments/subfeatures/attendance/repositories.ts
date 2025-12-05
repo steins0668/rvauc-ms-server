@@ -58,8 +58,8 @@ export namespace Repositories {
           enrollmentId,
           status,
           recordedAt,
-          recordedDate,
-          recordedTime,
+          recordedMs,
+          datePh,
           custom,
         } = filter;
 
@@ -72,10 +72,10 @@ export namespace Repositories {
           conditions.push(eq(attendanceRecords.status, status));
         if (recordedAt && recordedAt.trim())
           conditions.push(eq(attendanceRecords.recordedAt, recordedAt));
-        if (recordedDate && recordedDate.trim())
-          conditions.push(eq(attendanceRecords.recordedDate, recordedDate));
-        if (recordedTime !== undefined)
-          conditions.push(eq(attendanceRecords.recordedTime, recordedTime));
+        if (recordedMs !== undefined)
+          conditions.push(eq(attendanceRecords.recordedMs, recordedMs));
+        if (datePh && datePh.trim())
+          conditions.push(eq(attendanceRecords.datePh, datePh));
         if (custom)
           conditions.push(...custom(attendanceRecords, RepositoryUtil.filters));
 
