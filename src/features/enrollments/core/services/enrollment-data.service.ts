@@ -120,11 +120,7 @@ export namespace EnrollmentData {
             columns: { classId: false },
             with: {
               enrollment: {
-                columns: {
-                  classOfferingId: false,
-                  studentId: false,
-                  termId: false,
-                },
+                columns: { id: true, status: true },
               },
               class: {
                 columns: {},
