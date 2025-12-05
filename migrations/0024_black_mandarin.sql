@@ -1,0 +1,1 @@
+ALTER TABLE `attendance_records` ADD `record_count` integer DEFAULT 1 NOT NULL;

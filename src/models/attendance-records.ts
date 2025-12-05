@@ -24,6 +24,7 @@ export const attendanceRecords = sqliteTable(
         onUpdate: "cascade",
       }),
     status: text("status").notNull(),
+    recordCount: integer("record_count").notNull().default(1),
     recordedAt: text("recorded_at").notNull(), //  ! complete ISO date
     recordedMs: integer("recorded_ms").notNull(), //  ! epoch ms
     datePh: text("date_ph").notNull(), //  ! Ph date (yyyy-mm-dd)
