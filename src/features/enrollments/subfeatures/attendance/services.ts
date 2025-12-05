@@ -68,7 +68,7 @@ export namespace Services {
       }
 
       private toDto(
-        raw: NonNullable<Awaited<ReturnType<typeof this.insertRecord>>>
+        raw: NonNullable<Awaited<ReturnType<typeof this.insertRecords>>[number]>
       ) {
         const dto = {
           id: raw.id,
@@ -79,18 +79,6 @@ export namespace Services {
         };
 
         return Schemas.Dto.attendance.parse(dto);
-      }
-
-      private async insertRecord(args: {
-        dbOrTx?: DbOrTx | undefined;
-        onConflict?: "doNothing" | "doUpdate" | undefined;
-        value: Types.InsertModels.AttendanceRecord;
-      }) {
-        return await this.insertRecords({
-          dbOrTx: args.dbOrTx,
-          onConflict: args.onConflict,
-          values: [args.value],
-        }).then((result) => result[0]);
       }
 
       private async insertRecords(args: {
