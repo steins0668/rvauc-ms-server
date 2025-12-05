@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
+import { Clock, TimeUtil } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
-import { Clock } from "../../../../../utils";
+import { Data } from "../data";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
@@ -28,7 +29,7 @@ export async function handleNewRecord(
   if (!isAllowedPayload || auth.payload.role !== "student") {
     logger.log(
       "info",
-      "Invalid payload attempted to access `uniform-compliance/new-record`."
+      "Invalid payload attempted to access `attendance/new-record`."
     );
 
     return res.status(403).json({
@@ -103,10 +104,14 @@ export async function handleNewRecord(
     value: {
       studentId: student.id,
       enrollmentId: enrollment.id,
-      status: "",
+      status: getAttendanceStatus({
+        attendanceDate: finalDate,
+        schedStartTime: enrollment.startTime,
+        schedEndTime: enrollment.endTime,
+      }),
       recordedAt: finalDate.toISOString(),
-      recordedMs: 1,
-      datePh: "",
+      recordedMs: finalDate.getTime(),
+      datePh: TimeUtil.toPhDate(finalDate),
     },
   });
 
@@ -140,3 +145,28 @@ export async function handleNewRecord(
     message: "Success recording attendance",
   });
 }
+
+/**
+ *
+ * @param attendanceDate - date of attendance
+ * @param schedStartTime - scheduled start time in seconds
+ * @param schedEndTime - scheduled end time in seconds
+ * @returns
+ */
+const getAttendanceStatus = (args: {
+  attendanceDate: Date;
+  schedStartTime: number;
+  schedEndTime: number;
+}) => {
+  const { attendanceDate, schedStartTime, schedEndTime } = args;
+  const attendanceTime = TimeUtil.secondsSinceMidnightPh(attendanceDate);
+
+  const GRACE_PERIOD_OFFSET_SECONDS = 15 * 60; //  ! 15 minutes grace period
+  const graceTime = schedStartTime + GRACE_PERIOD_OFFSET_SECONDS;
+
+  return attendanceTime >= schedEndTime
+    ? Data.attendanceStatus.absent
+    : attendanceTime > graceTime
+    ? Data.attendanceStatus.late
+    : Data.attendanceStatus.present;
+};
