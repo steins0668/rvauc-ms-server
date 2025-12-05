@@ -7,7 +7,7 @@ export namespace Middlewares {
     res: Response,
     next: NextFunction
   ) {
-    req.enrollmentDataService = await Services.EnrollmentData.createService();
+    req.activeClassService = await Services.ActiveClass.createService();
     next();
   }
 }
@@ -15,7 +15,7 @@ export namespace Middlewares {
 declare global {
   namespace Express {
     interface Request {
-      enrollmentDataService: Services.EnrollmentData.Service;
+      activeClassService: Services.ActiveClass.Service;
     }
   }
 }

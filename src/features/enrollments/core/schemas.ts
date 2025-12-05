@@ -2,7 +2,7 @@ import z from "zod";
 
 export namespace Schemas {
   export namespace Dto {
-    export const enrollmentDTO = z
+    export const activeClass = z
       .strictObject({
         id: z.number(),
         //  * class metadata
@@ -24,6 +24,6 @@ export namespace Schemas {
       })
       .strip();
 
-    export type EnrollmentDTO = z.infer<typeof enrollmentDTO>;
+    export type ActiveClass = z.infer<typeof activeClass>;
   }
 }

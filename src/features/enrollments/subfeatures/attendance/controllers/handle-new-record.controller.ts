@@ -14,7 +14,7 @@ export async function handleNewRecord(
   const {
     body,
     auth,
-    enrollmentDataService,
+    activeClassService,
     attendanceDataService,
     requestLogger: logger,
   } = req;
@@ -42,7 +42,7 @@ export async function handleNewRecord(
 
   logger.log("debug", "Attempting to get current term from system config...");
   try {
-    const queried = await enrollmentDataService.getCurrentTerm();
+    const queried = await activeClassService.getCurrentTerm();
     if (!queried.success) throw queried.error;
 
     term = queried.result;
@@ -74,7 +74,7 @@ export async function handleNewRecord(
   const { payload: student } = auth;
 
   logger.log("debug", "Attempting to get student's ongoing classs...");
-  const queriedEnrollment = await enrollmentDataService.getActiveEnrollment({
+  const queriedEnrollment = await activeClassService.getFor({
     studentId: student.id,
     date: finalDate,
     termId: term.id,
