@@ -75,6 +75,7 @@ export namespace Services {
           status: raw.status,
           date: raw.datePh,
           time: TimeUtil.toPhTime(new Date(raw.recordedAt)),
+          isNew: raw.recordCount === 1,
         };
 
         return Schemas.Dto.attendance.parse(dto);
@@ -108,7 +109,7 @@ export namespace Services {
                 ? insertion.onConflictDoNothing()
                 : insertion.onConflictDoUpdate({
                     target: [ar.studentId, ar.enrollmentId, ar.datePh],
-                    set: { status: sql`excluded.status` },
+                    set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
                   });
 
             return insertion.returning();

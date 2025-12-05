@@ -19,6 +19,7 @@ export namespace Schemas {
         status: z.enum(Data.attendanceStatus),
         date: z.string(),
         time: z.string(),
+        isNew: z.boolean(),
       })
       .strip();
 
