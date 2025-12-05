@@ -101,20 +101,15 @@ export namespace Services {
         const { dbOrTx, onConflict = "doNothing", values } = args;
         return await this._attendanceRecordRepo.execInsert({
           dbOrTx,
-          fn: async ({ insert, sql }) => {
+          fn: async ({ table: ar, insert, sql }) => {
             let insertion = insert.values(values);
 
             insertion =
               onConflict === "doNothing"
                 ? insertion.onConflictDoNothing()
                 : insertion.onConflictDoUpdate({
-                    target: Schema.attendanceRecords.id,
-                    set: {
-                      status: sql`excluded.status`,
-                      recordedAt: sql`excluded.recorded_at`,
-                      recordedMs: sql`excluded.recorded_ms`,
-                      datePh: sql`excluded.date_ph`,
-                    },
+                    target: [ar.studentId, ar.enrollmentId, ar.datePh],
+                    set: { status: sql`excluded.status` },
                   });
 
             return insertion.returning();
