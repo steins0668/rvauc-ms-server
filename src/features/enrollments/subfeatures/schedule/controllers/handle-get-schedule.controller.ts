@@ -22,10 +22,7 @@ export async function handleGetSchedule(req: Request, res: Response) {
 
   logger.log("info", "Attempting to get schedule...");
   //  * authorize user
-  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
-    auth,
-    "minimal"
-  );
+  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!isAllowedPayload || auth.payload.role !== "student") {
     logger.log(
