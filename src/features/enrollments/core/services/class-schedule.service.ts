@@ -84,7 +84,18 @@ export namespace ClassSchedule {
           })
         );
 
-      return this.toDto(result);
+      try {
+        const parsed = this.toDto(result);
+        return ResultBuilder.success(parsed);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+            message: "Failed converting raw query data into enrollment DTO",
+            err,
+          })
+        );
+      }
     }
 
     public async getForToday(args: {
@@ -119,7 +130,18 @@ export namespace ClassSchedule {
           })
         );
 
-      return result.map((row) => this.toDto(row));
+      try {
+        const parsed = result.map((row) => this.toDto(row));
+        return ResultBuilder.success(parsed);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+            message: "Failed converting raw query data into enrollment DTO",
+            err,
+          })
+        );
+      }
     }
 
     private whereClassOffering(args: {
@@ -212,17 +234,7 @@ export namespace ClassSchedule {
         professor: professor.user,
       };
 
-      const parsed = Schemas.Dto.activeClass.safeParse(dto);
-
-      return parsed.success
-        ? ResultBuilder.success(parsed.data)
-        : ResultBuilder.fail(
-            Errors.EnrollmentData.normalizeError({
-              name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-              message: "Failed converting raw query data into enrollment DTO",
-              err: parsed.error,
-            })
-          );
+      return Schemas.Dto.activeClass.parse(dto);
     }
 
     private async queryOne(args: {
