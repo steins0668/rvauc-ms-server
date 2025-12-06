@@ -89,5 +89,17 @@ export namespace Repositories {
 
       return undefined;
     }
+
+    public static sqlWhere(
+      builder: Types.Repository.WhereBuilders.AttendanceRecord
+    ) {
+      return builder(attendanceRecords, RepositoryUtil.filters);
+    }
+
+    public static sqlOrderBy(
+      builder: Types.Repository.OrderBuilders.AttendanceRecord
+    ) {
+      return builder(attendanceRecords, RepositoryUtil.orderOperators);
+    }
   }
 }

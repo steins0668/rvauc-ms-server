@@ -57,9 +57,13 @@ export class Class extends Repository<Types.Tables.Class> {
     return undefined;
   }
 
-  protected static buildOrder(
-    configureOrder: BaseRepositoryType.ConfigureOrder<Types.Tables.Class>
+  public static sqlWhere(builder: Types.Repository.WhereBuilders.Class) {
+    return builder(classes, RepositoryUtil.filters);
+  }
+
+  public static sqlOrderBy(
+    builder: BaseRepositoryType.OrderBuilder<Types.Tables.Class>
   ) {
-    return configureOrder(classes, RepositoryUtil.orderOperators);
+    return builder(classes, RepositoryUtil.orderOperators);
   }
 }

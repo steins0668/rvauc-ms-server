@@ -3,6 +3,7 @@ import { DbContext } from "../../../db/create-context";
 import { terms } from "../../../models";
 import { Repository } from "../../../services";
 import { Types } from "../types";
+import { RepositoryUtil } from "../../../utils";
 
 export class Term extends Repository<Types.Tables.Term> {
   public constructor(context: DbContext) {
@@ -53,5 +54,13 @@ export class Term extends Repository<Types.Tables.Term> {
     }
 
     return undefined;
+  }
+
+  public static sqlWhere(builder: Types.Repository.WhereBuilders.Term) {
+    return builder(terms, RepositoryUtil.filters);
+  }
+
+  public static sqlOrderBy(builder: Types.Repository.OrderBuilders.Term) {
+    return builder(terms, RepositoryUtil.orderOperators);
   }
 }

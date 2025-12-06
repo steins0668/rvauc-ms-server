@@ -2,7 +2,6 @@ import { and, eq, or, sql, SQL } from "drizzle-orm";
 import { DbContext } from "../../../db/create-context";
 import { classOfferings } from "../../../models";
 import { Repository } from "../../../services";
-import { BaseRepositoryType } from "../../../types";
 import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
 
@@ -30,7 +29,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
       table: classOfferings,
       context,
       converter: ClassOffering.buildWhereClause,
-      order: ClassOffering.buildOrder,
+      order: ClassOffering.sqlOrderBy,
       sql,
     });
   }
@@ -44,7 +43,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
       table: classOfferings,
       selectBase,
       converter: ClassOffering.buildWhereClause,
-      order: ClassOffering.buildOrder,
+      order: ClassOffering.sqlOrderBy,
     });
   }
 
@@ -104,9 +103,15 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     return undefined;
   }
 
-  protected static buildOrder(
-    configureOrder: BaseRepositoryType.ConfigureOrder<Types.Tables.ClassOffering>
+  public static sqlWhere(
+    builder: Types.Repository.WhereBuilders.ClassOffering
   ) {
-    return configureOrder(classOfferings, RepositoryUtil.orderOperators);
+    return builder(classOfferings, RepositoryUtil.filters);
+  }
+
+  public static sqlOrderBy(
+    builder: Types.Repository.OrderBuilders.ClassOffering
+  ) {
+    return builder(classOfferings, RepositoryUtil.orderOperators);
   }
 }

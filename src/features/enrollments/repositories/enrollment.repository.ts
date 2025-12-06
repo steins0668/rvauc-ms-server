@@ -28,7 +28,7 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
       table: enrollments,
       context,
       converter: Enrollment.buildWhereClause,
-      order: Enrollment.buildOrder,
+      order: Enrollment.sqlOrderBy,
       sql,
     });
   }
@@ -42,7 +42,7 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
       table: enrollments,
       selectBase,
       converter: Enrollment.buildWhereClause,
-      order: Enrollment.buildOrder,
+      order: Enrollment.sqlOrderBy,
     });
   }
 
@@ -95,9 +95,11 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     return undefined;
   }
 
-  protected static buildOrder(
-    configureOrder: BaseRepositoryType.ConfigureOrder<Types.Tables.Enrollment>
-  ) {
-    return configureOrder(enrollments, RepositoryUtil.orderOperators);
+  public static sqlWhere(builder: Types.Repository.WhereBuilders.Enrollment) {
+    return builder(enrollments, RepositoryUtil.filters);
+  }
+
+  public static sqlOrderBy(builder: Types.Repository.OrderBuilders.Enrollment) {
+    return builder(enrollments, RepositoryUtil.orderOperators);
   }
 }

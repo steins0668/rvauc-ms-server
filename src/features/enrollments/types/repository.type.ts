@@ -237,6 +237,40 @@ export namespace Repository {
     >;
   }
 
+  export namespace WhereBuilders {
+    export type Class = BaseRepositoryType.WhereBuilder<Tables.Class>;
+
+    export type ClassOffering =
+      BaseRepositoryType.WhereBuilder<Tables.ClassOffering>;
+
+    export type College = BaseRepositoryType.WhereBuilder<Tables.College>;
+
+    export type Course = BaseRepositoryType.WhereBuilder<Tables.Course>;
+
+    export type Department = BaseRepositoryType.WhereBuilder<Tables.Department>;
+
+    export type Enrollment = BaseRepositoryType.WhereBuilder<Tables.Enrollment>;
+
+    export type Term = BaseRepositoryType.WhereBuilder<Tables.Term>;
+  }
+
+  export namespace OrderBuilders {
+    export type Class = BaseRepositoryType.OrderBuilder<Tables.Class>;
+
+    export type ClassOffering =
+      BaseRepositoryType.OrderBuilder<Tables.ClassOffering>;
+
+    export type College = BaseRepositoryType.OrderBuilder<Tables.College>;
+
+    export type Course = BaseRepositoryType.OrderBuilder<Tables.Course>;
+
+    export type Department = BaseRepositoryType.OrderBuilder<Tables.Department>;
+
+    export type Enrollment = BaseRepositoryType.OrderBuilder<Tables.Enrollment>;
+
+    export type Term = BaseRepositoryType.OrderBuilder<Tables.Term>;
+  }
+
   export namespace QueryFilters {
     export type Class = BaseRepositoryType.QueryFilter<Tables.Class>;
 

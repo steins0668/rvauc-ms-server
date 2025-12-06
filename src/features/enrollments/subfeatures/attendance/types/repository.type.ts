@@ -42,6 +42,16 @@ export namespace Repository {
     >;
   }
 
+  export namespace WhereBuilders {
+    export type AttendanceRecord =
+      BaseRepositoryType.WhereBuilder<Tables.AttendanceRecord>;
+  }
+
+  export namespace OrderBuilders {
+    export type AttendanceRecord =
+      BaseRepositoryType.OrderBuilder<Tables.AttendanceRecord>;
+  }
+
   export namespace QueryFilters {
     export type AttendanceRecord =
       BaseRepositoryType.QueryFilter<Tables.AttendanceRecord>;

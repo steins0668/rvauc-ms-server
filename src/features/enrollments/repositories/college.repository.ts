@@ -54,9 +54,11 @@ export class College extends Repository<Types.Tables.College> {
     return undefined;
   }
 
-  protected static buildOrder(
-    configureOrder: BaseRepositoryType.ConfigureOrder<Types.Tables.College>
-  ) {
-    return configureOrder(colleges, RepositoryUtil.orderOperators);
+  public static sqlWhere(builder: Types.Repository.WhereBuilders.College) {
+    return builder(colleges, RepositoryUtil.filters);
+  }
+
+  public static sqlOrderBy(builder: Types.Repository.OrderBuilders.College) {
+    return builder(colleges, RepositoryUtil.orderOperators);
   }
 }

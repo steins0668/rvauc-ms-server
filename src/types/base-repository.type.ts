@@ -96,6 +96,11 @@ export namespace BaseRepositoryType {
 
   export type Filters = typeof RepositoryUtil.filters;
 
+  export type WhereBuilder<TTable extends SQLiteTable> = (
+    table: TTable,
+    filters: Filters
+  ) => SQL | undefined;
+
   export type QueryFilter<
     TTable extends SQLiteTable,
     TModel = InferSelectModel<TTable>
@@ -113,12 +118,12 @@ export namespace BaseRepositoryType {
 
   export type OrderOperators = typeof RepositoryUtil.orderOperators;
 
-  export type ConfigureOrder<TTable extends SQLiteTable> = (
+  export type OrderBuilder<TTable extends SQLiteTable> = (
     table: TTable,
     operators: OrderOperators
   ) => SQL;
 
   export type BuildOrder<TTable extends SQLiteTable> = (
-    configureOrder: ConfigureOrder<TTable>
+    configureOrder: OrderBuilder<TTable>
   ) => SQL;
 }
