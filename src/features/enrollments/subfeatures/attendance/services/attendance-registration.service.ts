@@ -77,7 +77,7 @@ export namespace AttendanceRegistration {
         isNew: raw.recordCount === 1,
       };
 
-      return Schemas.Dto.attendance.parse(dto);
+      return Schemas.Dto.registeredAttendance.parse(dto);
     }
 
     private async insertRecords(args: {

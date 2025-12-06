@@ -19,10 +19,17 @@ export namespace Schemas {
         status: z.enum(Data.attendanceStatus),
         date: z.string(),
         time: z.string(),
+      })
+      .strip();
+
+    export const registeredAttendance = z
+      .strictObject({
+        ...attendance.shape,
         isNew: z.boolean(),
       })
       .strip();
 
     export type Attendance = z.infer<typeof attendance>;
+    export type RegisteredAttendance = z.infer<typeof registeredAttendance>;
   }
 }
