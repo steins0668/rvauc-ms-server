@@ -1,2 +1,2 @@
-export * from "./active-class.service";
+export * from "./class-schedule.service";
 export * from "./term-data.service";

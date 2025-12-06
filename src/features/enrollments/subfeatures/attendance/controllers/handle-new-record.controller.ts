@@ -14,7 +14,7 @@ export async function handleNewRecord(
   const {
     body,
     auth,
-    activeClassService,
+    classSchedService,
     attendanceRegistrationService: registrationService,
     termDataService,
     requestLogger: logger,
@@ -75,7 +75,7 @@ export async function handleNewRecord(
   const { payload: student } = auth;
 
   logger.log("debug", "Attempting to get student's ongoing classs...");
-  const queriedEnrollment = await activeClassService.getForNow({
+  const queriedEnrollment = await classSchedService.getForNow({
     studentId: student.id,
     date: finalDate,
     termId: term.id,

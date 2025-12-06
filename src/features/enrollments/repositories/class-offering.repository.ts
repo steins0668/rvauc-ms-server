@@ -103,12 +103,6 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     return undefined;
   }
 
-  public static sqlWhere(
-    builder: Types.Repository.WhereBuilders.ClassOffering
-  ) {
-    return builder(classOfferings, RepositoryUtil.filters);
-  }
-
   public static sqlOrderBy(
     builder: Types.Repository.OrderBuilders.ClassOffering
   ) {

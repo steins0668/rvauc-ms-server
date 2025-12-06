@@ -1,4 +1,3 @@
-import { SQL } from "drizzle-orm";
 import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { Enums } from "../../../../data";
 import { createContext, DbOrTx } from "../../../../db/create-context";
@@ -7,8 +6,9 @@ import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Types } from "../../types";
+import { SQL, SQLWrapper } from "drizzle-orm";
 
-export namespace ActiveClass {
+export namespace ClassSchedule {
   export async function createService() {
     const context = await createContext();
     const classOfferingRepo = new Repositories.ClassOffering(context);
@@ -58,42 +58,13 @@ export namespace ActiveClass {
       termId: number;
       studentId: number;
     }) {
-      const { dbOrTx, date, termId, studentId } = args;
-      const day = Enums.Days[date.getDay()] as string;
-      const weekDay = day.substring(0, 3);
-      const seconds = TimeUtil.secondsSinceMidnightPh(date);
-
-      //  ! for allowing attendance 30 minutes before class
-      const offsetDate = new Date(date);
-      offsetDate.setMinutes(offsetDate.getMinutes() + 30);
-      const offsetSeconds = TimeUtil.secondsSinceMidnightPh(offsetDate);
-
-      const subquery = (classOfferingId: SQLiteColumn) =>
-        this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId, termId });
-
-      const sqlWhere: Types.Repository.WhereBuilders.ClassOffering = (
-        co,
-        { eq, and, or, lte, gt, exists }
-      ) =>
-        and(
-          eq(co.weekDay, weekDay),
-          or(
-            //  ! class currently in session
-            and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
-            //  ! class starts in 30 minutes
-            and(gt(co.startTime, seconds), lte(co.startTime, offsetSeconds))
-          ),
-          exists(subquery(co.id))
-        );
-
-      const orderBy: Types.Repository.OrderBuilders.ClassOffering = (
-        c,
-        { asc }
-      ) => asc(c.startTime); //  ! ascending by start time
-
       let result;
       try {
-        result = await this.queryOne({ dbOrTx, sqlWhere, orderBy });
+        result = await this.queryOne({
+          dbOrTx: args.dbOrTx,
+          where: this.whereClassOffering({ ...args, mode: "now" }),
+          orderBy: (co, { asc }) => asc(co.startTime),
+        });
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
@@ -114,6 +85,88 @@ export namespace ActiveClass {
         );
 
       return this.toDto(result);
+    }
+
+    public async getForToday(args: {
+      dbOrTx?: DbOrTx | undefined;
+      date: Date;
+      termId: number;
+      studentId: number;
+    }) {
+      let result;
+      try {
+        result = await this.queryMany({
+          dbOrTx: args.dbOrTx,
+          where: this.whereClassOffering({ ...args, mode: "today" }),
+          orderBy: this.orderByStartTimeAscending(),
+          constraints: { limit: 50 },
+        });
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
+            message: "Failed querying the `enrollments` table.",
+            err,
+          })
+        );
+      }
+
+      if (result.length === 0)
+        return ResultBuilder.fail(
+          new Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR",
+            message: "This student has no classes for today.",
+          })
+        );
+
+      return result.map((row) => this.toDto(row));
+    }
+
+    private whereClassOffering(args: {
+      dbOrTx?: DbOrTx | undefined;
+      date: Date;
+      studentId: number;
+      termId: number;
+      mode: "today" | "now";
+    }): Types.Repository.WhereBuilders.ClassOffering {
+      const { dbOrTx, date, studentId, termId, mode } = args;
+
+      const day = Enums.Days[date.getDay()] as string;
+      const weekDay = day.substring(0, 3);
+
+      const subquery = (classOfferingId: SQLiteColumn) =>
+        this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId, termId });
+
+      return (co, { eq, and, or, lte, gt, exists }) => {
+        const conditions = [];
+
+        conditions.push(eq(co.weekDay, weekDay));
+        conditions.push(exists(subquery(co.id)));
+
+        if (mode === "now") {
+          const seconds = TimeUtil.secondsSinceMidnightPh(date);
+
+          //  ! for allowing attendance 30 minutes before class
+          const offsetDate = new Date(date);
+          offsetDate.setMinutes(offsetDate.getMinutes() + 30);
+          const offsetSeconds = TimeUtil.secondsSinceMidnightPh(offsetDate);
+
+          conditions.push(
+            or(
+              //  ! class currently in session
+              and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
+              //  ! class starts in 30 minutes
+              and(gt(co.startTime, seconds), lte(co.startTime, offsetSeconds))
+            )
+          );
+        }
+
+        return and(...conditions);
+      };
+    }
+
+    private orderByStartTimeAscending(): Types.Repository.OrderBuilders.ClassOffering {
+      return (co, { asc }) => asc(co.startTime);
     }
 
     private enrollmentSubquery(args: {
@@ -174,23 +227,40 @@ export namespace ActiveClass {
 
     private async queryOne(args: {
       dbOrTx?: DbOrTx | undefined;
-      sqlWhere?: Types.Repository.WhereBuilders.ClassOffering;
+      where?: Types.Repository.WhereBuilders.ClassOffering;
       orderBy?: Types.Repository.OrderBuilders.ClassOffering;
     }) {
-      const { dbOrTx, sqlWhere, orderBy } = args;
+      const { dbOrTx, where, orderBy } = args;
+      return await this.queryMany({
+        dbOrTx,
+        where,
+        orderBy,
+        constraints: { limit: 1 },
+      }).then((result) => result[0]);
+    }
+
+    private async queryMany(args: {
+      dbOrTx?: DbOrTx | undefined;
+      constraints?: Partial<{ page: number; limit: number }>;
+      where?: Types.Repository.WhereBuilders.ClassOffering | undefined;
+      orderBy?: Types.Repository.OrderBuilders.ClassOffering | undefined;
+    }) {
+      const { dbOrTx, constraints, where, orderBy } = args;
+
+      const { page = 1, limit = 6 } = constraints ?? {};
 
       return await this._classOfferingRepo.execQuery({
         dbOrTx,
         fn: async (query) =>
-          query.findFirst({
-            where: sqlWhere
-              ? Repositories.ClassOffering.sqlWhere(sqlWhere)
-              : undefined,
+          query.findMany({
+            where,
             orderBy: orderBy
               ? Repositories.ClassOffering.sqlOrderBy(orderBy)
               : undefined,
             columns: { classId: false },
             with: this._queryWith,
+            limit,
+            offset: (page - 1) * limit,
           }),
       });
     }

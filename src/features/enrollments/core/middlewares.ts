@@ -2,12 +2,12 @@ import { NextFunction, Request, Response } from "express";
 import { Services } from "./services";
 
 export namespace Middlewares {
-  export async function attachActiveClassService(
+  export async function attachClassScheduleService(
     req: Request,
     res: Response,
     next: NextFunction
   ) {
-    req.activeClassService = await Services.ActiveClass.createService();
+    req.classSchedService = await Services.ClassSchedule.createService();
     next();
   }
 
@@ -24,7 +24,7 @@ export namespace Middlewares {
 declare global {
   namespace Express {
     interface Request {
-      activeClassService: Services.ActiveClass.Service;
+      classSchedService: Services.ClassSchedule.Service;
       termDataService: Services.TermData.Service;
     }
   }

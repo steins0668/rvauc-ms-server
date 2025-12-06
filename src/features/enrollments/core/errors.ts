@@ -6,6 +6,7 @@ export namespace Errors {
   export namespace EnrollmentData {
     export type ErrorName =
       | "ENROLLMENT_DATA_DTO_CONVERSION_ERROR"
+      | "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR"
       | "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR"
       | "ENROLLMENT_DATA_QUERY_ERROR"
       | "ENROLLMENT_DATA_STORE_ERROR";
@@ -14,6 +15,7 @@ export namespace Errors {
 
     export const statusCodeMap: Exhaustive<ErrorName> = {
       ENROLLMENT_DATA_DTO_CONVERSION_ERROR: 500,
+      ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR: 404,
       ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR: 404,
       ENROLLMENT_DATA_QUERY_ERROR: 500,
       ENROLLMENT_DATA_STORE_ERROR: 500,

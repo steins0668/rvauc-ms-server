@@ -240,8 +240,9 @@ export namespace Repository {
   export namespace WhereBuilders {
     export type Class = BaseRepositoryType.WhereBuilder<Tables.Class>;
 
-    export type ClassOffering =
-      BaseRepositoryType.WhereBuilder<Tables.ClassOffering>;
+    export type ClassOffering = NonNullable<
+      Parameters<DbContext["query"]["classOfferings"]["findFirst"]>[0]
+    >["where"];
 
     export type College = BaseRepositoryType.WhereBuilder<Tables.College>;
 
