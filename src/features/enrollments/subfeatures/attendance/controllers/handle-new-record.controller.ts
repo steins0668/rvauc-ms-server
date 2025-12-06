@@ -30,7 +30,7 @@ export async function handleNewRecord(
   if (!isAllowedPayload || auth.payload.role !== "student") {
     logger.log(
       "info",
-      "Invalid payload attempted to access `attendance/new-record`."
+      "Invalid payload attempted to access `enrollments/attendance/new-record`."
     );
 
     return res.status(403).json({
