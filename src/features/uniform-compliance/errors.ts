@@ -6,6 +6,7 @@ export namespace Errors {
   export namespace ComplianceData {
     export type ErrorName =
       | "COMPLIANCE_DATA_DTO_CONVERSION_ERROR"
+      | "COMPLIANCE_DATA_EXISTING_RECORD_ERROR"
       | "COMPLIANCE_DATA_QUERY_RECORD_ERROR"
       | "COMPLIANCE_DATA_STORE_RECORD_ERROR";
 
@@ -13,6 +14,7 @@ export namespace Errors {
 
     export const statusCodeMap: Exhaustive<ErrorName> = {
       COMPLIANCE_DATA_DTO_CONVERSION_ERROR: 500,
+      COMPLIANCE_DATA_EXISTING_RECORD_ERROR: 409,
       COMPLIANCE_DATA_QUERY_RECORD_ERROR: 500,
       COMPLIANCE_DATA_STORE_RECORD_ERROR: 500,
     };

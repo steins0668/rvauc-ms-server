@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import { createContext, DbOrTx } from "../../db/create-context";
 import { DbAccess } from "../../error";
+import { Schema } from "../../models";
 import { ResultBuilder } from "../../utils";
 import { Repositories } from "./repositories";
 import { Types } from "./types";
@@ -26,19 +28,23 @@ export namespace Services {
         return await this.storeRecords({
           dbOrTx: args.dbOrTx,
           values: [args.value],
-        });
+        }).then((result) => result[0]);
       }
 
       public async storeRecords(args: {
         dbOrTx?: DbOrTx | undefined;
         values: Types.Db.InsertModels.ComplianceRecord[];
       }) {
-        return await this.insertRecord({
+        return await this._complianceRecordRepo.execInsert({
           dbOrTx: args.dbOrTx,
           fn: async (insert) => {
+            const { complianceRecords: cr } = Schema;
             return await insert
               .values(args.values)
-              .onConflictDoNothing()
+              .onConflictDoUpdate({
+                target: [cr.studentId, cr.uniformTypeId, cr.datePh],
+                set: { recordCount: sql`${cr.recordCount} + 1` },
+              })
               .returning();
           },
         });

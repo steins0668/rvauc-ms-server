@@ -25,7 +25,6 @@ export namespace Schemas {
       hasId: z.boolean(),
       validUpperwear: z.boolean(),
       validBottoms: z.boolean(),
-      termId: z.number(),
     });
 
     export type RecordDTO = z.infer<typeof recordDTO>;
