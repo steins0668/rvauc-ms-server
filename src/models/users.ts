@@ -17,7 +17,7 @@ export const users = sqliteTable("users", {
   surname: text("surname").notNull(),
   firstName: text("first_name").notNull(),
   middleName: text("middle_name"),
-  contact_number: text("contact_number"),
+  contactNumber: text("contact_number"),
 });
 
 export const usersRelations = relations(users, ({ one }) => ({

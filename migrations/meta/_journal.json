@@ -113,6 +113,90 @@
       "when": 1763999775753,
       "tag": "0015_lowly_vulcan",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1764768629194,
+      "tag": "0016_tranquil_princess_powerful",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1764773764411,
+      "tag": "0017_complex_venom",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1764827585916,
+      "tag": "0018_left_meggan",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1764828307781,
+      "tag": "0019_sparkling_iron_monger",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1764836225279,
+      "tag": "0020_nervous_romulus",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1764855576277,
+      "tag": "0021_loud_susan_delgado",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1764872593529,
+      "tag": "0022_massive_triathlon",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1764920557731,
+      "tag": "0023_ordinary_sentinels",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1764958607348,
+      "tag": "0024_black_mandarin",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1765040625236,
+      "tag": "0025_slimy_dark_phoenix",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1765040976975,
+      "tag": "0026_tan_jimmy_woo",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1765042363965,
+      "tag": "0027_thin_nick_fury",
+      "breakpoints": true
     }
   ]
 }

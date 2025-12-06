@@ -1,14 +1,16 @@
 import { Router } from "express";
-import { Auth } from "../auth";
-import { Middlewares } from "./middlewares";
-import { Controllers } from "./controllers";
 import { validateRequest } from "../../middlewares";
-import { Schemas } from "./schemas";
+import { Auth } from "../auth";
+import { Enrollments } from "../enrollments";
 import { Violation } from "../violation";
+import { Controllers } from "./controllers";
+import { Middlewares } from "./middlewares";
+import { Schemas } from "./schemas";
 
 export const Routes = Router();
 
 Routes.use(Auth.Core.Middlewares.attachUserDataService);
+Routes.use(Enrollments.Core.Middlewares.attachTermDataService);
 Routes.use(Middlewares.attachComplianceDataService);
 
 Routes.get(

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `uidx_compliance_records_student_id_uniform_type_id_date_ph` ON `compliance_records` (`student_id`,`uniform_type_id`,`date_ph`);

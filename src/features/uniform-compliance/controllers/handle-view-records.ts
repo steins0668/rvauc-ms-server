@@ -139,7 +139,7 @@ async function fetchRecords(args: {
         where: converter({ studentId }),
         orderBy: (records, { desc }) => [
           desc(records.termId),
-          desc(records.createdAt),
+          desc(records.recordedAt),
         ],
         with: {
           uniformType: true,
@@ -182,11 +182,11 @@ function toDTORecord(
 
   try {
     const dtoRecord = rawRecords.map((record) => {
-      const { id, student, uniformType, createdAt, ...flags } = record;
+      const { id, student, uniformType, recordedAt, ...flags } = record;
 
       //  * record metadata
-      const rawDate = new Date(createdAt);
-      const date = createdAt.split("T")[0] as string;
+      const rawDate = new Date(recordedAt);
+      const date = recordedAt.split("T")[0] as string;
       const day = Enums.Days[rawDate.getDay()] as string;
       const hours = rawDate.getHours().toString().padStart(2, "0");
       const minutes = rawDate.getMinutes().toString().padStart(2, "0");

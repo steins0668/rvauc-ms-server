@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import { execTransaction } from "../../../db/create-context";
+import { Clock, TimeUtil } from "../../../utils";
 import { Auth } from "../../auth";
 import { Notifications } from "../../notifications";
 import { Violation } from "../../violation";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
-import { Types } from "../types";
+
+const internalErrMessage = "Something went wrong. Please try again later.";
 
 export async function handleNewRecord(
   req: Request<{}, {}, Schemas.ComplianceData.NewRecord>,
@@ -15,6 +17,7 @@ export async function handleNewRecord(
     auth,
     body,
     complianceDataService,
+    termDataService,
     userDataService,
     violationDataService,
     requestLogger: logger,
@@ -45,6 +48,24 @@ export async function handleNewRecord(
     reasons: [] as string[],
   };
 
+  let term;
+
+  logger.log("debug", "Attempting to get current term from system config...");
+  try {
+    const queried = await termDataService.getCurrentTerm();
+    if (!queried.success) throw queried.error;
+
+    term = queried.result;
+    logger.log("debug", "Success getting term config: " + JSON.stringify(term));
+  } catch (err) {
+    logger.log("error", "Failed getting current term from system config.", err);
+
+    return res.status(500).json({
+      success: false,
+      message: internalErrMessage,
+    });
+  }
+
   logger.log("info", "Attempting to store new compliance record...");
 
   try {
@@ -57,27 +78,41 @@ export async function handleNewRecord(
 
       if (!queried.success) throw queried.error; //  ! propagate error
 
-      const now = new Date();
+      const { result: student } = queried;
+
+      const now = Clock.now();
 
       logger.log("debug", "Attempting to store record...");
       const storedCompliance = await complianceDataService.storeRecord({
         dbOrTx: tx,
         value: {
-          studentId: queried.result.id,
+          studentId: student.id,
           ...body,
-          createdAt: now.toISOString(),
+          recordedAt: now.toISOString(),
+          recordedMs: now.getTime(),
+          datePh: TimeUtil.toPhDate(now),
+          termId: term.id,
         },
       });
 
-      if (!storedCompliance.success) throw storedCompliance.error; // ! propagate error
-      const { id: studentId } = queried.result;
-      const { id: complianceRecordId } = storedCompliance
-        .result[0] as Types.Db.ViewModels.ComplianceRecord;
+      if (!storedCompliance)
+        throw new Errors.ComplianceData.ErrorClass({
+          name: "COMPLIANCE_DATA_STORE_RECORD_ERROR",
+          message: "Returning clause of attendance record insert failed.",
+        });
+
+      if (storedCompliance.recordCount > 1)
+        throw new Errors.ComplianceData.ErrorClass({
+          name: "COMPLIANCE_DATA_EXISTING_RECORD_ERROR",
+          message:
+            "This student has already recorded compliance today for the uniform type:" +
+            body.uniformTypeId,
+        });
 
       logger.log("debug", "Queueing compliance notification...");
-      notifications.push(notifyCompliance(studentId, now));
+      notifications.push(notifyCompliance(student.id, now));
 
-      const { studentNumber, termId, uniformTypeId, ...flags } = body;
+      const { studentNumber, uniformTypeId, ...flags } = body;
       const hasViolation = Object.values(flags).some((value) => !value);
       result.isCompliant = !hasViolation;
 
@@ -90,10 +125,10 @@ export async function handleNewRecord(
         const storedViolation = await violationDataService.storeRecord({
           dbOrTx: tx,
           value: {
-            complianceRecordId,
+            complianceRecordId: storedCompliance.id,
             date: now.toISOString(),
             statusId: Violation.Data.Records.ViolationStatus.unsettled,
-            studentId,
+            studentId: student.id,
             reasons,
           },
         });
@@ -101,7 +136,7 @@ export async function handleNewRecord(
         if (!storedViolation.success) throw storedViolation.error; //  ! propagate error
 
         logger.log("debug", "Queueing violation notification...");
-        notifications.push(notifyViolation(studentId, reasons));
+        notifications.push(notifyViolation(student.id, reasons));
       }
 
       return storedCompliance;
@@ -122,7 +157,10 @@ export async function handleNewRecord(
 
     logger.log("error", "Failed storing new record.", error);
 
-    const message = "Failed storing new record. Please try again later.";
+    const message =
+      error.name === "COMPLIANCE_DATA_EXISTING_RECORD_ERROR"
+        ? "You have already recorded compliance for today."
+        : internalErrMessage;
     return res
       .status(Errors.ComplianceData.getErrStatusCode(error))
       .json({ success: false, message });
@@ -130,7 +168,7 @@ export async function handleNewRecord(
 }
 
 function getViolationReasons(complianceData: Schemas.ComplianceData.NewRecord) {
-  const { studentNumber, termId, uniformTypeId, ...flags } = complianceData;
+  const { studentNumber, uniformTypeId, ...flags } = complianceData;
   const reasons = [];
 
   if (!flags.hasId) reasons.push(Violation.Data.Records.ViolationReason.noId);

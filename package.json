@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@libsql/client": "^0.15.15",
+    "@sinonjs/fake-timers": "^15.0.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.4.1",
@@ -16,13 +17,16 @@
     "zod": "^4.1.11"
   },
   "scripts": {
+    "watch": "tsc --watch --incremental",
     "dev": "nodemon",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate --config=./config/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=./config/drizzle.config.ts",
     "db:studio": "drizzle-kit studio --config=./config/drizzle.config.ts",
-    "db:push": "drizzle-kit push --config=./config/drizzle.config.ts"
+    "db:push": "drizzle-kit push --config=./config/drizzle.config.ts",
+    "db:seed": "tsc && node ./build/scripts/seeders/seed-all.seeder.js",
+    "test:enrollments": "tsc && node ./build/tests/enrollments.test.js"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

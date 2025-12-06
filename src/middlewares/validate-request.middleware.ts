@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import z from "zod";
+import { ValidatedRequest } from "../interfaces";
 
 type RequestSchemas<
   PS extends z.ZodType = z.ZodType,
@@ -20,9 +21,10 @@ export function validateRequest<
   B = z.infer<BS>
 >(
   schemas: RequestSchemas<PS, QS, BS>
-): (req: Request<P, {}, B, Q>, res: Response, next: NextFunction) => void {
-  return (req: Request<P, {}, B, Q>, res: Response, next: NextFunction) => {
+): (req: Request<P, {}, B>, res: Response, next: NextFunction) => void {
+  return (req: Request<P, {}, B>, res: Response, next: NextFunction) => {
     const { requestLogger } = req;
+    const validated: any = {};
 
     requestLogger.log("debug", "Validating request schemas...");
 
@@ -33,8 +35,10 @@ export function validateRequest<
       const parsedParams = schemas.params.safeParse(req.params);
       const { data, error, success } = parsedParams;
 
-      if (success) req.params = data as P;
-      else {
+      if (success) {
+        validated.params = data as P;
+        req.params = data as P;
+      } else {
         errorMessages.push(z.prettifyError(error));
 
         requestLogger.log(
@@ -51,7 +55,7 @@ export function validateRequest<
       const parsedQuery = schemas.query.safeParse(req.query);
       const { data, error, success } = parsedQuery;
 
-      if (success) req.query = data as Q;
+      if (success) validated.query = data as Q;
       else {
         errorMessages.push(z.prettifyError(error));
 
@@ -69,8 +73,10 @@ export function validateRequest<
       const parsedBody = schemas.body.safeParse(req.body);
       const { data, error, success } = parsedBody;
 
-      if (success) req.body = data as B;
-      else {
+      if (success) {
+        validated.body = data as B;
+        req.body = data as B;
+      } else {
         errorMessages.push(z.prettifyError(error));
 
         requestLogger.log(
@@ -88,6 +94,7 @@ export function validateRequest<
     }
 
     requestLogger.log("debug", "Request schemas validated.");
+    (req as ValidatedRequest<P, {}, B, Q>).validated = validated;
     next();
   };
 }

@@ -9,6 +9,10 @@ export namespace Schemas {
         email: z.string(),
         username: z.string(),
         role: z.string(),
+        surname: z.string(),
+        firstName: z.string(),
+        middleName: z.string().nullish(),
+        contactNumber: z.string().nullish(),
       });
 
       export const professor = z.object({
@@ -32,8 +36,16 @@ export namespace Schemas {
           iss.input === undefined ? "Role is required." : "Invalid role.",
       });
 
+      const minimalBase = z.strictObject({
+        id: z.number(),
+        surname: z.string(),
+        firstName: z.string(),
+        middleName: z.string().nullish(),
+      });
+
       export const minimalStudent = z
         .strictObject({
+          ...minimalBase.shape,
           role: z.literal(Data.Records.roles.student),
           studentNumber: z.string(),
           department: z.string(),
@@ -134,6 +146,7 @@ export namespace Schemas {
       surname: z.string(),
       firstName: z.string(),
       middleName: z.string().nullish(),
+      contactNumber: z.string().nullish(),
     });
   }
 }
