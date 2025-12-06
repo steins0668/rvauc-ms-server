@@ -11,7 +11,7 @@ export namespace Schemas {
         role: z.string(),
         surname: z.string(),
         firstName: z.string(),
-        middleName: z.string().nullish(),
+        middleName: z.string().nullish().default(""),
         contactNumber: z.string().nullish(),
       });
 
@@ -40,7 +40,7 @@ export namespace Schemas {
         id: z.number(),
         surname: z.string(),
         firstName: z.string(),
-        middleName: z.string().nullish(),
+        middleName: z.string().nullish().default(""),
       });
 
       export const minimalStudent = z
