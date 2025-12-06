@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { StrictValidatedRequest } from "../../../../../interfaces";
 import { Auth } from "../../../../auth";
-import { Core } from "../../../core";
 import { Schemas } from "../schemas";
+import { Core } from "../../../core";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
-export async function handleGetSchedule(req: Request, res: Response) {
+export async function handleGetClassList(req: Request, res: Response) {
   const {
     auth,
     validated: { query },
@@ -20,14 +20,14 @@ export async function handleGetSchedule(req: Request, res: Response) {
     Schemas.RequestQuery.StudentSchedule
   >;
 
-  logger.log("info", "Attempting to get schedule...");
+  logger.log("info", "Attempting to get class list...");
   //  * authorize user
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!isAllowedPayload || auth.payload.role !== "student") {
     logger.log(
       "info",
-      "Invalid payload attempted to access `enrollments/schedule/get-schedule`."
+      "Invalid payload attempted to access `enrollments/schedule/get-class-list`."
     );
 
     return res.status(403).json({
@@ -57,7 +57,7 @@ export async function handleGetSchedule(req: Request, res: Response) {
   const date = new Date(query.date);
   const { payload: student } = auth;
 
-  const queried = await classSchedService.getForToday({
+  const queried = await classSchedService.getForTerm({
     studentId: student.id,
     date,
     termId: term.id,
@@ -69,8 +69,8 @@ export async function handleGetSchedule(req: Request, res: Response) {
     logger.log("error", "Failed querying enrollments.", error);
 
     const message =
-      error.name === "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR"
-        ? "This student does not have any class scheduled for this day."
+      error.name === "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR"
+        ? "This student does not have any class for this term."
         : internalErrMessage;
 
     return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
@@ -82,6 +82,6 @@ export async function handleGetSchedule(req: Request, res: Response) {
   return res.status(200).json({
     success: true,
     result: { schedule: queried.result },
-    message: "Success retrieving schedule.",
+    message: "Success retrieving class list.",
   });
 }

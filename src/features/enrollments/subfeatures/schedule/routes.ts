@@ -12,3 +12,10 @@ Routes.get(
   validateRequest({ query: Schemas.RequestQuery.studentSchedule }),
   Controllers.handleGetSchedule
 );
+
+Routes.get(
+  "/get-class-list",
+  Auth.Core.Middlewares.validateJwt("full"),
+  validateRequest({ query: Schemas.RequestQuery.studentSchedule }),
+  Controllers.handleGetClassList
+);

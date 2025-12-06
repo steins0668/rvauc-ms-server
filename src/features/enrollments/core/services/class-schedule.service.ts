@@ -144,17 +144,63 @@ export namespace ClassSchedule {
       }
     }
 
+    public async getForTerm(args: {
+      dbOrTx?: DbOrTx | undefined;
+      date: Date;
+      termId: number;
+      studentId: number;
+    }) {
+      let result;
+      try {
+        result = await this.queryMany({
+          dbOrTx: args.dbOrTx,
+          where: this.whereClassOffering({ ...args, mode: "term" }),
+          orderBy: this.orderByStartTimeAscending(),
+          constraints: { limit: 50 },
+        });
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
+            message: "Failed querying the `enrollments` table.",
+            err,
+          })
+        );
+      }
+
+      if (result.length === 0)
+        return ResultBuilder.fail(
+          new Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR",
+            message: "This student has no classes for this term.",
+          })
+        );
+
+      try {
+        const distinctClasses = Array.from(
+          new Map(result.map((row) => [row.classNumber, row])).values()
+        );
+        const parsed = distinctClasses.map((row) => this.toDto(row));
+        return ResultBuilder.success(parsed);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+            message: "Failed converting raw query data into enrollment DTO",
+            err,
+          })
+        );
+      }
+    }
+
     private whereClassOffering(args: {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
       studentId: number;
       termId: number;
-      mode: "today" | "now";
+      mode: "term" | "today" | "now";
     }): Types.Repository.WhereBuilders.ClassOffering {
       const { dbOrTx, date, studentId, termId, mode } = args;
-
-      const day = Enums.Days[date.getDay()] as string;
-      const weekDay = day.substring(0, 3);
 
       const subquery = (classOfferingId: SQLiteColumn) =>
         this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId, termId });
@@ -162,8 +208,13 @@ export namespace ClassSchedule {
       return (co, { eq, and, or, lte, gt, exists }) => {
         const conditions: (SQLWrapper | undefined)[] = [];
 
-        conditions.push(eq(co.weekDay, weekDay));
         conditions.push(exists(subquery(co.id)));
+
+        if (mode !== "term") {
+          const day = Enums.Days[date.getDay()] as string;
+          const weekDay = day.substring(0, 3);
+          conditions.push(eq(co.weekDay, weekDay));
+        }
 
         if (mode === "now") {
           const seconds = TimeUtil.secondsSinceMidnightPh(date);
