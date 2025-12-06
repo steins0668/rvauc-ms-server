@@ -6,6 +6,7 @@ import { Violation } from "../../violation";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Types } from "../types";
+import { Clock, TimeUtil } from "../../../utils";
 
 export async function handleNewRecord(
   req: Request<{}, {}, Schemas.ComplianceData.NewRecord>,
@@ -57,7 +58,7 @@ export async function handleNewRecord(
 
       if (!queried.success) throw queried.error; //  ! propagate error
 
-      const now = new Date();
+      const now = Clock.now();
 
       logger.log("debug", "Attempting to store record...");
       const storedCompliance = await complianceDataService.storeRecord({
@@ -65,7 +66,9 @@ export async function handleNewRecord(
         value: {
           studentId: queried.result.id,
           ...body,
-          createdAt: now.toISOString(),
+          recordedAt: now.toISOString(),
+          recordedMs: now.getTime(),
+          datePh: TimeUtil.toPhDate(now),
         },
       });
 

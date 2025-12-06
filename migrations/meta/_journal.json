@@ -176,6 +176,20 @@
       "when": 1764958607348,
       "tag": "0024_black_mandarin",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1765040625236,
+      "tag": "0025_slimy_dark_phoenix",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1765040976975,
+      "tag": "0026_tan_jimmy_woo",
+      "breakpoints": true
     }
   ]
 }

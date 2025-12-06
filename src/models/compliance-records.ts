@@ -28,7 +28,10 @@ export const complianceRecords = sqliteTable("compliance_records", {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),
-  createdAt: text("created_at").notNull(),
+  recordCount: integer("record_count").notNull().default(1),
+  recordedAt: text("recorded_at").notNull(),
+  recordedMs: integer("recorded_ms").notNull(), //  ! epoch ms
+  datePh: text("date_ph").notNull(), //  ! Ph date (yyyy-mm-dd)
 });
 
 export const complianceRecordsRelations = relations(
