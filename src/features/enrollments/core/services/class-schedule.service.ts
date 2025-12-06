@@ -6,7 +6,7 @@ import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Types } from "../../types";
-import { SQL, SQLWrapper } from "drizzle-orm";
+import { SQLWrapper } from "drizzle-orm";
 
 export namespace ClassSchedule {
   export async function createService() {
@@ -160,7 +160,7 @@ export namespace ClassSchedule {
         this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId, termId });
 
       return (co, { eq, and, or, lte, gt, exists }) => {
-        const conditions = [];
+        const conditions: (SQLWrapper | undefined)[] = [];
 
         conditions.push(eq(co.weekDay, weekDay));
         conditions.push(exists(subquery(co.id)));
@@ -183,7 +183,7 @@ export namespace ClassSchedule {
           );
         }
 
-        return and(...conditions);
+        return conditions.length ? and(...conditions) : undefined;
       };
     }
 
