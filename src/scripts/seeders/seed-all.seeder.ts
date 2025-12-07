@@ -60,6 +60,7 @@ export const usersProfessors = [
     passwordHash: "Password1!",
     surname: "Ropal",
     firstName: "Jolymar",
+    gender: "male",
     contactNumber: "09171234501",
   },
   {
@@ -70,6 +71,7 @@ export const usersProfessors = [
     passwordHash: "Password2!",
     surname: "San Jose",
     firstName: "Kurt",
+    gender: "male",
     contactNumber: "09171234502",
   },
   {
@@ -80,6 +82,7 @@ export const usersProfessors = [
     passwordHash: "Password3!",
     surname: "Leron",
     firstName: "Juvie",
+    gender: "female",
     contactNumber: "09171234503",
   },
   {
@@ -90,6 +93,7 @@ export const usersProfessors = [
     passwordHash: "Password4!",
     surname: "Bergonio",
     firstName: "Eden",
+    gender: "female",
     contactNumber: "09171234504",
   },
   {
@@ -100,6 +104,7 @@ export const usersProfessors = [
     passwordHash: "Password5!",
     surname: "Avila",
     firstName: "Joville",
+    gender: "female",
     contactNumber: "09171234505",
   },
   {
@@ -110,6 +115,7 @@ export const usersProfessors = [
     passwordHash: "Password6!",
     surname: "Belarmino",
     firstName: "Bea",
+    gender: "female",
     contactNumber: "09171234506",
   },
 ];
@@ -178,6 +184,7 @@ export const usersStudents = [
     passwordHash: "Password7!",
     surname: "Agaton",
     firstName: "Lee Archelaus",
+    gender: "male",
     contactNumber: "09171234507",
   },
   {
@@ -188,6 +195,7 @@ export const usersStudents = [
     passwordHash: "Password8!",
     surname: "Parducho",
     firstName: "Daina Joy",
+    gender: "male",
     contactNumber: "09171234508",
   },
   {
@@ -198,6 +206,7 @@ export const usersStudents = [
     passwordHash: "Password9!",
     surname: "Trinidad",
     firstName: "Julius",
+    gender: "male",
     contactNumber: "09171234509",
   },
 ];
