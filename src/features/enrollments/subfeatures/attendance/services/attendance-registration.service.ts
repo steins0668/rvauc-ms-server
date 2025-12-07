@@ -95,7 +95,7 @@ export namespace AttendanceRegistration {
             onConflict === "doNothing"
               ? insertion.onConflictDoNothing()
               : insertion.onConflictDoUpdate({
-                  target: [ar.studentId, ar.enrollmentId, ar.datePh],
+                  target: [ar.studentId, ar.classId, ar.datePh],
                   set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
                 });
 

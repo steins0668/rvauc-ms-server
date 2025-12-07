@@ -104,7 +104,6 @@ export namespace AttendanceData {
               and(eq(ar.studentId, studentId), exists(classSq)),
             columns: {
               classId: false,
-              enrollmentId: false,
               studentId: false,
               recordCount: false,
             },
