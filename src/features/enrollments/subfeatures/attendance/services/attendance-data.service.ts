@@ -80,7 +80,7 @@ export namespace AttendanceData {
         dbOrTx,
         fn: (query, converter) =>
           query.findMany({
-            where: converter({ enrollmentId, studentId }),
+            where: converter({ filterType: "and", enrollmentId, studentId }),
             columns: {
               enrollmentId: false,
               studentId: false,

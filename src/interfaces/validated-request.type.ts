@@ -1,7 +1,7 @@
 import { Request } from "express";
 
 export interface ValidatedRequest<P = any, R = any, B = any, Q = any>
-  extends Request<P, R, B> {
+  extends Request {
   validated?: Partial<{
     params: P;
     body: B;
@@ -9,10 +9,10 @@ export interface ValidatedRequest<P = any, R = any, B = any, Q = any>
   }>;
 }
 
-export interface StrictValidatedRequest<T = any, R = any, B = any, Q = any>
-  extends ValidatedRequest<T, R, B, Q> {
+export interface StrictValidatedRequest<P = any, R = any, B = any, Q = any>
+  extends ValidatedRequest<P, R, B, Q> {
   validated: {
-    params: T;
+    params: P;
     body: B;
     query: Q;
   };
