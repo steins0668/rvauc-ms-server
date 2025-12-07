@@ -14,7 +14,7 @@ Routes.get(
   "/view-records/enrollment/:enrollmentId",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
-    params: Schemas.RequestParams.enrollmentId,
+    params: Schemas.RequestParams.classNumber,
     query: Schemas.RequestQuery.attendanceRecord,
   }),
   Controllers.handleViewRecords

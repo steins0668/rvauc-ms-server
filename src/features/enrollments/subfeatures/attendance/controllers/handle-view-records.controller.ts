@@ -11,13 +11,12 @@ const internalErrMessage = "Something went wrong. Please try again later.";
 export async function handleViewRecords(req: Request, res: Response) {
   const {
     auth,
-    body,
     validated: { params, query },
     attendanceDataService,
     termDataService,
     requestLogger: logger,
   } = req as StrictValidatedRequest<
-    Schemas.RequestParams.EnrollmentId,
+    Schemas.RequestParams.ClassNumber,
     {},
     {},
     Schemas.RequestQuery.AttendanceRecord
@@ -75,9 +74,10 @@ export async function handleViewRecords(req: Request, res: Response) {
   const { payload: student } = auth;
 
   logger.log("debug", "Attempting to get attendance records...");
-  const queried = await attendanceDataService.getByStudentEnrollment({
+  const queried = await attendanceDataService.getByStudentClassTerm({
     studentId: student.id,
-    enrollmentId: params.enrollmentId,
+    classNumber: params.classNumber,
+    termId: term.id,
     constraints: { limit: 6 },
   });
 

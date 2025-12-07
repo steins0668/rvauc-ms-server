@@ -24,11 +24,11 @@ export namespace Schemas {
   }
 
   export namespace RequestParams {
-    export const enrollmentId = z
-      .strictObject({ enrollmentId: z.coerce.number() })
+    export const classNumber = z
+      .strictObject({ classNumber: z.coerce.string() })
       .strip();
 
-    export type EnrollmentId = z.infer<typeof enrollmentId>;
+    export type ClassNumber = z.infer<typeof classNumber>;
   }
 
   export namespace Dto {
