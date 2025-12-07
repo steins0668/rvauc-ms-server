@@ -266,18 +266,21 @@ export namespace ClassSchedule {
       });
     }
 
-    private toDto(raw: NonNullable<Awaited<ReturnType<typeof this.queryOne>>>) {
-      const { course, professor } = raw.class;
+    private toDto(
+      classOffering: NonNullable<Awaited<ReturnType<typeof this.queryOne>>>
+    ) {
+      const { course, professor } = classOffering.class;
 
       const dto = {
         //  * class metadata
-        id: raw.id,
-        weekDay: raw.weekDay,
-        startTimeText: raw.startTimeText,
-        endTimeText: raw.endTimeText,
-        startTime: raw.startTime,
-        endTime: raw.endTime,
-        classNumber: raw.class.classNumber,
+        id: classOffering.id,
+        classId: classOffering.class.id,
+        weekDay: classOffering.weekDay,
+        startTimeText: classOffering.startTimeText,
+        endTimeText: classOffering.endTimeText,
+        startTime: classOffering.startTime,
+        endTime: classOffering.endTime,
+        classNumber: classOffering.class.classNumber,
         //  * course metadata
         courseCode: course.code,
         courseName: course.name,
@@ -326,7 +329,7 @@ export namespace ClassSchedule {
                 columns: { id: true, status: true },
               },
               class: {
-                columns: { classNumber: true },
+                columns: { id: true, classNumber: true },
                 with: {
                   course: { columns: { code: true, name: true } },
                   professor: {
