@@ -104,7 +104,6 @@ export async function handleNewRecord(
     onConflict: "doUpdate",
     value: {
       studentId: student.id,
-      enrollmentId: 1,
       classId: classOffering.classId,
       status: getAttendanceStatus({
         attendanceDate: finalDate,
