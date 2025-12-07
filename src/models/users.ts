@@ -16,7 +16,8 @@ export const users = sqliteTable("users", {
   passwordHash: text("password_hash").unique().notNull(),
   surname: text("surname").notNull(),
   firstName: text("first_name").notNull(),
-  middleName: text("middle_name"),
+  middleName: text("middle_name").notNull().default(""),
+  gender: text("gender").notNull(),
   contactNumber: text("contact_number"),
 });
 
