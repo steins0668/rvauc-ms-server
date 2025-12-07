@@ -11,7 +11,7 @@ Routes.use(Middlewares.attachAttendanceDataService);
 Routes.use(Middlewares.attachAttendanceRegistrationService);
 
 Routes.get(
-  "/view-records/enrollment/:enrollmentId",
+  "/view-records/enrollment/:classNumber",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
     params: Schemas.RequestParams.classNumber,
