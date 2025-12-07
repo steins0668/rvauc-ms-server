@@ -310,31 +310,43 @@ export const classes = [
     id: 1,
     professorId: 1, // Ropal
     courseId: 1, // DS-3101
+    termId: 1,
+    classNumber: "525",
   },
   {
     id: 2,
     professorId: 2, // San Jose
     courseId: 4, // CS-3113
+    termId: 1,
+    classNumber: "522",
   },
   {
     id: 3,
     professorId: 3, // Leron
     courseId: 6, // CS-3115
+    termId: 1,
+    classNumber: "524",
   },
   {
     id: 4,
     professorId: 4, // Bergonio
     courseId: 2, // CC-3105
+    termId: 1,
+    classNumber: "520",
   },
   {
     id: 5,
     professorId: 5, // Avila
     courseId: 5, // CS-3114
+    termId: 1,
+    classNumber: "523",
   },
   {
     id: 6,
     professorId: 6, // Belarmino
     courseId: 3, // CS-3112
+    termId: 1,
+    classNumber: "512",
   },
 ];
 
