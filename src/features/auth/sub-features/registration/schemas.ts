@@ -53,6 +53,10 @@ export namespace Schemas {
             ? "Contact number is required."
             : "Invalid input.",
       }),
+      gender: z.string({
+        error: (iss) =>
+          iss.input === undefined ? "Gender is required." : "Invalid input.",
+      }),
     });
 
     export const professor = z.object({
