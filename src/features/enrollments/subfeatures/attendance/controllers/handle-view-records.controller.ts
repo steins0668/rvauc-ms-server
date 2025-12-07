@@ -94,8 +94,8 @@ export async function handleViewRecords(req: Request, res: Response) {
   logger.log("info", "Success retrieving attendance records");
   return res.status(200).json({
     success: true,
-    result: { attendanceRecords: queried.result },
-    message: "Attendance records retrieved.",
+    result: { attendanceList: queried.result },
+    message: "Attendance list retrieved.",
   });
 }
 
