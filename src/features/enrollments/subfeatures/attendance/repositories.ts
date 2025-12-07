@@ -56,7 +56,7 @@ export namespace Repositories {
           filterType = "or",
           id,
           studentId,
-          enrollmentId,
+          classId,
           status,
           recordCount,
           recordedAt,
@@ -68,8 +68,8 @@ export namespace Repositories {
         if (id !== undefined) conditions.push(eq(attendanceRecords.id, id));
         if (studentId !== undefined)
           conditions.push(eq(attendanceRecords.studentId, studentId));
-        if (enrollmentId !== undefined)
-          conditions.push(eq(attendanceRecords.enrollmentId, enrollmentId));
+        if (classId !== undefined)
+          conditions.push(eq(attendanceRecords.classId, classId));
         if (status && status.trim())
           conditions.push(eq(attendanceRecords.status, status));
         if (recordCount !== undefined)
