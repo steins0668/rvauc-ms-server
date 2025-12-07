@@ -1,7 +1,7 @@
 import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { Enums } from "../../../../data";
 import { createContext, DbOrTx } from "../../../../db/create-context";
-import { ResultBuilder, TimeUtil } from "../../../../utils";
+import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
@@ -11,43 +11,24 @@ import { SQLWrapper } from "drizzle-orm";
 export namespace ClassSchedule {
   export async function createService() {
     const context = await createContext();
+    const classRepo = new Repositories.Class(context);
     const classOfferingRepo = new Repositories.ClassOffering(context);
     const enrollmentRepo = new Repositories.Enrollment(context);
 
-    return new Service({ classOfferingRepo, enrollmentRepo });
+    return new Service({ classRepo, classOfferingRepo, enrollmentRepo });
   }
 
   export class Service {
-    private readonly _enrollmentRepo: Repositories.Enrollment;
+    private readonly _classRepo: Repositories.Class;
     private readonly _classOfferingRepo: Repositories.ClassOffering;
-    private readonly _queryWith = {
-      enrollment: {
-        columns: { id: true, status: true },
-      },
-      class: {
-        columns: {},
-        with: {
-          course: { columns: { code: true, name: true } },
-          professor: {
-            columns: {},
-            with: {
-              user: {
-                columns: {
-                  firstName: true,
-                  middleName: true,
-                  surname: true,
-                },
-              },
-            },
-          },
-        },
-      },
-    } as const;
+    private readonly _enrollmentRepo: Repositories.Enrollment;
 
     public constructor(args: {
+      classRepo: Repositories.Class;
       classOfferingRepo: Repositories.ClassOffering;
       enrollmentRepo: Repositories.Enrollment;
     }) {
+      this._classRepo = args.classRepo;
       this._classOfferingRepo = args.classOfferingRepo;
       this._enrollmentRepo = args.enrollmentRepo;
     }
@@ -202,13 +183,16 @@ export namespace ClassSchedule {
     }): Types.Repository.WhereBuilders.ClassOffering {
       const { dbOrTx, date, studentId, termId, mode } = args;
 
-      const subquery = (classOfferingId: SQLiteColumn) =>
-        this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId, termId });
+      const subqueryC = (termId: number) =>
+        this.classSubquery({ dbOrTx, termId });
+      const subqueryE = (classOfferingId: SQLiteColumn) =>
+        this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId });
 
       return (co, { eq, and, or, lte, gt, exists }) => {
         const conditions: (SQLWrapper | undefined)[] = [];
 
-        conditions.push(exists(subquery(co.id)));
+        conditions.push(exists(subqueryC(termId)));
+        conditions.push(exists(subqueryE(co.id)));
 
         if (mode !== "term") {
           const day = Enums.Days[date.getDay()] as string;
@@ -242,13 +226,27 @@ export namespace ClassSchedule {
       return (co, { asc }) => asc(co.startTime);
     }
 
+    private classSubquery(args: {
+      dbOrTx?: DbOrTx | undefined;
+      termId: number;
+    }) {
+      const { dbOrTx, termId } = args;
+      return this._classRepo.getContext({
+        dbOrTx,
+        fn: ({ table: c, context }) =>
+          context
+            .select({ id: c.id })
+            .from(c)
+            .where(RepositoryUtil.filters.eq(c.termId, termId)),
+      });
+    }
+
     private enrollmentSubquery(args: {
       dbOrTx?: DbOrTx | undefined;
       classOfferingId: SQLiteColumn;
       studentId: number;
-      termId: number;
     }) {
-      const { dbOrTx, classOfferingId, studentId, termId } = args;
+      const { dbOrTx, classOfferingId, studentId } = args;
       return this._enrollmentRepo.getContext({
         dbOrTx,
         fn: ({ table: e, context, converter }) =>
@@ -260,8 +258,7 @@ export namespace ClassSchedule {
                 custom: (e, { eq, and }) => [
                   and(
                     eq(e.classOfferingId, classOfferingId),
-                    eq(e.studentId, studentId),
-                    eq(e.termId, termId)
+                    eq(e.studentId, studentId)
                   ),
                 ],
               })
@@ -273,7 +270,6 @@ export namespace ClassSchedule {
       const { course, professor } = raw.class;
 
       const dto = {
-        enrollmentId: raw.enrollment?.id, //  todo: this might cause issues where a student sees a class they aren't enrolled in
         //  * class metadata
         id: raw.id,
         weekDay: raw.weekDay,
@@ -281,7 +277,7 @@ export namespace ClassSchedule {
         endTimeText: raw.endTimeText,
         startTime: raw.startTime,
         endTime: raw.endTime,
-        classNumber: raw.classNumber,
+        classNumber: raw.class.classNumber,
         //  * course metadata
         courseCode: course.code,
         courseName: course.name,
@@ -325,7 +321,29 @@ export namespace ClassSchedule {
               ? Repositories.ClassOffering.sqlOrderBy(orderBy)
               : undefined,
             columns: { classId: false },
-            with: this._queryWith,
+            with: {
+              enrollment: {
+                columns: { id: true, status: true },
+              },
+              class: {
+                columns: { classNumber: true },
+                with: {
+                  course: { columns: { code: true, name: true } },
+                  professor: {
+                    columns: {},
+                    with: {
+                      user: {
+                        columns: {
+                          firstName: true,
+                          middleName: true,
+                          surname: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
             limit,
             offset: (page - 1) * limit,
           }),
