@@ -60,5 +60,9 @@ export const attendanceRecordsRelations = relations(
       fields: [attendanceRecords.enrollmentId],
       references: [enrollments.id],
     }),
+    class: one(classes, {
+      fields: [attendanceRecords.classId],
+      references: [classes.id],
+    }),
   })
 );
