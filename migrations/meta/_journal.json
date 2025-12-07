@@ -253,6 +253,13 @@
       "when": 1765129346275,
       "tag": "0035_broken_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "6",
+      "when": 1765130210114,
+      "tag": "0036_keen_tusk",
+      "breakpoints": true
     }
   ]
 }

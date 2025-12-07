@@ -72,7 +72,6 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
         id,
         studentId,
         classOfferingId,
-        termId,
         status,
         custom,
       } = filter;
@@ -82,7 +81,6 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
         conditions.push(eq(enrollments.studentId, studentId));
       if (classOfferingId !== undefined)
         conditions.push(eq(enrollments.classOfferingId, classOfferingId));
-      if (termId !== undefined) conditions.push(eq(enrollments.termId, termId));
       if (status && status.trim())
         conditions.push(eq(enrollments.status, status));
       if (custom)
