@@ -23,7 +23,12 @@ export const classes = sqliteTable(
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
-    termId: integer("term_id").notNull(),
+    termId: integer("term_id")
+      .notNull()
+      .references(() => terms.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
     classNumber: text("class_number").notNull(),
   },
   (t) => [
