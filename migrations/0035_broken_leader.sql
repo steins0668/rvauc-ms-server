@@ -1,0 +1,1 @@
+ALTER TABLE `class_offerings` DROP COLUMN `class_number`;

@@ -76,7 +76,6 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
         filterType = "or",
         id,
         classId,
-        classNumber,
         weekDay,
         startTime,
         endTime,
@@ -86,8 +85,6 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
       if (id !== undefined) conditions.push(eq(classOfferings.id, id));
       if (classId !== undefined)
         conditions.push(eq(classOfferings.classId, classId));
-      if (classNumber && classNumber.trim())
-        conditions.push(eq(classOfferings.classNumber, classNumber));
       if (weekDay && weekDay.trim())
         conditions.push(eq(classOfferings.weekDay, weekDay));
       if (startTime !== undefined)

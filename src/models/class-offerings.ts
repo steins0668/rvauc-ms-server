@@ -10,7 +10,6 @@ export const classOfferings = sqliteTable("class_offerings", {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),
-  classNumber: text("class_number").notNull(),
   weekDay: text("week_day").notNull(),
   startTime: integer("start_time").notNull(),
   endTime: integer("end_time").notNull(),
