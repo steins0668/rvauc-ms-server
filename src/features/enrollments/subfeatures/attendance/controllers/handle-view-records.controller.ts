@@ -16,7 +16,7 @@ export async function handleViewRecords(req: Request, res: Response) {
     termDataService,
     requestLogger: logger,
   } = req as StrictValidatedRequest<
-    Schemas.RequestParams.ClassNumber,
+    Schemas.RequestParams.ClassId,
     {},
     {},
     Schemas.RequestQuery.AttendanceRecord
@@ -76,8 +76,7 @@ export async function handleViewRecords(req: Request, res: Response) {
   logger.log("debug", "Attempting to get attendance records...");
   const queried = await attendanceDataService.getByStudentClassTerm({
     studentId: student.id,
-    classNumber: params.classNumber,
-    termId: term.id,
+    classId: params.classId,
     constraints: { limit: 6 },
   });
 

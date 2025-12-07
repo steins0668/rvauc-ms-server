@@ -28,9 +28,8 @@ export namespace AttendanceData {
     async getByStudentClassTerm(args: {
       dbOrTx?: DbOrTx | undefined;
       constraints?: { limit?: number; page?: number };
-      classNumber: string;
+      classId: number;
       studentId: number;
-      termId: number;
     }) {
       let queried;
 
@@ -77,31 +76,21 @@ export namespace AttendanceData {
     private async queryByStudentClassTerm(args: {
       dbOrTx?: DbOrTx | undefined;
       constraints?: { limit?: number; page?: number };
-      classNumber: string;
+      classId: number;
       studentId: number;
-      termId: number;
     }) {
-      const { dbOrTx, constraints, classNumber, studentId, termId } = args;
+      const { dbOrTx, constraints, classId, studentId } = args;
 
       const { limit = 6, page = 1 } = constraints ?? {};
 
       const { and, eq } = RepositoryUtil.filters;
 
-      const classSq = this._classRepo.getContext({
-        dbOrTx,
-        fn: ({ table: c, context }) =>
-          context
-            .select({ id: c.id })
-            .from(c)
-            .where(and(eq(c.classNumber, classNumber), eq(c.termId, termId))),
-      });
-
       return this._attendanceRecordRepo.execQuery({
         dbOrTx,
         fn: (query) =>
           query.findMany({
-            where: (ar, { exists }) =>
-              and(eq(ar.studentId, studentId), exists(classSq)),
+            where: (ar) =>
+              and(eq(ar.studentId, studentId), eq(ar.classId, classId)),
             columns: {
               classId: false,
               studentId: false,
