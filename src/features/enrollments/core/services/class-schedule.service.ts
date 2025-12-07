@@ -158,7 +158,11 @@ export namespace ClassSchedule {
         );
 
       try {
-        const parsed = result.map((row) => this.toDto(row));
+        const distinctClasses = Array.from(
+          new Map(result.map((row) => [row.class.classNumber, row])).values()
+        );
+
+        const parsed = distinctClasses.map((row) => this.toDto(row));
         return ResultBuilder.success(parsed);
       } catch (err) {
         return ResultBuilder.fail(
