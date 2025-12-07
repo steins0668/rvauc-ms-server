@@ -272,7 +272,9 @@ export namespace ClassSchedule {
     private toDto(raw: NonNullable<Awaited<ReturnType<typeof this.queryOne>>>) {
       const { course, professor } = raw.class;
 
-      const dto: Schemas.Dto.ActiveClass = {
+      const dto = {
+        enrollmentId: raw.enrollment?.id, //  todo: this might cause issues where a student sees a class they aren't enrolled in
+        //  * class metadata
         id: raw.id,
         weekDay: raw.weekDay,
         startTimeText: raw.startTimeText,
@@ -280,8 +282,10 @@ export namespace ClassSchedule {
         startTime: raw.startTime,
         endTime: raw.endTime,
         classNumber: raw.classNumber,
+        //  * course metadata
         courseCode: course.code,
         courseName: course.name,
+        //  * professor metadata
         professor: professor.user,
       };
 

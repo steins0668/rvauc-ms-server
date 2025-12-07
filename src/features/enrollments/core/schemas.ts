@@ -4,8 +4,9 @@ export namespace Schemas {
   export namespace Dto {
     export const activeClass = z
       .strictObject({
-        id: z.number(),
+        enrollmentId: z.number().optional().default(-1), //  todo: this might cause issues where a student sees a class they aren't enrolled in
         //  * class metadata
+        id: z.number(),
         weekDay: z.string(),
         startTimeText: z.string(),
         endTimeText: z.string(),
