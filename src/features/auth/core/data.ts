@@ -165,7 +165,7 @@ export namespace Data {
   export namespace Token {
     export const signOptions = {
       full: { expiresIn: "5m" },
-      minimal: { expiresIn: "3m" },
+      minimal: { expiresIn: "5m" },
       refresh: { expiresIn: "30d" },
       microservice: { expiresIn: "1m" },
     };
