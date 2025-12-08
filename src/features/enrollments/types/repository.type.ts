@@ -150,6 +150,13 @@ export namespace Repository {
   }
 
   export namespace ContextArgs {
+    export type Class<T> = BaseRepositoryType.ContextArgs<
+      Tables.Class,
+      BaseRepositoryType.BuildWhereClause<Tables.Class>,
+      BaseRepositoryType.BuildOrder<Tables.Class>,
+      T
+    >;
+
     export type ClassOffering<T> = BaseRepositoryType.ContextArgs<
       Tables.ClassOffering,
       BaseRepositoryType.BuildWhereClause<Tables.ClassOffering>,

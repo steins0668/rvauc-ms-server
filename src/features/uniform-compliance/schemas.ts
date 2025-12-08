@@ -41,7 +41,7 @@ export namespace Schemas {
       department: z.string(),
       surname: z.string(),
       firstName: z.string(),
-      middleName: z.string(),
+      middleName: z.string().nullish().default(""),
     });
   }
 }

@@ -1,0 +1,2 @@
+ALTER TABLE `attendance_records` ADD `class_id` integer NOT NULL REFERENCES classes(id);--> statement-breakpoint
+CREATE UNIQUE INDEX `uidx_attendance_records_student_id_class_id_date_ph` ON `attendance_records` (`student_id`,`class_id`,`date_ph`);

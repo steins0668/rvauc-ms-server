@@ -4,28 +4,27 @@ import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 import { Data } from "../data";
+import { StrictValidatedRequest } from "../../../../../interfaces";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
-export async function handleNewRecord(
-  req: Request<{}, {}, Schemas.RequestBody.NewRecord>,
-  res: Response
-) {
+export async function handleViewRecords(req: Request, res: Response) {
   const {
-    body,
     auth,
-    classSchedService,
-    attendanceRegistrationService: registrationService,
+    validated: { params, query },
+    attendanceDataService,
     termDataService,
     requestLogger: logger,
-  } = req;
+  } = req as StrictValidatedRequest<
+    Schemas.RequestParams.ClassId,
+    {},
+    {},
+    Schemas.RequestQuery.AttendanceRecord
+  >;
 
   logger.log("info", "Attempting to create new attendance record...");
   //  * authorize user
-  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
-    auth,
-    "minimal"
-  );
+  const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!isAllowedPayload || auth.payload.role !== "student") {
     logger.log(
@@ -58,7 +57,7 @@ export async function handleNewRecord(
   }
 
   const serverDate = Clock.now();
-  const clientDate = body.date;
+  const clientDate = new Date(query.date);
 
   const MAX_DRIFT_MS = 30 * 1000; //  30 seconds max time drift
   const drift = Math.abs(serverDate.getTime() - clientDate.getTime());
@@ -74,78 +73,28 @@ export async function handleNewRecord(
   const finalDate = isInvalidTime ? serverDate : clientDate;
   const { payload: student } = auth;
 
-  logger.log("debug", "Attempting to get student's ongoing classs...");
-  const queriedClassOffering = await classSchedService.getForNow({
+  logger.log("debug", "Attempting to get attendance records...");
+  const queried = await attendanceDataService.getByStudentClassTerm({
     studentId: student.id,
-    date: finalDate,
-    termId: term.id,
+    classId: params.classId,
+    constraints: { limit: 6 },
   });
 
-  if (!queriedClassOffering.success) {
-    const { error } = queriedClassOffering;
+  if (!queried.success) {
+    const { error } = queried;
 
-    logger.log("error", "Failed querying enrollments.", error);
-
-    const message =
-      error.name === "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR"
-        ? "This student does not have any ongoing classes at the moment."
-        : internalErrMessage;
-
-    return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
-      success: false,
-      message,
-    });
-  }
-
-  const { result: classOffering } = queriedClassOffering;
-
-  logger.log("debug", "Recording attendance...");
-  const recorded = await registrationService.newRecord({
-    onConflict: "doUpdate",
-    value: {
-      studentId: student.id,
-      classId: classOffering.classId,
-      status: getAttendanceStatus({
-        attendanceDate: finalDate,
-        schedStartTime: classOffering.startTime,
-        schedEndTime: classOffering.endTime,
-      }),
-      recordedAt: finalDate.toISOString(),
-      recordedMs: finalDate.getTime(),
-      datePh: TimeUtil.toPhDate(finalDate),
-    },
-  });
-
-  if (!recorded.success) {
-    const { error } = recorded;
-
-    logger.log("error", "Failed recording new attendance record.", error);
-
-    return res.status(500).json({
-      success: false,
-      message: internalErrMessage,
-    });
-  }
-
-  const { result: attendance } = recorded;
-
-  if (!attendance) {
-    logger.log("info", "Returning clause of attendance record insert failed.");
+    logger.log("error", "Failed retrieving attendance records.", error);
 
     return res
       .status(500)
       .json({ success: false, message: internalErrMessage });
   }
 
-  const message = attendance.isNew
-    ? "Successfully recorded new attendance."
-    : "An attendance was already recorded.";
-
-  logger.log("info", message);
+  logger.log("info", "Success retrieving attendance records");
   return res.status(200).json({
     success: true,
-    result: { enrollment: classOffering, attendance },
-    message,
+    result: { attendanceList: queried.result },
+    message: "Attendance list retrieved.",
   });
 }
 

@@ -10,7 +10,6 @@ export const classOfferings = sqliteTable("class_offerings", {
       onDelete: "restrict",
       onUpdate: "cascade",
     }),
-  classNumber: text("class_number").notNull(),
   weekDay: text("week_day").notNull(),
   startTime: integer("start_time").notNull(),
   endTime: integer("end_time").notNull(),
@@ -18,10 +17,13 @@ export const classOfferings = sqliteTable("class_offerings", {
   endTimeText: text("end_time_text").notNull(),
 });
 
-export const classOfferingsRelations = relations(classOfferings, ({ one }) => ({
-  class: one(classes, {
-    fields: [classOfferings.classId],
-    references: [classes.id],
-  }),
-  enrollment: one(enrollments),
-}));
+export const classOfferingsRelations = relations(
+  classOfferings,
+  ({ one, many }) => ({
+    class: one(classes, {
+      fields: [classOfferings.classId],
+      references: [classes.id],
+    }),
+    enrollments: many(enrollments),
+  })
+);

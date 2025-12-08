@@ -60,6 +60,7 @@ export const usersProfessors = [
     passwordHash: "Password1!",
     surname: "Ropal",
     firstName: "Jolymar",
+    gender: "male",
     contactNumber: "09171234501",
   },
   {
@@ -70,6 +71,7 @@ export const usersProfessors = [
     passwordHash: "Password2!",
     surname: "San Jose",
     firstName: "Kurt",
+    gender: "male",
     contactNumber: "09171234502",
   },
   {
@@ -80,6 +82,7 @@ export const usersProfessors = [
     passwordHash: "Password3!",
     surname: "Leron",
     firstName: "Juvie",
+    gender: "female",
     contactNumber: "09171234503",
   },
   {
@@ -90,6 +93,7 @@ export const usersProfessors = [
     passwordHash: "Password4!",
     surname: "Bergonio",
     firstName: "Eden",
+    gender: "female",
     contactNumber: "09171234504",
   },
   {
@@ -100,6 +104,7 @@ export const usersProfessors = [
     passwordHash: "Password5!",
     surname: "Avila",
     firstName: "Joville",
+    gender: "female",
     contactNumber: "09171234505",
   },
   {
@@ -110,6 +115,7 @@ export const usersProfessors = [
     passwordHash: "Password6!",
     surname: "Belarmino",
     firstName: "Bea",
+    gender: "female",
     contactNumber: "09171234506",
   },
 ];
@@ -178,6 +184,7 @@ export const usersStudents = [
     passwordHash: "Password7!",
     surname: "Agaton",
     firstName: "Lee Archelaus",
+    gender: "male",
     contactNumber: "09171234507",
   },
   {
@@ -188,6 +195,7 @@ export const usersStudents = [
     passwordHash: "Password8!",
     surname: "Parducho",
     firstName: "Daina Joy",
+    gender: "male",
     contactNumber: "09171234508",
   },
   {
@@ -198,6 +206,7 @@ export const usersStudents = [
     passwordHash: "Password9!",
     surname: "Trinidad",
     firstName: "Julius",
+    gender: "male",
     contactNumber: "09171234509",
   },
 ];
@@ -301,31 +310,43 @@ export const classes = [
     id: 1,
     professorId: 1, // Ropal
     courseId: 1, // DS-3101
+    termId: 1,
+    classNumber: "525",
   },
   {
     id: 2,
     professorId: 2, // San Jose
     courseId: 4, // CS-3113
+    termId: 1,
+    classNumber: "522",
   },
   {
     id: 3,
     professorId: 3, // Leron
     courseId: 6, // CS-3115
+    termId: 1,
+    classNumber: "524",
   },
   {
     id: 4,
     professorId: 4, // Bergonio
     courseId: 2, // CC-3105
+    termId: 1,
+    classNumber: "520",
   },
   {
     id: 5,
     professorId: 5, // Avila
     courseId: 5, // CS-3114
+    termId: 1,
+    classNumber: "523",
   },
   {
     id: 6,
     professorId: 6, // Belarmino
     courseId: 3, // CS-3112
+    termId: 1,
+    classNumber: "512",
   },
 ];
 

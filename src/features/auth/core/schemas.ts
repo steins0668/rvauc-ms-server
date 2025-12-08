@@ -12,6 +12,7 @@ export namespace Schemas {
         surname: z.string(),
         firstName: z.string(),
         middleName: z.string().nullish().default(""),
+        gender: z.string(),
         contactNumber: z.string().nullish(),
       });
 
@@ -41,6 +42,7 @@ export namespace Schemas {
         surname: z.string(),
         firstName: z.string(),
         middleName: z.string().nullish().default(""),
+        gender: z.string(),
       });
 
       export const minimalStudent = z
@@ -147,6 +149,7 @@ export namespace Schemas {
       firstName: z.string(),
       middleName: z.string().nullish(),
       contactNumber: z.string().nullish(),
+      gender: z.string(),
     });
   }
 }

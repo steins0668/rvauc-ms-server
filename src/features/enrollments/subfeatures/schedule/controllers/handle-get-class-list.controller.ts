@@ -81,7 +81,7 @@ export async function handleGetClassList(req: Request, res: Response) {
 
   return res.status(200).json({
     success: true,
-    result: { schedule: queried.result },
+    result: { classList: queried.result },
     message: "Success retrieving class list.",
   });
 }

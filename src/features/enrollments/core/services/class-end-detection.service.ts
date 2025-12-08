@@ -1,15 +1,16 @@
+import { SQLWrapper } from "drizzle-orm";
 import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { Enums } from "../../../../data";
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
+import { Types } from "../../types";
+import { Data } from "../data";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
-import { Types } from "../../types";
-import { SQLWrapper } from "drizzle-orm";
 
-export namespace ClassSchedule {
-  export async function createService() {
+export namespace ClassEndDetection {
+  export async function create() {
     const context = await createContext();
     const classRepo = new Repositories.Class(context);
     const classOfferingRepo = new Repositories.ClassOffering(context);
@@ -17,19 +18,23 @@ export namespace ClassSchedule {
 
     return new Service({ classRepo, classOfferingRepo, enrollmentRepo });
   }
-
+  /**
+   * todo: merge this with class schedule service
+   * todo: add a WithBuilder repo type so you can dynamically choose to include enrollments in the query
+   * todo: add a type: 'student' | 'all' discriminator to the method args so you can choose to get just one enrollment or all
+   */
   export class Service {
-    private readonly _classRepo: Repositories.Class;
     private readonly _classOfferingRepo: Repositories.ClassOffering;
+    private readonly _classRepo: Repositories.Class;
     private readonly _enrollmentRepo: Repositories.Enrollment;
 
     public constructor(args: {
-      classRepo: Repositories.Class;
       classOfferingRepo: Repositories.ClassOffering;
+      classRepo: Repositories.Class;
       enrollmentRepo: Repositories.Enrollment;
     }) {
-      this._classRepo = args.classRepo;
       this._classOfferingRepo = args.classOfferingRepo;
+      this._classRepo = args.classRepo;
       this._enrollmentRepo = args.enrollmentRepo;
     }
 
@@ -37,7 +42,6 @@ export namespace ClassSchedule {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
       termId: number;
-      studentId: number;
     }) {
       let result;
       try {
@@ -60,8 +64,7 @@ export namespace ClassSchedule {
         return ResultBuilder.fail(
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-            message:
-              "This student has neither an ongoing class or a class that starts in 30 minutes.",
+            message: "There is no class that has already ended.",
           })
         );
 
@@ -83,7 +86,6 @@ export namespace ClassSchedule {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
       termId: number;
-      studentId: number;
     }) {
       let result;
       try {
@@ -107,7 +109,7 @@ export namespace ClassSchedule {
         return ResultBuilder.fail(
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR",
-            message: "This student has no classes for today.",
+            message: "There are no classes for today.",
           })
         );
 
@@ -125,17 +127,16 @@ export namespace ClassSchedule {
       }
     }
 
-    public async getForTerm(args: {
+    public async getForWeek(args: {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
       termId: number;
-      studentId: number;
     }) {
       let result;
       try {
         result = await this.queryMany({
           dbOrTx: args.dbOrTx,
-          where: this.whereClassOffering({ ...args, mode: "term" }),
+          where: this.whereClassOffering({ ...args, mode: "week" }),
           orderBy: this.orderByStartTimeAscending(),
           constraints: { limit: 50 },
         });
@@ -153,22 +154,18 @@ export namespace ClassSchedule {
         return ResultBuilder.fail(
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR",
-            message: "This student has no classes for this term.",
+            message: "There are no classes for this week.",
           })
         );
 
       try {
-        const distinctClasses = Array.from(
-          new Map(result.map((row) => [row.class.classNumber, row])).values()
-        );
-
-        const parsed = distinctClasses.map((row) => this.toDto(row));
+        const parsed = result.map((row) => this.toDto(row));
         return ResultBuilder.success(parsed);
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw query data into enrollment DTO",
+            message: "Failed converting raw query data into enrollments DTO",
             err,
           })
         );
@@ -178,24 +175,23 @@ export namespace ClassSchedule {
     private whereClassOffering(args: {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
-      studentId: number;
       termId: number;
-      mode: "term" | "today" | "now";
+      mode: "week" | "today" | "now";
     }): Types.Repository.WhereBuilders.ClassOffering {
-      const { dbOrTx, date, studentId, termId, mode } = args;
+      const { dbOrTx, date, termId, mode } = args;
 
       const subqueryC = (termId: number) =>
         this.classSubquery({ dbOrTx, termId });
       const subqueryE = (classOfferingId: SQLiteColumn) =>
-        this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId });
+        this.enrollmentSubquery({ dbOrTx, classOfferingId });
 
-      return (co, { eq, and, or, lte, gt, exists }) => {
+      return (co, { eq, and, lte, exists }) => {
         const conditions: (SQLWrapper | undefined)[] = [];
 
         conditions.push(exists(subqueryC(termId)));
         conditions.push(exists(subqueryE(co.id)));
 
-        if (mode !== "term") {
+        if (mode !== "week") {
           const day = Enums.Days[date.getDay()] as string;
           const weekDay = day.substring(0, 3);
           conditions.push(eq(co.weekDay, weekDay));
@@ -204,19 +200,7 @@ export namespace ClassSchedule {
         if (mode === "now") {
           const seconds = TimeUtil.secondsSinceMidnightPh(date);
 
-          //  ! for allowing attendance 30 minutes before class
-          const offsetDate = new Date(date);
-          offsetDate.setMinutes(offsetDate.getMinutes() + 30);
-          const offsetSeconds = TimeUtil.secondsSinceMidnightPh(offsetDate);
-
-          conditions.push(
-            or(
-              //  ! class currently in session
-              and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
-              //  ! class starts in 30 minutes
-              and(gt(co.startTime, seconds), lte(co.startTime, offsetSeconds))
-            )
-          );
+          conditions.push(lte(co.endTime, seconds));
         }
 
         return conditions.length ? and(...conditions) : undefined;
@@ -245,24 +229,22 @@ export namespace ClassSchedule {
     private enrollmentSubquery(args: {
       dbOrTx?: DbOrTx | undefined;
       classOfferingId: SQLiteColumn;
-      studentId: number;
     }) {
-      const { dbOrTx, classOfferingId, studentId } = args;
+      const { dbOrTx, classOfferingId } = args;
+
+      const { eq, and } = RepositoryUtil.filters;
+
       return this._enrollmentRepo.getContext({
         dbOrTx,
-        fn: ({ table: e, context, converter }) =>
+        fn: ({ table: e, context }) =>
           context
             .select({ id: e.id })
             .from(e)
             .where(
-              converter({
-                custom: (e, { eq, and }) => [
-                  and(
-                    eq(e.classOfferingId, classOfferingId),
-                    eq(e.studentId, studentId)
-                  ),
-                ],
-              })
+              and(
+                eq(e.classOfferingId, classOfferingId),
+                eq(e.status, Data.enrollmentStatus.enrolled)
+              )
             ),
       });
     }
@@ -287,9 +269,11 @@ export namespace ClassSchedule {
         courseName: course.name,
         //  * professor metadata
         professor: professor.user,
+        //  * enrollments
+        enrollments: classOffering.enrollments,
       };
 
-      return Schemas.Dto.activeClass.parse(dto);
+      return Schemas.Dto.enrollments.parse(dto);
     }
 
     private async queryOne(args: {
@@ -326,6 +310,9 @@ export namespace ClassSchedule {
               : undefined,
             columns: { classId: false },
             with: {
+              enrollments: {
+                columns: { id: true, studentId: true, status: true },
+              },
               class: {
                 columns: { id: true, classNumber: true },
                 with: {

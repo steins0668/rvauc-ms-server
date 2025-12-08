@@ -21,6 +21,18 @@ export class Class extends Repository<Types.Tables.Class> {
     });
   }
 
+  public getContext<T>(args: Types.Repository.ContextArgs.Class<T>) {
+    const context = args.dbOrTx ?? this._dbContext;
+
+    return args.fn({
+      table: classes,
+      context,
+      converter: Class.buildWhereClause,
+      order: Class.sqlOrderBy,
+      sql,
+    });
+  }
+
   public async execQuery<T>(args: Types.Repository.QueryArgs.Class<T>) {
     const query = (args.dbOrTx ?? this._dbContext).query.classes;
     return await args.fn(query, Class.buildWhereClause);

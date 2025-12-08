@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { Enums } from "../../../data";
 import { TxContext } from "../../../db/create-context";
 import { BaseResult } from "../../../types";
-import { ResultBuilder } from "../../../utils";
+import { ResultBuilder, TimeUtil } from "../../../utils";
 import { Auth } from "../../auth";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
@@ -51,7 +51,9 @@ export async function handleViewRecords(req: Request, res: Response) {
   }
 
   logger.log("info", "Successfully retrieved records.");
-  res.status(200).json({ success: true, result: resolution.result });
+  res
+    .status(200)
+    .json({ success: true, result: { violationRecords: resolution.result } });
 }
 
 async function resolveRecords(args: {
@@ -182,11 +184,9 @@ function toDTORecord(
       //  * violation metadata
       const { id, date: isoDate } = record;
       const rawDate = new Date(isoDate);
-      const date = isoDate.split("T")[0] as string;
+      const date = TimeUtil.toPhDate(rawDate);
       const day = Enums.Days[rawDate.getDay()] as string;
-      const hours = rawDate.getHours().toString().padStart(2, "0");
-      const minutes = rawDate.getMinutes().toString().padStart(2, "0");
-      const time = hours + ":" + minutes; //  * hh:mm format
+      const time = TimeUtil.toPhTime(rawDate); //  * hh:mm format
       const status = record.status.name;
       const reasons = record.reasons;
 

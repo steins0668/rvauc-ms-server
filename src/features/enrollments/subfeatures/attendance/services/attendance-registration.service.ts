@@ -91,11 +91,13 @@ export namespace AttendanceRegistration {
         fn: async ({ table: ar, insert, sql }) => {
           let insertion = insert.values(values);
 
+          const targets = [sql`student_id`, sql`class_id`, sql`date_ph`];
+
           insertion =
             onConflict === "doNothing"
-              ? insertion.onConflictDoNothing()
+              ? insertion.onConflictDoNothing({ target: targets })
               : insertion.onConflictDoUpdate({
-                  target: [ar.studentId, ar.enrollmentId, ar.datePh],
+                  target: [ar.studentId, ar.classId, ar.datePh],
                   set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
                 });
 
