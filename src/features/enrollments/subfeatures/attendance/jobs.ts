@@ -19,8 +19,14 @@ export namespace Jobs {
 
     const { result: term } = termQ;
 
+    const date = Clock.now();
+    const dateIso = date.toISOString();
+    const timeMs = date.getTime();
+    const timePh = TimeUtil.toPhTime(date);
+    const datePh = TimeUtil.toPhDate(date);
+
     const endedClassesQ = await classEndDetection.getForToday({
-      date: Clock.now(),
+      date: date,
       termId: term.id,
     });
 
@@ -31,13 +37,11 @@ export namespace Jobs {
 
     const { result: endedClasses } = endedClassesQ;
 
-    const absenteeRecords: Types.InsertModels.AttendanceRecord[] = [];
+    console.log("ended classes: ", endedClasses.length);
 
-    const date = Clock.now();
-    const dateIso = date.toISOString();
-    const timeMs = date.getTime();
-    const timePh = TimeUtil.toPhTime(date);
-    const datePh = TimeUtil.toPhDate(date);
+    if (endedClasses.length === 0) return;
+
+    const attendanceRecords: Types.InsertModels.AttendanceRecord[] = [];
 
     for (const _class of endedClasses) {
       const { enrollments } = _class;
@@ -53,11 +57,16 @@ export namespace Jobs {
         })
       );
 
-      absenteeRecords.push(...records);
+      attendanceRecords.push(...records);
     }
 
+    console.log("attendance records: ", attendanceRecords.length);
+
+    if (attendanceRecords.length === 0) return;
+
+    console.log("recording...");
     const recorded = await attendanceRegistration.newRecords({
-      values: absenteeRecords,
+      values: attendanceRecords,
       onConflict: "doNothing",
     });
 
