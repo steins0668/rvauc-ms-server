@@ -4,14 +4,15 @@ export namespace Schemas {
   export namespace Dto {
     export const activeClass = z
       .strictObject({
-        classId: z.number(),
-        //  * class metadata
+        //  * class offering metadata
         id: z.number(),
         weekDay: z.string(),
         startTimeText: z.string(),
         endTimeText: z.string(),
         startTime: z.number(),
         endTime: z.number(),
+        //  * class metadata
+        classId: z.number(),
         classNumber: z.coerce.string(), //  ! coerced incase column type changes
         //  * course metadata
         courseCode: z.coerce.string(), //  ! coerced incase column type changes
@@ -20,11 +21,25 @@ export namespace Schemas {
         professor: z.object({
           surname: z.string(),
           firstName: z.string(),
-          middleName: z.string().nullish(),
+          middleName: z.string(),
         }),
       })
       .strip();
 
+    export const enrollments = z
+      .strictObject({
+        ...activeClass.shape,
+        enrollments: z.array(
+          z.object({
+            id: z.number(),
+            studentId: z.number(),
+            status: z.string(),
+          })
+        ),
+      })
+      .strip();
+
     export type ActiveClass = z.infer<typeof activeClass>;
+    export type Enrollments = z.infer<typeof enrollments>;
   }
 }

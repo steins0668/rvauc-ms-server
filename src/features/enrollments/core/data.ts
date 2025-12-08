@@ -2,6 +2,10 @@ import "dotenv/config";
 import z from "zod";
 
 export namespace Data {
+  export const enrollmentStatus = {
+    enrolled: "enrolled",
+  } as const;
+
   export namespace Env {
     export function getAcademicYearConfig() {
       const config = {
