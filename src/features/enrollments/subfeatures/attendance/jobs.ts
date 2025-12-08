@@ -40,17 +40,16 @@ export namespace Jobs {
     console.log("ended classes: ", endedClasses.length);
 
     if (endedClasses.length === 0) return;
-    console.log(JSON.stringify(endedClasses));
 
     const attendanceRecords: Types.InsertModels.AttendanceRecord[] = [];
 
-    for (const _class of endedClasses) {
-      const { enrollments } = _class;
+    for (const classOffering of endedClasses) {
+      const { enrollments } = classOffering;
 
       const records: Types.InsertModels.AttendanceRecord[] = enrollments.map(
         (e) => ({
           studentId: e.studentId,
-          classId: _class.id,
+          classId: classOffering.classId,
           status: "absent",
           recordedAt: dateIso,
           recordedMs: timeMs,
@@ -64,20 +63,10 @@ export namespace Jobs {
     console.log("attendance records: ", attendanceRecords.length);
 
     if (attendanceRecords.length === 0) return;
-    console.log(JSON.stringify(attendanceRecords));
 
     console.log("recording...");
     const recorded = await attendanceRegistration.newRecords({
-      values: [
-        {
-          studentId: 7,
-          classId: 1,
-          status: "absent",
-          recordedAt: dateIso,
-          recordedMs: timeMs,
-          datePh: datePh,
-        },
-      ],
+      values: attendanceRecords,
       onConflict: "doNothing",
     });
 
