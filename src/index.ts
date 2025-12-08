@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
 import { ENV } from "./data";
 import { Auth } from "./features/auth";
+import { Enrollments } from "./features/enrollments";
 import { Notifications } from "./features/notifications";
 import { SessionBroker } from "./features/session-broker";
 import { UniformCompliance } from "./features/uniform-compliance";
@@ -13,7 +14,7 @@ import {
   requestProfiler,
   setHeaderCredentials,
 } from "./middlewares";
-import { Enrollments } from "./features/enrollments";
+import "./schedulers";
 
 dotenv.config();
 
