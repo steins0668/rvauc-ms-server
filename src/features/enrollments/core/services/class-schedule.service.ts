@@ -326,9 +326,6 @@ export namespace ClassSchedule {
               : undefined,
             columns: { classId: false },
             with: {
-              enrollment: {
-                columns: { id: true, status: true },
-              },
               class: {
                 columns: { id: true, classNumber: true },
                 with: {
