@@ -45,8 +45,6 @@ export async function handleForgotPassword(
     const { error } = activeCodeVerification;
     logger.log("error", "Failed verifying active codes", error);
 
-    await notifyInternalError({ userId: user.id });
-
     const message = "Something went wrong. Please try again later.";
     return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -80,8 +78,6 @@ export async function handleForgotPassword(
 
     const message = "Failed generating reset code. Please try again later.";
 
-    await notifyInternalError({ userId: user.id, message });
-
     return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
@@ -103,8 +99,6 @@ export async function handleForgotPassword(
 
     const message = "Failed sending reset code. Please try again later.";
 
-    await notifyInternalError({ userId: user.id, message });
-
     return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
@@ -114,12 +108,6 @@ export async function handleForgotPassword(
 
   const message = "Reset password code sent. Please check your email.";
 
-  await notify({
-    category: "password_code_sent",
-    userId: user.id,
-    title: "Password code sent.",
-    message,
-  });
   res.status(200).json({ success: true, message });
 }
 //#region Utils
@@ -151,18 +139,4 @@ async function sendEmail(args: {
   }
 }
 
-const notifyInternalError = async (args: {
-  userId: number;
-  message?: string;
-}) =>
-  notify({
-    category: "internal_error",
-    userId: args.userId,
-    title: "Internal error.",
-    message: args.message ?? "Something went wrong. Please try again later.",
-  });
-
-const notify = async (
-  notification: Notifications.Core.Schemas.NewNotification
-) => Notifications.Core.Services.Api.pushNotification(notification);
 //#endregion

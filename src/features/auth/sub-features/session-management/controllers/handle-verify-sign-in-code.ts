@@ -58,15 +58,6 @@ export async function handleVerifyCode(
       ? "Something went wrong. Please try again later."
       : error.message; //  ? either could not find code or code is expired.
 
-    isInternalError
-      ? await notifyInternalError({ userId: user.id })
-      : await notify({
-          category: "request_code_not_verified",
-          userId: user.id,
-          title: "Request Code",
-          message,
-        });
-
     logger.log("error", "Failed verifying code.", error);
 
     return res
@@ -82,8 +73,6 @@ export async function handleVerifyCode(
   if (!codeInvalidation.success) {
     const { error } = codeInvalidation;
     logger.log("error", "Failed to invalidate request code.", error);
-
-    await notifyInternalError({ userId: user.id });
 
     const message = "Something went wrong. Please try again later.";
     return res
@@ -101,8 +90,6 @@ export async function handleVerifyCode(
   if (!createAccessPayload.success) {
     const { error } = createAccessPayload;
     logger.log("debug", "Failed creating payload.", error);
-
-    await notifyInternalError({ userId: user.id });
 
     const message = "Something went wrong. Please try again later.";
     return res
@@ -125,8 +112,6 @@ export async function handleVerifyCode(
     const { error } = tknCreation;
     logger.log("error", "Failed creating tokens.", error);
 
-    await notifyInternalError({ userId: user.id });
-
     return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
@@ -148,8 +133,6 @@ export async function handleVerifyCode(
     const { error } = sessionResult;
     logger.log("error", "Failed starting session.", error);
 
-    await notifyInternalError({ userId: user.id });
-
     return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message: internalErrMsg });
@@ -157,13 +140,6 @@ export async function handleVerifyCode(
 
   const { refresh } = Core.Data.Cookie.config;
   const { cookieName, persistentCookie, sessionCookie } = refresh;
-
-  await notify({
-    category: "request_code_verified",
-    userId: user.id,
-    title: "Sign In Request",
-    message: "Sign in success.",
-  });
 
   logger.log("info", "Success verifying code. Signing in...");
   res.cookie(
@@ -173,18 +149,3 @@ export async function handleVerifyCode(
   );
   res.json({ success: true, result: { accessToken, refreshToken } });
 }
-
-const notifyInternalError = async (args: {
-  userId: number;
-  message?: string;
-}) =>
-  notify({
-    category: "internal_error",
-    userId: args.userId,
-    title: "Internal error.",
-    message: args.message ?? "Something went wrong. Please try again later.",
-  });
-
-const notify = async (
-  notification: Notifications.Core.Schemas.NewNotification
-) => Notifications.Core.Services.Api.pushNotification(notification);

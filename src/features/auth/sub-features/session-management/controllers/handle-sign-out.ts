@@ -40,17 +40,6 @@ export async function handleSignOut(
   const { sessionNumber } = payloadVerification.result;
   await sessionManager.endSession(sessionNumber);
 
-  await notify({
-    category: "sign_out_success",
-    userId: payloadVerification.result.userId,
-    title: "Sign Out",
-    message: "Signed out successfully.",
-  });
-
   //  * clear cookie
   clearCookie(refresh);
 }
-
-const notify = async (
-  notification: Notifications.Core.Schemas.NewNotification
-) => Notifications.Core.Services.Api.pushNotification(notification);

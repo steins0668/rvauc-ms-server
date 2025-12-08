@@ -54,14 +54,7 @@ export async function handleVerifyCode(
       ? "Something went wrong. Please try again later"
       : error.message; //  ? either could not find code or code is expired.
 
-    const notification = isInternalError
-      ? notifyInternalError({ userId: user.id })
-      : notify({
-          category: "password_code_not_verified",
-          userId: user.id,
-          title: "Failed verification.",
-          message,
-        });
+    const notification = isInternalError;
 
     await notification;
 
@@ -74,27 +67,5 @@ export async function handleVerifyCode(
 
   const message = "Code verified.";
 
-  await notify({
-    category: "password_code_verified",
-    userId: user.id,
-    title: "Code verification",
-    message,
-  });
-
   res.status(200).json({ success: true, message });
 }
-
-const notifyInternalError = async (args: {
-  userId: number;
-  message?: string;
-}) =>
-  notify({
-    category: "internal_error",
-    userId: args.userId,
-    title: "Internal error.",
-    message: args.message ?? "Something went wrong. Please try again later.",
-  });
-
-const notify = async (
-  notification: Notifications.Core.Schemas.NewNotification
-) => Notifications.Core.Services.Api.pushNotification(notification);

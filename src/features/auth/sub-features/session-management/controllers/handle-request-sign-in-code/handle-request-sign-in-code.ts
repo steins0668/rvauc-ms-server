@@ -57,8 +57,6 @@ export async function handleRequestSignInCode(
 
     const message = "Failed generating sign-in code. Please try again later.";
 
-    await notifyInternalError({ userId: user.id, message });
-
     return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
@@ -81,7 +79,6 @@ export async function handleRequestSignInCode(
     await signInRequestService.deleteRequestWhere({ filter: { id } });
 
     const message = "Failed sending request code. Please try again later.";
-    await notifyInternalError({ userId: user.id, message });
     return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
       .json({ success: false, message });
@@ -98,12 +95,6 @@ export async function handleRequestSignInCode(
   logger.log("info", "Successs sending code to email.");
 
   const message = "Request code sent. Please check your email.";
-  await notify({
-    category: "request_code_sent",
-    userId: user.id,
-    title: "Request Code",
-    message,
-  });
   res.status(200).json({
     success: true,
     result: { email: user.email },
@@ -152,18 +143,3 @@ function getSafeId(identifier: string): string {
       return JSON.stringify(identifier).slice(0, 50);
   }
 }
-
-const notifyInternalError = async (args: {
-  userId: number;
-  message?: string;
-}) =>
-  notify({
-    category: "internal_error",
-    userId: args.userId,
-    title: "Internal error.",
-    message: args.message ?? "Something went wrong. Please try again later.",
-  });
-
-const notify = async (
-  notification: Notifications.Core.Schemas.NewNotification
-) => Notifications.Core.Services.Api.pushNotification(notification);

@@ -61,8 +61,6 @@ export async function handleResetPassword(
     const { error } = updateOperation;
     logger.log("error", "Update transaction failed.", error);
 
-    await notifyInternalError({ userId: codeVerification.result.userId });
-
     const message = "Something went wrong. Please try again later.";
     return res
       .status(Core.Errors.Authentication.getErrStatusCode(error))
@@ -72,12 +70,6 @@ export async function handleResetPassword(
 
   const message = "Password changed successfully.";
 
-  await notify({
-    category: "password_change_success",
-    userId: codeVerification.result.userId,
-    title: "Password changed.",
-    message: "Password changed successfully.",
-  });
   //    todo: sign in user
   res.status(200).json({ success: true, message });
 }
@@ -123,19 +115,4 @@ async function execUpdate(args: {
     );
   }
 }
-
-const notifyInternalError = async (args: {
-  userId: number;
-  message?: string;
-}) =>
-  notify({
-    category: "internal_error",
-    userId: args.userId,
-    title: "Internal error.",
-    message: args.message ?? "Something went wrong. Please try again later.",
-  });
-
-const notify = async (
-  notification: Notifications.Core.Schemas.NewNotification
-) => Notifications.Core.Services.Api.pushNotification(notification);
 //#endregion
