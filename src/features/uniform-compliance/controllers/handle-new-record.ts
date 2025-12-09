@@ -113,6 +113,7 @@ export async function handleNewRecord(
       notifications.push(notifyCompliance(student.id, now));
 
       const { studentNumber, uniformTypeId, ...flags } = body;
+      flags.hasId = true;
       const hasViolation = Object.values(flags).some((value) => !value);
       result.isCompliant = !hasViolation;
 
