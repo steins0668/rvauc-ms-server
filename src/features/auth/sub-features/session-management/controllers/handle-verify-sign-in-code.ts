@@ -147,5 +147,5 @@ export async function handleVerifyCode(
     refreshToken,
     isPersistentAuth ? persistentCookie : sessionCookie
   );
-  res.json({ success: true, result: { accessToken, refreshToken } });
+  res.status(200).json({ success: true, result: { accessToken, refreshToken } });
 }

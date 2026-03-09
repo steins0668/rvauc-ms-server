@@ -124,5 +124,5 @@ export async function handleRefresh(
     refreshToken,
     isPersistentAuth ? persistentCookie : sessionCookie
   );
-  res.json({ success: true, result: { accessToken, refreshToken } }); //  ! refresh token is for demo only
+  res.status(200).json({ success: true, result: { accessToken, refreshToken } }); //  ! refresh token is for demo only
 }
