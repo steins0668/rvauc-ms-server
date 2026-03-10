@@ -11,7 +11,7 @@ export namespace Controllers {
     if (!isAllowed) {
       requestLogger.log(
         "info",
-        "Invalid payload attempted to access `notifications/get-notifications`."
+        "Invalid payload attempted to access `notifications/get-notifications`.",
       );
 
       return res.status(401).json({
@@ -51,7 +51,7 @@ export namespace Controllers {
     if (!isAllowed) {
       requestLogger.log(
         "info",
-        "Invalid payload attempted to access `notifications/get-notifications`."
+        "Invalid payload attempted to access `notifications/get-notifications`.",
       );
 
       return res.status(401).json({
