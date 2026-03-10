@@ -11,7 +11,7 @@ const internalErrMessage = "Something went wrong. Please try again later.";
 
 export async function handleNewRecord(
   req: Request<{}, {}, Schemas.ComplianceData.NewRecord>,
-  res: Response
+  res: Response,
 ) {
   const {
     auth,
@@ -26,13 +26,13 @@ export async function handleNewRecord(
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
     auth,
     "full",
-    "minimal"
+    "minimal",
   );
 
   if (!isAllowedPayload) {
     logger.log(
       "info",
-      "Invalid payload attempted to access `uniform-compliance/new-record`."
+      "Invalid payload attempted to access `uniform-compliance/new-record`.",
     );
 
     return res.status(401).json({
@@ -148,7 +148,7 @@ export async function handleNewRecord(
     await Promise.all(notifications);
 
     logger.log("info", "Success storing new record.");
-    return res.status(200).json({ success: true, result });
+    return res.status(201).json({ success: true, result });
   } catch (err) {
     const error = Errors.ComplianceData.normalizeError({
       name: "COMPLIANCE_DATA_STORE_RECORD_ERROR",
@@ -202,7 +202,7 @@ async function notifyViolation(userId: number, reasons: string[]) {
 }
 
 async function notify(
-  notification: Notifications.Core.Schemas.NewNotification
+  notification: Notifications.Core.Schemas.NewNotification,
 ) {
   return await Notifications.Core.Services.Api.pushNotification(notification);
 }

@@ -82,6 +82,6 @@ export namespace Controllers {
     }
     //  * send token
 
-    res.json({ success: true, result: tknCreation.result.accessToken });
+    res.status(200).json({ success: true, result: tknCreation.result.accessToken });
   }
 }

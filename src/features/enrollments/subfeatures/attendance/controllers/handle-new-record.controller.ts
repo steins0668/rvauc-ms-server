@@ -142,7 +142,7 @@ export async function handleNewRecord(
     : "An attendance was already recorded.";
 
   logger.log("info", message);
-  return res.status(200).json({
+  return res.status(201).json({
     success: true,
     result: { enrollment: classOffering, attendance },
     message,

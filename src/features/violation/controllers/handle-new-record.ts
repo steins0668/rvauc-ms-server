@@ -6,7 +6,7 @@ import { Schemas } from "../schemas";
 
 export async function handleNewRecord(
   req: Request<{}, {}, Schemas.ViolationData.NewRecord>,
-  res: Response
+  res: Response,
 ) {
   const {
     auth,
@@ -21,7 +21,7 @@ export async function handleNewRecord(
   if (!isAllowedPayload) {
     logger.log(
       "info",
-      "Invalid payload attempted to access `violation/new-record`."
+      "Invalid payload attempted to access `violation/new-record`.",
     );
 
     return res.status(401).json({
@@ -62,7 +62,7 @@ export async function handleNewRecord(
     });
 
     logger.log("info", "Success storing new record.");
-    return res.status(200).json({ success: true, result: transaction.result });
+    return res.status(201).json({ success: true, result: transaction.result });
   } catch (err) {
     const error = Errors.ViolationData.normalizeError({
       name: "VIOLATION_DATA_STORE_RECORD_ERROR",
