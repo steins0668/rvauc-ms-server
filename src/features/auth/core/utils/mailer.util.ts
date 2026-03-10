@@ -10,7 +10,7 @@ export namespace Mailer {
     const env = ENV.getEnvironment();
 
     const { to, subject, text } = args;
-    if (env === "dev")
+    if (env === "dev" || env === "testing")
       console.log(
         JSON.stringify({
           to,
@@ -19,13 +19,13 @@ export namespace Mailer {
         })
       );
 
-    if (env === "testing") {
-      return await EmailTransports.sendEmail({
-        to,
-        subject,
-        text,
-      });
-    }
+    // if (env === "testing") {
+    //   return await EmailTransports.sendEmail({
+    //     to,
+    //     subject,
+    //     text,
+    //   });
+    // }
 
     if (env === "prod") throw Error("Production behavior not developed yet.");
 
