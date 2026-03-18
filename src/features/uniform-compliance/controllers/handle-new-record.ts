@@ -113,7 +113,7 @@ export async function handleNewRecord(
       notifications.push(notifyCompliance(student.id, now));
 
       const { studentNumber, uniformTypeId, ...flags } = body;
-      flags.hasId = true;
+      flags.hasId = true; //  todo: remove this when you implement id detection in the client
       const hasViolation = Object.values(flags).some((value) => !value);
       result.isCompliant = !hasViolation;
 
