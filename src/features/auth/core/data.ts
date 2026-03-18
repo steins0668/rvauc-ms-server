@@ -11,6 +11,9 @@ export namespace Data {
     } as const;
 
     //  todo: remove the need for id checks?
+    /**
+     * @deprecated use `roles` instead and check for values instead of ids. This is to avoid the need to check for valid ids and to make the code more readable.
+     */
     export const _roles = {
       student: {
         id: 0,
