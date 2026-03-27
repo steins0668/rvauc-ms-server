@@ -7,6 +7,7 @@ export namespace Schemas {
         //  * class offering metadata
         id: z.number(),
         weekDay: z.string(),
+        room: z.preprocess((r) => r ?? undefined, z.string().default("N/A")),
         startTimeText: z.string(),
         endTimeText: z.string(),
         startTime: z.number(),
@@ -34,7 +35,7 @@ export namespace Schemas {
             id: z.number(),
             studentId: z.number(),
             status: z.string(),
-          })
+          }),
         ),
       })
       .strip();
