@@ -47,6 +47,12 @@ export namespace Repository {
       T
     >;
 
+    export type Room<T> = BaseRepositoryType.DeleteArgs<
+      SQLiteDeleteBase<Tables.Room, "async", ResultSet>,
+      BaseRepositoryType.BuildWhereClause<Tables.Room>,
+      T
+    >;
+
     export type Term<T> = BaseRepositoryType.DeleteArgs<
       SQLiteDeleteBase<Tables.Term, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.Term>,
@@ -97,6 +103,13 @@ export namespace Repository {
       T
     >;
 
+    export type Room<T> = BaseRepositoryType.InsertArgs<
+      Tables.Room,
+      SQLiteInsertBuilder<Tables.Room, "async", ResultSet>,
+      BaseRepositoryType.BuildWhereClause<Tables.Room>,
+      T
+    >;
+
     export type Term<T> = BaseRepositoryType.InsertArgs<
       Tables.Term,
       SQLiteInsertBuilder<Tables.Term, "async", ResultSet>,
@@ -142,6 +155,12 @@ export namespace Repository {
       T
     >;
 
+    export type Room<T> = BaseRepositoryType.UpdateArgs<
+      SQLiteUpdateBuilder<Tables.Room, "async", ResultSet>,
+      BaseRepositoryType.BuildWhereClause<Tables.Room>,
+      T
+    >;
+
     export type Term<T> = BaseRepositoryType.UpdateArgs<
       SQLiteUpdateBuilder<Tables.Term, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.Term>,
@@ -170,6 +189,13 @@ export namespace Repository {
       BaseRepositoryType.BuildOrder<Tables.Enrollment>,
       T
     >;
+
+    export type Room<T> = BaseRepositoryType.ContextArgs<
+      Tables.Room,
+      BaseRepositoryType.BuildWhereClause<Tables.Room>,
+      BaseRepositoryType.BuildOrder<Tables.Room>,
+      T
+    >;
   }
 
   export namespace SubQueryArgs {
@@ -196,6 +222,19 @@ export namespace Repository {
       >,
       BaseRepositoryType.BuildWhereClause<Tables.Enrollment>,
       BaseRepositoryType.BuildOrder<Tables.Enrollment>,
+      T
+    >;
+
+    export type Room<T> = BaseRepositoryType.SubQueryArgs<
+      Tables.Room,
+      SQLiteSelectBase<
+        "rooms",
+        "async",
+        ResultSet,
+        Tables.Room["_"]["columns"]
+      >,
+      BaseRepositoryType.BuildWhereClause<Tables.Room>,
+      BaseRepositoryType.BuildOrder<Tables.Room>,
       T
     >;
   }
@@ -237,6 +276,12 @@ export namespace Repository {
       T
     >;
 
+    export type Room<T> = BaseRepositoryType.QueryArgs<
+      DbContext["query"]["rooms"],
+      BaseRepositoryType.BuildWhereClause<Tables.Room>,
+      T
+    >;
+
     export type Term<T> = BaseRepositoryType.QueryArgs<
       DbContext["query"]["terms"],
       BaseRepositoryType.BuildWhereClause<Tables.Term>,
@@ -259,6 +304,8 @@ export namespace Repository {
 
     export type Enrollment = BaseRepositoryType.WhereBuilder<Tables.Enrollment>;
 
+    export type Room = BaseRepositoryType.WhereBuilder<Tables.Room>;
+
     export type Term = BaseRepositoryType.WhereBuilder<Tables.Term>;
   }
 
@@ -276,6 +323,8 @@ export namespace Repository {
 
     export type Enrollment = BaseRepositoryType.OrderBuilder<Tables.Enrollment>;
 
+    export type Room = BaseRepositoryType.OrderBuilder<Tables.Room>;
+
     export type Term = BaseRepositoryType.OrderBuilder<Tables.Term>;
   }
 
@@ -292,6 +341,8 @@ export namespace Repository {
     export type Department = BaseRepositoryType.QueryFilter<Tables.Department>;
 
     export type Enrollment = BaseRepositoryType.QueryFilter<Tables.Enrollment>;
+
+    export type Room = BaseRepositoryType.QueryFilter<Tables.Room>;
 
     export type Term = BaseRepositoryType.QueryFilter<Tables.Term>;
   }

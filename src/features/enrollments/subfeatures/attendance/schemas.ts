@@ -7,6 +7,7 @@ export namespace Schemas {
     export const newRecord = z
       .strictObject({
         date: z.coerce.date(),
+        room: z.string(),
       })
       .strip();
 

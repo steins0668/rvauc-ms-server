@@ -9,6 +9,7 @@ export * from "./enrollments";
 export * from "./password-reset-codes";
 export * from "./professors";
 export * from "./roles";
+export * from "./rooms";
 export * from "./sign-in-requests";
 export * from "./session-tokens";
 export * from "./students";

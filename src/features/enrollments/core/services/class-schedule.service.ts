@@ -52,7 +52,7 @@ export namespace ClassSchedule {
             name: "ENROLLMENT_DATA_QUERY_ERROR",
             message: "Failed querying the `enrollments` table.",
             err,
-          })
+          }),
         );
       }
 
@@ -62,7 +62,7 @@ export namespace ClassSchedule {
             name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
             message:
               "This student has neither an ongoing class or a class that starts in 30 minutes.",
-          })
+          }),
         );
 
       try {
@@ -74,7 +74,7 @@ export namespace ClassSchedule {
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
             message: "Failed converting raw query data into enrollment DTO",
             err,
-          })
+          }),
         );
       }
     }
@@ -99,7 +99,7 @@ export namespace ClassSchedule {
             name: "ENROLLMENT_DATA_QUERY_ERROR",
             message: "Failed querying the `enrollments` table.",
             err,
-          })
+          }),
         );
       }
 
@@ -108,7 +108,7 @@ export namespace ClassSchedule {
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR",
             message: "This student has no classes for today.",
-          })
+          }),
         );
 
       try {
@@ -120,7 +120,7 @@ export namespace ClassSchedule {
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
             message: "Failed converting raw query data into enrollment DTO",
             err,
-          })
+          }),
         );
       }
     }
@@ -145,7 +145,7 @@ export namespace ClassSchedule {
             name: "ENROLLMENT_DATA_QUERY_ERROR",
             message: "Failed querying the `enrollments` table.",
             err,
-          })
+          }),
         );
       }
 
@@ -154,12 +154,12 @@ export namespace ClassSchedule {
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR",
             message: "This student has no classes for this term.",
-          })
+          }),
         );
 
       try {
         const distinctClasses = Array.from(
-          new Map(result.map((row) => [row.class.classNumber, row])).values()
+          new Map(result.map((row) => [row.class.classNumber, row])).values(),
         );
 
         const parsed = distinctClasses.map((row) => this.toDto(row));
@@ -170,7 +170,7 @@ export namespace ClassSchedule {
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
             message: "Failed converting raw query data into enrollment DTO",
             err,
-          })
+          }),
         );
       }
     }
@@ -214,8 +214,8 @@ export namespace ClassSchedule {
               //  ! class currently in session
               and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
               //  ! class starts in 30 minutes
-              and(gt(co.startTime, seconds), lte(co.startTime, offsetSeconds))
-            )
+              and(gt(co.startTime, seconds), lte(co.startTime, offsetSeconds)),
+            ),
           );
         }
 
@@ -259,16 +259,16 @@ export namespace ClassSchedule {
                 custom: (e, { eq, and }) => [
                   and(
                     eq(e.classOfferingId, classOfferingId),
-                    eq(e.studentId, studentId)
+                    eq(e.studentId, studentId),
                   ),
                 ],
-              })
+              }),
             ),
       });
     }
 
     private toDto(
-      classOffering: NonNullable<Awaited<ReturnType<typeof this.queryOne>>>
+      classOffering: NonNullable<Awaited<ReturnType<typeof this.queryOne>>>,
     ) {
       const { course, professor } = classOffering.class;
 
@@ -277,6 +277,7 @@ export namespace ClassSchedule {
         id: classOffering.id,
         classId: classOffering.class.id,
         weekDay: classOffering.weekDay,
+        room: classOffering.rooms?.name,
         startTimeText: classOffering.startTimeText,
         endTimeText: classOffering.endTimeText,
         startTime: classOffering.startTime,
@@ -344,6 +345,7 @@ export namespace ClassSchedule {
                   },
                 },
               },
+              rooms: { columns: { name: true } },
             },
             limit,
             offset: (page - 1) * limit,

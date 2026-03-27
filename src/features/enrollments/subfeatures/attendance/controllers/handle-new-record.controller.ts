@@ -9,7 +9,7 @@ const internalErrMessage = "Something went wrong. Please try again later.";
 
 export async function handleNewRecord(
   req: Request<{}, {}, Schemas.RequestBody.NewRecord>,
-  res: Response
+  res: Response,
 ) {
   const {
     body,
@@ -24,13 +24,13 @@ export async function handleNewRecord(
   //  * authorize user
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(
     auth,
-    "minimal"
+    "minimal",
   );
 
   if (!isAllowedPayload || auth.payload.role !== "student") {
     logger.log(
       "info",
-      "Invalid payload attempted to access `enrollments/attendance/new-record`."
+      "Invalid payload attempted to access `enrollments/attendance/new-record`.",
     );
 
     return res.status(403).json({
@@ -67,7 +67,7 @@ export async function handleNewRecord(
   if (isInvalidTime) {
     logger.log(
       "info",
-      "Server-client time drift has exceeded maximum threshold. Falling back to server time..."
+      "Server-client time drift has exceeded maximum threshold. Falling back to server time...",
     );
   }
 
@@ -88,7 +88,7 @@ export async function handleNewRecord(
 
     const message =
       error.name === "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR"
-        ? "This student does not have any ongoing classes at the moment."
+        ? "The student does not have any ongoing classes in this room at the moment."
         : internalErrMessage;
 
     return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
@@ -98,6 +98,19 @@ export async function handleNewRecord(
   }
 
   const { result: classOffering } = queriedClassOffering;
+
+  if (classOffering.room !== body.room) {
+    logger.log(
+      "error",
+      "Student attempted to take attendance in the wrong room.",
+    );
+
+    return res.status(403).json({
+      success: false,
+      message:
+        "The student does not have any ongoing classes in this room at the moment.",
+    });
+  }
 
   logger.log("debug", "Recording attendance...");
   const recorded = await registrationService.newRecord({
@@ -170,6 +183,6 @@ const getAttendanceStatus = (args: {
   return attendanceTime >= schedEndTime
     ? Data.attendanceStatus.absent
     : attendanceTime > graceTime
-    ? Data.attendanceStatus.late
-    : Data.attendanceStatus.present;
+      ? Data.attendanceStatus.late
+      : Data.attendanceStatus.present;
 };
