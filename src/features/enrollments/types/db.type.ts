@@ -7,6 +7,7 @@ export namespace InsertModels {
   export type Course = typeof Schema.courses.$inferInsert;
   export type Department = typeof Schema.departments.$inferInsert;
   export type Enrollment = typeof Schema.enrollments.$inferInsert;
+  export type Room = typeof Schema.rooms.$inferInsert;
   export type Term = typeof Schema.terms.$inferInsert;
 }
 
@@ -17,6 +18,7 @@ export namespace Tables {
   export type Course = typeof Schema.courses;
   export type Department = typeof Schema.departments;
   export type Enrollment = typeof Schema.enrollments;
+  export type Room = typeof Schema.rooms;
   export type Term = typeof Schema.terms;
 }
 
@@ -27,5 +29,6 @@ export namespace ViewModels {
   export type Course = typeof Schema.courses.$inferSelect;
   export type Department = typeof Schema.departments.$inferSelect;
   export type Enrollment = typeof Schema.enrollments.$inferSelect;
+  export type Room = typeof Schema.rooms.$inferSelect;
   export type Term = typeof Schema.terms.$inferSelect;
 }
