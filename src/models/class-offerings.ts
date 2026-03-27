@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
-import { classes, enrollments } from "./schema";
+import { classes, enrollments, rooms } from "./schema";
 
 export const classOfferings = sqliteTable("class_offerings", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -11,6 +11,10 @@ export const classOfferings = sqliteTable("class_offerings", {
       onUpdate: "cascade",
     }),
   weekDay: text("week_day").notNull(),
+  roomId: integer("room_id").references(() => rooms.id, {
+    onDelete: "restrict",
+    onUpdate: "cascade",
+  }),
   startTime: integer("start_time").notNull(),
   endTime: integer("end_time").notNull(),
   startTimeText: text("start_time_text").notNull(),
@@ -25,5 +29,9 @@ export const classOfferingsRelations = relations(
       references: [classes.id],
     }),
     enrollments: many(enrollments),
-  })
+    rooms: one(rooms, {
+      fields: [classOfferings.roomId],
+      references: [rooms.id],
+    }),
+  }),
 );
