@@ -37,6 +37,26 @@ export const seedDepartments = async (dbOrTx?: DbOrTx | undefined) => {
   });
 };
 
+export const rooms = [
+  { id: 1, name: "406", building: "Athletes' Village" },
+  { id: 2, name: "407", building: "Athletes' Village" },
+  { id: 3, name: "408", building: "Athletes' Village" },
+  { id: 4, name: "409", building: "Athletes' Village" },
+  { id: 5, name: "306", building: "Athletes' Village" },
+  { id: 6, name: "307", building: "Athletes' Village" },
+  { id: 7, name: "308", building: "Athletes' Village" },
+  { id: 8, name: "309", building: "Athletes' Village" },
+];
+
+export const seedRooms = async (dbOrTx?: DbOrTx | undefined) => {
+  const repo = new Enrollments.Repositories.Room(await createContext());
+
+  return await repo.execInsert({
+    dbOrTx,
+    fn: async ({ insert }) => insert.values(rooms).returning(),
+  });
+};
+
 export const roles = [
   { id: 0, name: "student" },
   { id: 1, name: "professor" },
@@ -161,7 +181,7 @@ export const seedProfessors = async (dbOrTx?: DbOrTx | undefined) => {
     usersProfessors.map(async (value) => {
       value.passwordHash = await bcrypt.hash(value.passwordHash, 10);
       return value;
-    })
+    }),
   );
 
   await userRepo.execInsert({
@@ -243,7 +263,7 @@ export const seedStudents = async (dbOrTx?: DbOrTx | undefined) => {
     usersStudents.map(async (value) => {
       value.passwordHash = await bcrypt.hash(value.passwordHash, 10);
       return value;
-    })
+    }),
   );
 
   await userRepo.execInsert({
@@ -365,6 +385,7 @@ export const classOfferings = [
     classId: 1,
     classNumber: "525",
     weekDay: "mon",
+    roomId: 1,
     startTime: 32400,
     endTime: 39600,
     startTimeText: "9:00 AM",
@@ -375,6 +396,7 @@ export const classOfferings = [
     classId: 2,
     classNumber: "522",
     weekDay: "mon",
+    roomId: 2,
     startTime: 46800,
     endTime: 54000,
     startTimeText: "1:00 PM",
@@ -385,6 +407,7 @@ export const classOfferings = [
     classId: 3,
     classNumber: "524",
     weekDay: "mon",
+    roomId: 3,
     startTime: 54000,
     endTime: 61200,
     startTimeText: "3:00 PM",
@@ -395,6 +418,7 @@ export const classOfferings = [
     classId: 4,
     classNumber: "520",
     weekDay: "tue",
+    roomId: 4,
     startTime: 32400,
     endTime: 39600,
     startTimeText: "9:00 AM",
@@ -405,6 +429,7 @@ export const classOfferings = [
     classId: 5,
     classNumber: "523",
     weekDay: "tue",
+    roomId: 5,
     startTime: 46800,
     endTime: 54000,
     startTimeText: "1:00 PM",
@@ -415,6 +440,7 @@ export const classOfferings = [
     classId: 2,
     classNumber: "522",
     weekDay: "tue",
+    roomId: 6,
     startTime: 54000,
     endTime: 61200,
     startTimeText: "3:00 PM",
@@ -425,6 +451,7 @@ export const classOfferings = [
     classId: 6,
     classNumber: "512",
     weekDay: "wed",
+    roomId: 7,
     startTime: 25200,
     endTime: 28800,
     startTimeText: "7:00 AM",
@@ -435,6 +462,7 @@ export const classOfferings = [
     classId: 5,
     classNumber: "523",
     weekDay: "wed",
+    roomId: 8,
     startTime: 28800,
     endTime: 32400,
     startTimeText: "8:00 AM",
@@ -445,6 +473,7 @@ export const classOfferings = [
     classId: 2,
     classNumber: "522",
     weekDay: "wed",
+    roomId: 8,
     startTime: 39600,
     endTime: 43200,
     startTimeText: "11:00 AM",
@@ -455,6 +484,7 @@ export const classOfferings = [
     classId: 1,
     classNumber: "525",
     weekDay: "wed",
+    roomId: 1,
     startTime: 46800,
     endTime: 50400,
     startTimeText: "1:00 PM",
@@ -465,6 +495,7 @@ export const classOfferings = [
     classId: 3,
     classNumber: "524",
     weekDay: "wed",
+    roomId: 2,
     startTime: 54000,
     endTime: 57600,
     startTimeText: "3:00 PM",
@@ -475,6 +506,7 @@ export const classOfferings = [
     classId: 4,
     classNumber: "520",
     weekDay: "wed",
+    roomId: 3,
     startTime: 57600,
     endTime: 61200,
     startTimeText: "4:00 PM",
@@ -485,6 +517,7 @@ export const classOfferings = [
     classId: 6,
     classNumber: "512",
     weekDay: "thu",
+    roomId: 4,
     startTime: 36000,
     endTime: 43200,
     startTimeText: "10:00 AM",
@@ -495,6 +528,7 @@ export const classOfferings = [
     classId: 1,
     classNumber: "525",
     weekDay: "thu",
+    roomId: 5,
     startTime: 46800,
     endTime: 54000,
     startTimeText: "1:00 PM",
@@ -505,6 +539,7 @@ export const classOfferings = [
     classId: 5,
     classNumber: "523",
     weekDay: "fri",
+    roomId: 6,
     startTime: 28800,
     endTime: 36000,
     startTimeText: "8:00 AM",
@@ -515,6 +550,7 @@ export const classOfferings = [
     classId: 4,
     classNumber: "520",
     weekDay: "fri",
+    roomId: 7,
     startTime: 36000,
     endTime: 43200,
     startTimeText: "10:00 AM",
@@ -525,6 +561,7 @@ export const classOfferings = [
     classId: 6,
     classNumber: "512",
     weekDay: "fri",
+    roomId: 8,
     startTime: 46800,
     endTime: 54000,
     startTimeText: "1:00 PM",
@@ -534,7 +571,7 @@ export const classOfferings = [
 
 export const seedClassOfferings = async (dbOrTx: DbOrTx | undefined) => {
   const offeringRepo = new Enrollments.Repositories.ClassOffering(
-    await createContext()
+    await createContext(),
   );
 
   return await offeringRepo.execInsert({
@@ -616,7 +653,7 @@ export const enrollments = [
 
 export const seedEnrollments = async (dbOrTx?: DbOrTx | undefined) => {
   const enrollmentRepo = new Enrollments.Repositories.Enrollment(
-    await createContext()
+    await createContext(),
   );
 
   return await enrollmentRepo.execInsert({
@@ -629,6 +666,7 @@ export const seedDatabase = async () => {
   await execTransaction(async (tx) => {
     await seedColleges(tx);
     await seedDepartments(tx);
+    await seedRooms(tx);
     await seedRoles(tx);
     await seedProfessors(tx);
     await seedStudents(tx);
