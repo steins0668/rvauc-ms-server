@@ -310,7 +310,7 @@ export namespace ClassSchedule {
         professor: professor.user,
       };
 
-      return Schemas.Dto.activeClass.parse(dto);
+      return Schemas.Dto.scheduledClass.parse(dto);
     }
 
     private async queryOne(args: {

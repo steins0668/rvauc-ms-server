@@ -2,7 +2,7 @@ import z from "zod";
 
 export namespace Schemas {
   export namespace Dto {
-    export const activeClass = z
+    export const scheduledClass = z
       .strictObject({
         //  * class offering metadata
         id: z.number(),
@@ -29,7 +29,7 @@ export namespace Schemas {
 
     export const enrollments = z
       .strictObject({
-        ...activeClass.shape,
+        ...scheduledClass.shape,
         enrollments: z.array(
           z.object({
             id: z.number(),
@@ -40,7 +40,7 @@ export namespace Schemas {
       })
       .strip();
 
-    export type ActiveClass = z.infer<typeof activeClass>;
+    export type ScheduledClass = z.infer<typeof scheduledClass>;
     export type Enrollments = z.infer<typeof enrollments>;
   }
 }
