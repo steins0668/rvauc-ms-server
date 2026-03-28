@@ -5,6 +5,7 @@ import { isError, StatusCode } from "../../../utils";
 export namespace Errors {
   export namespace Authentication {
     export type ErrorName =
+      | "AUTHENTICATION_FORBIDDEN_ROLE_ERROR" //  for roles that are not allowed to access a resource
       | "AUTHENTICATION_IDENTITY_VERIFICATION_ERROR" // for users not found
       | "AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR" //  for failure of sending reset url email to users
       | "AUTHENTICATION_PASSWORD_RESET_PASSWORD_MISMATCH_ERROR" // for password and confirm password mismatch
@@ -40,6 +41,7 @@ export namespace Errors {
     export class ErrorClass extends BaseError<ErrorName> {}
 
     export const statusCodeMap: Exhaustive<ErrorName> = {
+      AUTHENTICATION_FORBIDDEN_ROLE_ERROR: 403,
       AUTHENTICATION_IDENTITY_VERIFICATION_ERROR: 401,
       AUTHENTICATION_PASSWORD_RESET_EMAIL_ERROR: 500,
       AUTHENTICATION_PASSWORD_RESET_PASSWORD_MISMATCH_ERROR: 403, //  forbidden

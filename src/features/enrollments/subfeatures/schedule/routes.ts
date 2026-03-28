@@ -9,13 +9,13 @@ export const Routes = Router();
 Routes.get(
   "/get-schedule",
   Auth.Core.Middlewares.validateJwt("full"),
-  validateRequest({ query: Schemas.RequestQuery.studentSchedule }),
-  Controllers.handleGetSchedule
+  validateRequest({ query: Schemas.RequestQuery.userSchedule }),
+  Controllers.handleGetSchedule,
 );
 
 Routes.get(
   "/get-class-list",
   Auth.Core.Middlewares.validateJwt("full"),
-  validateRequest({ query: Schemas.RequestQuery.studentSchedule }),
-  Controllers.handleGetClassList
+  validateRequest({ query: Schemas.RequestQuery.userSchedule }),
+  Controllers.handleGetClassList,
 );

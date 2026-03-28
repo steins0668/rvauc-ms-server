@@ -17,17 +17,17 @@ export async function handleGetClassList(req: Request, res: Response) {
     {},
     {},
     {},
-    Schemas.RequestQuery.StudentSchedule
+    Schemas.RequestQuery.UserSchedule
   >;
 
   logger.log("info", "Attempting to get class list...");
   //  * authorize user
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
-  if (!isAllowedPayload || auth.payload.role !== "student") {
+  if (!isAllowedPayload) {
     logger.log(
       "info",
-      "Invalid payload attempted to access `enrollments/schedule/get-class-list`."
+      "Invalid payload attempted to access `enrollments/schedule/get-class-list`.",
     );
 
     return res.status(403).json({
@@ -55,10 +55,13 @@ export async function handleGetClassList(req: Request, res: Response) {
   }
 
   const date = new Date(query.date);
-  const { payload: student } = auth;
+  const { payload: user } = auth;
+
+  console.log(user);
 
   const queried = await classSchedService.getForTerm({
-    studentId: student.id,
+    userId: user.id,
+    role: user.role,
     date,
     termId: term.id,
   });
@@ -70,7 +73,7 @@ export async function handleGetClassList(req: Request, res: Response) {
 
     const message =
       error.name === "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR"
-        ? "This student does not have any class for this term."
+        ? `This ${user.role}does not have any class for this term.`
         : internalErrMessage;
 
     return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
