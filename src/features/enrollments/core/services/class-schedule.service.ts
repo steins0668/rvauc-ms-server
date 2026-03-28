@@ -7,6 +7,7 @@ import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { Types } from "../../types";
 import { SQLWrapper } from "drizzle-orm";
+import { Auth } from "../../../auth";
 
 export namespace ClassSchedule {
   export async function createService() {
@@ -37,7 +38,8 @@ export namespace ClassSchedule {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
       termId: number;
-      studentId: number;
+      userId: number;
+      role: keyof typeof Auth.Core.Data.Records.roles;
     }) {
       let result;
       try {
@@ -60,8 +62,7 @@ export namespace ClassSchedule {
         return ResultBuilder.fail(
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-            message:
-              "This student has neither an ongoing class or a class that starts in 30 minutes.",
+            message: `This ${args.role} has neither an ongoing class or a class that starts in 30 minutes.`,
           }),
         );
 
@@ -83,7 +84,8 @@ export namespace ClassSchedule {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
       termId: number;
-      studentId: number;
+      userId: number;
+      role: keyof typeof Auth.Core.Data.Records.roles;
     }) {
       let result;
       try {
@@ -107,7 +109,7 @@ export namespace ClassSchedule {
         return ResultBuilder.fail(
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR",
-            message: "This student has no classes for today.",
+            message: `This ${args.role} has no classes for today.`,
           }),
         );
 
@@ -129,7 +131,8 @@ export namespace ClassSchedule {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
       termId: number;
-      studentId: number;
+      userId: number;
+      role: keyof typeof Auth.Core.Data.Records.roles;
     }) {
       let result;
       try {
@@ -153,7 +156,7 @@ export namespace ClassSchedule {
         return ResultBuilder.fail(
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR",
-            message: "This student has no classes for this term.",
+            message: `This ${args.role} has no classes for this term.`,
           }),
         );
 
@@ -178,22 +181,29 @@ export namespace ClassSchedule {
     private whereClassOffering(args: {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
-      studentId: number;
       termId: number;
+      userId: number;
+      role: keyof typeof Auth.Core.Data.Records.roles;
       mode: "term" | "today" | "now";
     }): Types.Repository.WhereBuilders.ClassOffering {
-      const { dbOrTx, date, studentId, termId, mode } = args;
+      const { dbOrTx, date, userId, termId, role, mode } = args;
 
-      const subqueryC = (termId: number) =>
-        this.classSubquery({ dbOrTx, termId });
+      const subqueryC = (classId: SQLiteColumn) =>
+        this.classSubquery({
+          dbOrTx,
+          classId,
+          termId,
+          professorId: role === "professor" ? userId : undefined,
+        });
       const subqueryE = (classOfferingId: SQLiteColumn) =>
-        this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId });
+        this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId: userId });
 
       return (co, { eq, and, or, lte, gt, exists }) => {
         const conditions: (SQLWrapper | undefined)[] = [];
 
-        conditions.push(exists(subqueryC(termId)));
-        conditions.push(exists(subqueryE(co.id)));
+        conditions.push(exists(subqueryC(co.classId)));
+
+        if (role === "student") conditions.push(exists(subqueryE(co.id))); //  ! professors don't need enrollments subquery
 
         if (mode !== "term") {
           const day = Enums.Days[date.getDay()] as string;
@@ -229,16 +239,26 @@ export namespace ClassSchedule {
 
     private classSubquery(args: {
       dbOrTx?: DbOrTx | undefined;
+      classId: SQLiteColumn;
       termId: number;
+      professorId?: number | undefined;
     }) {
-      const { dbOrTx, termId } = args;
+      const { dbOrTx, classId, termId, professorId } = args;
       return this._classRepo.getContext({
         dbOrTx,
-        fn: ({ table: c, context }) =>
-          context
+        fn: ({ table: c, context }) => {
+          const { eq, and } = RepositoryUtil.filters;
+
+          const conditions = [eq(c.id, classId), eq(c.termId, termId)];
+          //  ! used when querying class offerings for professors
+          if (professorId !== undefined)
+            conditions.push(eq(c.professorId, professorId));
+
+          return context
             .select({ id: c.id })
             .from(c)
-            .where(RepositoryUtil.filters.eq(c.termId, termId)),
+            .where(and(...conditions));
+        },
       });
     }
 

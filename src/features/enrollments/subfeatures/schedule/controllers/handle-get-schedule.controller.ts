@@ -17,17 +17,17 @@ export async function handleGetSchedule(req: Request, res: Response) {
     {},
     {},
     {},
-    Schemas.RequestQuery.StudentSchedule
+    Schemas.RequestQuery.UserSchedule
   >;
 
   logger.log("info", "Attempting to get schedule...");
   //  * authorize user
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
-  if (!isAllowedPayload || auth.payload.role !== "student") {
+  if (!isAllowedPayload) {
     logger.log(
       "info",
-      "Invalid payload attempted to access `enrollments/schedule/get-schedule`."
+      "Invalid payload attempted to access `enrollments/schedule/get-schedule`.",
     );
 
     return res.status(403).json({
@@ -55,10 +55,11 @@ export async function handleGetSchedule(req: Request, res: Response) {
   }
 
   const date = new Date(query.date);
-  const { payload: student } = auth;
+  const { payload: user } = auth;
 
   const queried = await classSchedService.getForToday({
-    studentId: student.id,
+    userId: user.id,
+    role: user.role,
     date,
     termId: term.id,
   });
@@ -70,7 +71,7 @@ export async function handleGetSchedule(req: Request, res: Response) {
 
     const message =
       error.name === "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR"
-        ? "This student does not have any class scheduled for this day."
+        ? "This user does not have any class scheduled for this day."
         : internalErrMessage;
 
     return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({

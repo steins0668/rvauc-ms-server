@@ -76,7 +76,8 @@ export async function handleNewRecord(
 
   logger.log("debug", "Attempting to get student's ongoing classs...");
   const queriedClassOffering = await classSchedService.getForNow({
-    studentId: student.id,
+    userId: student.id,
+    role: student.role,
     date: finalDate,
     termId: term.id,
   });
