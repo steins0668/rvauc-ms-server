@@ -1,15 +1,17 @@
+import { SQLWrapper } from "drizzle-orm";
 import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { Enums } from "../../../../data";
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../utils";
+import { Auth } from "../../../auth";
 import { Repositories } from "../../repositories";
+import { Types } from "../../types";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
-import { Types } from "../../types";
-import { SQLWrapper } from "drizzle-orm";
-import { Auth } from "../../../auth";
 
 export namespace ClassSchedule {
+  const { roles } = Auth.Core.Data.Records;
+
   export async function createService() {
     const context = await createContext();
     const classRepo = new Repositories.Class(context);
@@ -39,7 +41,7 @@ export namespace ClassSchedule {
       date: Date;
       termId: number;
       userId: number;
-      role: keyof typeof Auth.Core.Data.Records.roles;
+      role: keyof typeof roles;
     }) {
       let result;
       try {
@@ -85,7 +87,7 @@ export namespace ClassSchedule {
       date: Date;
       termId: number;
       userId: number;
-      role: keyof typeof Auth.Core.Data.Records.roles;
+      role: keyof typeof roles;
     }) {
       let result;
       try {
@@ -132,7 +134,7 @@ export namespace ClassSchedule {
       date: Date;
       termId: number;
       userId: number;
-      role: keyof typeof Auth.Core.Data.Records.roles;
+      role: keyof typeof roles;
     }) {
       let result;
       try {
@@ -183,10 +185,18 @@ export namespace ClassSchedule {
       date: Date;
       termId: number;
       userId: number;
-      role: keyof typeof Auth.Core.Data.Records.roles;
+      role: keyof typeof roles;
       mode: "term" | "today" | "now";
     }): Types.Repository.WhereBuilders.ClassOffering {
       const { dbOrTx, date, userId, termId, role, mode } = args;
+
+      const allowedRoles = [roles.professor, roles.student] as const;
+
+      if (!allowedRoles.includes(role))
+        throw new Auth.Core.Errors.Authentication.ErrorClass({
+          name: "AUTHENTICATION_FORBIDDEN_ROLE_ERROR",
+          message: `Unsupported role for schedule query: ${role}.`,
+        });
 
       const subqueryC = (classId: SQLiteColumn) =>
         this.classSubquery({
