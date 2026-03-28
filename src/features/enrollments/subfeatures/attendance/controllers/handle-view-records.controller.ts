@@ -29,7 +29,7 @@ export async function handleViewRecords(req: Request, res: Response) {
   if (!isAllowedPayload || auth.payload.role !== "student") {
     logger.log(
       "info",
-      "Invalid payload attempted to access `enrollments/attendance/new-record`."
+      "Invalid payload attempted to access `enrollments/attendance/new-record`.",
     );
 
     return res.status(403).json({
@@ -66,7 +66,7 @@ export async function handleViewRecords(req: Request, res: Response) {
   if (isInvalidTime) {
     logger.log(
       "info",
-      "Server-client time drift has exceeded maximum threshold. Falling back to server time..."
+      "Server-client time drift has exceeded maximum threshold. Falling back to server time...",
     );
   }
 
@@ -74,7 +74,7 @@ export async function handleViewRecords(req: Request, res: Response) {
   const { payload: student } = auth;
 
   logger.log("debug", "Attempting to get attendance records...");
-  const queried = await attendanceDataService.getByStudentClassTerm({
+  const queried = await attendanceDataService.getStudentAttendance({
     studentId: student.id,
     classId: params.classId,
     constraints: { limit: 6 },
@@ -119,6 +119,6 @@ const getAttendanceStatus = (args: {
   return attendanceTime >= schedEndTime
     ? Data.attendanceStatus.absent
     : attendanceTime > graceTime
-    ? Data.attendanceStatus.late
-    : Data.attendanceStatus.present;
+      ? Data.attendanceStatus.late
+      : Data.attendanceStatus.present;
 };

@@ -25,7 +25,7 @@ export namespace AttendanceData {
       this._classRepo = args.classRepo;
     }
 
-    async getByStudentClassTerm(args: {
+    async getStudentAttendance(args: {
       dbOrTx?: DbOrTx | undefined;
       constraints?: { limit?: number; page?: number };
       classId: number;
@@ -34,7 +34,7 @@ export namespace AttendanceData {
       let queried;
 
       try {
-        queried = await this.queryByStudentClassTerm(args);
+        queried = await this.queryStudentAttendance(args);
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -42,12 +42,12 @@ export namespace AttendanceData {
             message:
               "Failed getting attendance records for student and enrollment.",
             err,
-          })
+          }),
         );
       }
 
       try {
-        const dtoList = queried.map((raw) => this.toDto(raw));
+        const dtoList = queried.map((raw) => this.toStudentAttendanceDto(raw));
         return ResultBuilder.success(dtoList);
       } catch (err) {
         return ResultBuilder.fail(
@@ -55,13 +55,13 @@ export namespace AttendanceData {
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
             message: "Failed converting raw attendance to dto",
             err,
-          })
+          }),
         );
       }
     }
 
-    private toDto(
-      raw: Awaited<ReturnType<typeof this.queryByStudentClassTerm>>[number]
+    private toStudentAttendanceDto(
+      raw: Awaited<ReturnType<typeof this.queryStudentAttendance>>[number],
     ) {
       const dto = {
         id: raw.id,
@@ -70,10 +70,10 @@ export namespace AttendanceData {
         time: TimeUtil.toPhTime(new Date(raw.recordedAt)),
       };
 
-      return Schemas.Dto.attendance.parse(dto);
+      return Schemas.Dto.studentAttendance.parse(dto);
     }
 
-    private async queryByStudentClassTerm(args: {
+    private async queryStudentAttendance(args: {
       dbOrTx?: DbOrTx | undefined;
       constraints?: { limit?: number; page?: number };
       classId: number;

@@ -1,6 +1,7 @@
 import z from "zod";
 import { Clock } from "../../../../utils";
 import { Data } from "./data";
+import { Core } from "../../core";
 
 export namespace Schemas {
   export namespace RequestBody {
@@ -33,7 +34,7 @@ export namespace Schemas {
   }
 
   export namespace Dto {
-    export const attendance = z
+    export const studentAttendance = z
       .strictObject({
         id: z.number(),
         status: z.enum(Data.attendanceStatus),
@@ -44,12 +45,12 @@ export namespace Schemas {
 
     export const registeredAttendance = z
       .strictObject({
-        ...attendance.shape,
+        ...studentAttendance.shape,
         isNew: z.boolean(),
       })
       .strip();
 
-    export type Attendance = z.infer<typeof attendance>;
+    export type StudentAttendance = z.infer<typeof studentAttendance>;
     export type RegisteredAttendance = z.infer<typeof registeredAttendance>;
   }
 }
