@@ -73,7 +73,7 @@ export async function handleGetClassList(req: Request, res: Response) {
 
     const message =
       error.name === "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR"
-        ? "This user does not have any class for this term."
+        ? `This ${user.role}does not have any class for this term.`
         : internalErrMessage;
 
     return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({

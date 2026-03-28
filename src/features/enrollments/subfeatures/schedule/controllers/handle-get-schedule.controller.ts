@@ -71,7 +71,7 @@ export async function handleGetSchedule(req: Request, res: Response) {
 
     const message =
       error.name === "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR"
-        ? "This user does not have any class scheduled for this day."
+        ? `This ${user.role} does not have any class scheduled for this day.`
         : internalErrMessage;
 
     return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
