@@ -50,7 +50,37 @@ export namespace Schemas {
       })
       .strip();
 
+    export const studentAttendanceDetailed = z
+      .strictObject({
+        attendance: studentAttendance,
+        student: z
+          .strictObject({
+            //  * student data
+            studentNumber: z.string(),
+            yearLevel: z.number(),
+            block: z.string(),
+            //  * user data
+            surname: z.string(),
+            firstName: z.string(),
+            middleName: z.string(),
+            gender: z.string(),
+          })
+          .strip(),
+      })
+      .strip();
+
+    export const classAttendanceRecord = z
+      .strictObject({
+        attendanceRecord: z.array(studentAttendanceDetailed),
+        scheduledClass: Core.Schemas.Dto.scheduledClass,
+      })
+      .strip();
+
     export type StudentAttendance = z.infer<typeof studentAttendance>;
     export type RegisteredAttendance = z.infer<typeof registeredAttendance>;
+    export type StudentAttendanceDetailed = z.infer<
+      typeof studentAttendanceDetailed
+    >;
+    export type ClassAttendanceRecord = z.infer<typeof classAttendanceRecord>;
   }
 }
