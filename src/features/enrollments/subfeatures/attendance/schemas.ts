@@ -91,6 +91,8 @@ export namespace Schemas {
       export const roleScopes = z.enum(Data.AttendanceQuery.roleScope);
       export type RoleScopes = z.infer<typeof roleScopes>;
 
+      const defaultValues = z.object({ termId: z.number(), date: z.date() });
+
       export const studentClass = z
         .strictObject({
           roleScope: z.literal(Data.AttendanceQuery.roleScope.studentClass),
@@ -98,10 +100,9 @@ export namespace Schemas {
           scope: z.literal(Data.AttendanceQuery.scope.class),
           values: z
             .strictObject({
-              termId: z.number(),
+              ...defaultValues.shape,
               classId: z.number(),
               studentId: z.number(),
-              date: z.date(),
             })
             .strip(),
         })
@@ -121,10 +122,9 @@ export namespace Schemas {
           scope: z.literal(Data.AttendanceQuery.scope.class),
           values: z
             .strictObject({
-              termId: z.number(),
+              ...defaultValues.shape,
               classId: z.number(),
               professorId: z.number(),
-              date: z.date(),
             })
             .strip(),
         })
