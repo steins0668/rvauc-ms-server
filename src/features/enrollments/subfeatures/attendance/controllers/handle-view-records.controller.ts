@@ -26,7 +26,7 @@ export async function handleViewRecords(req: Request, res: Response) {
   //  * authorize user
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
-  if (!isAllowedPayload || auth.payload.role !== "student") {
+  if (!isAllowedPayload) {
     logger.log(
       "info",
       "Invalid payload attempted to access `enrollments/attendance/new-record`.",
@@ -71,14 +71,35 @@ export async function handleViewRecords(req: Request, res: Response) {
   }
 
   const finalDate = isInvalidTime ? serverDate : clientDate;
-  const { payload: student } = auth;
+  const { payload: user } = auth;
 
   logger.log("debug", "Attempting to get attendance records...");
-  const queried = await attendanceDataService.getStudentAttendance({
-    studentId: student.id,
-    classId: params.classId,
-    constraints: { limit: 6 },
-  });
+  const queried =
+    user.role === "student"
+      ? await attendanceDataService.getAttendance({
+          constraints: { limit: 6 },
+          queryContext: {
+            role: user.role,
+            values: {
+              classId: params.classId,
+              termId: term.id,
+              studentId: user.id,
+            },
+          },
+        })
+      : await attendanceDataService.getAttendance({
+          constraints: { limit: 6 },
+          queryContext: {
+            role: user.role,
+            scope: "class",
+            values: {
+              classId: params.classId,
+              termId: term.id,
+              date: finalDate,
+              professorId: user.id,
+            },
+          },
+        });
 
   if (!queried.success) {
     const { error } = queried;
@@ -93,7 +114,7 @@ export async function handleViewRecords(req: Request, res: Response) {
   logger.log("info", "Success retrieving attendance records");
   return res.status(200).json({
     success: true,
-    result: { attendanceList: queried.result },
+    result: queried.result,
     message: "Attendance list retrieved.",
   });
 }
