@@ -88,6 +88,9 @@ export namespace Schemas {
 
   export namespace MethodArgs {
     export namespace AttendanceQuery {
+      export const roleScopes = z.enum(Data.AttendanceQuery.roleScope);
+      export type RoleScopes = z.infer<typeof roleScopes>;
+
       export const studentClass = z
         .strictObject({
           roleScope: z.literal(Data.AttendanceQuery.roleScope.studentClass),

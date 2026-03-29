@@ -21,14 +21,14 @@ export async function handleViewRecords(req: Request, res: Response) {
     Schemas.RequestQuery.AttendanceRecord
   >;
 
-  logger.log("info", "Attempting to create new attendance record...");
+  logger.log("info", "Attempting to retrieve attendance record...");
   //  * authorize user
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!isAllowedPayload) {
     logger.log(
       "info",
-      "Invalid payload attempted to access `enrollments/attendance/new-record`.",
+      "Invalid payload attempted to access `enrollments/attendance/view-record`.",
     );
 
     return res.status(403).json({
@@ -72,7 +72,18 @@ export async function handleViewRecords(req: Request, res: Response) {
   const finalDate = isInvalidTime ? serverDate : clientDate;
   const { payload: user } = auth;
 
-  logger.log("debug", "Attempting to get attendance records...");
+  let roleScope: Schemas.MethodArgs.AttendanceQuery.RoleScopes;
+
+  logger.log("debug", "Resolving user role and query scope...");
+  try {
+    const { roleScopes } = Schemas.MethodArgs.AttendanceQuery;
+    roleScope = roleScopes.parse(`${user.role}-${query.date}`);
+  } catch (error) {
+    return res.status(403).json({
+      success: false,
+      message: "Unable to access this resource. Please check your scope.",
+    });
+  }
 
   let values: { [key: string]: any } = {
     classId: params.classId,
@@ -80,41 +91,37 @@ export async function handleViewRecords(req: Request, res: Response) {
     date: finalDate,
   };
 
-  switch (user.role) {
-    case "student": {
+  switch (roleScope) {
+    case "student-class": {
       values = { ...values, studentId: user.id };
       break;
     }
-    case "professor": {
+    case "professor-class": {
       values = { ...values, professorId: user.id };
       break;
-    }
-    default: {
-      throw new Auth.Core.Errors.Authentication.ErrorClass({
-        name: "AUTHENTICATION_FORBIDDEN_ROLE_ERROR",
-        message: "Role not supported.",
-      });
     }
   }
 
   let queryContext: Schemas.MethodArgs.AttendanceQuery.All;
 
+  logger.log("debug", "Resolving query context...");
   try {
     queryContext = Schemas.MethodArgs.AttendanceQuery.all.parse({
-      roleScope: `${user.role}-${query.scope}`,
+      roleScope,
       role: user.role,
       scope: query.scope,
       values,
     });
   } catch (error) {
-    logger.log("error", "Failed attempt to access resource.", error);
+    logger.log("error", "Failed to resolve query context.", error);
 
-    return res.status(403).json({
+    return res.status(500).json({
       success: false,
-      message: "Unable to access this resource. Please check your inputs.",
+      message: "Something went wrong. Please try again later.",
     });
   }
 
+  logger.log("debug", "Attempting to get attendance records...");
   const queried = await attendanceDataService.getAttendance({
     constraints: { limit: 6 },
     queryContext,
