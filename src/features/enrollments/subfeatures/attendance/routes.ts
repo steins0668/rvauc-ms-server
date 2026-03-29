@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { StrictValidatedRequest } from "../../../../interfaces";
 import { validateRequest } from "../../../../middlewares";
 import { Auth } from "../../../auth";
 import { Schemas } from "./schemas";
@@ -17,12 +18,26 @@ Routes.get(
     params: Schemas.RequestParams.classId,
     query: Schemas.RequestQuery.attendanceRecord,
   }),
-  Controllers.handleViewRecords
+  Controllers._handlewViewRecords({
+    allowedRoles: ["student", "professor"],
+    scope: "class",
+    extractInput: (req) => {
+      const { validated } = req as StrictValidatedRequest<
+        Schemas.RequestParams.ClassId,
+        {},
+        {},
+        {}
+      >;
+      const { params } = validated;
+
+      return { classId: params.classId };
+    },
+  }),
 );
 
 Routes.post(
   "/new-record",
   Auth.Core.Middlewares.validateJwt("minimal"),
   validateRequest({ body: Schemas.RequestBody.newRecord }),
-  Controllers.handleNewRecord
+  Controllers.handleNewRecord,
 );
