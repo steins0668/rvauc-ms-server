@@ -20,6 +20,7 @@ export namespace Schemas {
     export const attendanceRecord = z
       .strictObject({
         date: z.iso.datetime().default(Clock.now().toISOString()),
+        scope: z.enum(Data.AttendanceQuery.scope),
       })
       .strip();
 
@@ -86,46 +87,67 @@ export namespace Schemas {
   }
 
   export namespace MethodArgs {
-    export const studentAttendanceQueryContext = z
-      .strictObject({
-        role: z.literal(Auth.Core.Data.Records.roles.student),
-        scope: z.literal("class"),
-        values: z
-          .strictObject({
-            termId: z.number(),
-            classId: z.number(),
-            studentId: z.number(),
-            date: z.date(),
-          })
-          .strip(),
-      })
-      .strip();
+    export namespace AttendanceQuery {
+      export const studentClass = z
+        .strictObject({
+          roleScope: z.literal(Data.AttendanceQuery.roleScope.studentClass),
+          role: z.literal(Auth.Core.Data.Records.roles.student),
+          scope: z.literal(Data.AttendanceQuery.scope.class),
+          values: z
+            .strictObject({
+              termId: z.number(),
+              classId: z.number(),
+              studentId: z.number(),
+              date: z.date(),
+            })
+            .strip(),
+        })
+        .strip();
 
-    export const classAttendanceQueryContext = z
-      .strictObject({
-        role: z.literal(Auth.Core.Data.Records.roles.professor),
-        scope: z.literal("class"),
-        values: z
-          .strictObject({
-            termId: z.number(),
-            classId: z.number(),
-            professorId: z.number(),
-            date: z.date(),
-          })
-          .strip(),
-      })
-      .strip();
-    export const attendanceQueryContext = z.discriminatedUnion("role", [
-      studentAttendanceQueryContext,
-      classAttendanceQueryContext,
-    ]);
+      export const studentVariants = [studentClass] as const;
 
-    export type StudentAttendanceQueryContext = z.infer<
-      typeof studentAttendanceQueryContext
-    >;
-    export type ClassAttendanceQueryContext = z.infer<
-      typeof classAttendanceQueryContext
-    >;
-    export type AttendanceQueryContext = z.infer<typeof attendanceQueryContext>;
+      export const studentAttendanceQuery = z.discriminatedUnion(
+        "roleScope",
+        studentVariants,
+      );
+
+      export const professorClass = z
+        .strictObject({
+          roleScope: z.literal(Data.AttendanceQuery.roleScope.professorClass),
+          role: z.literal(Auth.Core.Data.Records.roles.professor),
+          scope: z.literal(Data.AttendanceQuery.scope.class),
+          values: z
+            .strictObject({
+              termId: z.number(),
+              classId: z.number(),
+              professorId: z.number(),
+              date: z.date(),
+            })
+            .strip(),
+        })
+        .strip();
+
+      export const professorVariants = [professorClass] as const;
+
+      export const professorAttendanceQuery = z.discriminatedUnion(
+        "roleScope",
+        professorVariants,
+      );
+
+      export const all = z.discriminatedUnion("roleScope", [
+        ...studentVariants,
+        ...professorVariants,
+      ]);
+
+      export type StudentClass = z.infer<typeof studentClass>;
+      export type StudentAttendanceQuery = z.infer<
+        typeof studentAttendanceQuery
+      >;
+      export type ProfessorClass = z.infer<typeof professorClass>;
+      export type ProfessorAttendanceQuery = z.infer<
+        typeof professorAttendanceQuery
+      >;
+      export type All = z.infer<typeof all>;
+    }
   }
 }

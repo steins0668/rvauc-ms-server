@@ -34,13 +34,13 @@ export namespace AttendanceData {
 
     async getAttendance(
       args: QueryArgs & {
-        queryContext: Schemas.MethodArgs.AttendanceQueryContext;
+        queryContext: Schemas.MethodArgs.AttendanceQuery.All;
       },
     ) {
       const { queryContext } = args;
 
-      switch (queryContext.role) {
-        case "student": {
+      switch (queryContext.roleScope) {
+        case "student-class": {
           const { values } = queryContext;
           return await this.getStudentAttendance({
             ...args,
@@ -48,8 +48,11 @@ export namespace AttendanceData {
             studentId: values.studentId,
           });
         }
-        case "professor": {
-          return await this.getClassAttendance({ ...args, queryContext });
+        case "professor-class": {
+          return await this.getClassAttendance({
+            ...args,
+            values: queryContext.values,
+          });
         }
         default:
           throw new Auth.Core.Errors.Authentication.ErrorClass({
@@ -95,7 +98,12 @@ export namespace AttendanceData {
 
     async getClassAttendance(
       args: QueryArgs & {
-        queryContext: Schemas.MethodArgs.ClassAttendanceQueryContext;
+        values: {
+          termId: number;
+          classId: number;
+          professorId: number;
+          date: Date;
+        };
       },
     ) {
       let queried;
@@ -233,11 +241,16 @@ export namespace AttendanceData {
      * as well as the attendance records linked to each enrollment.
      */
     private async queryClassAttendance(
-      args: QueryArgs & {
-        queryContext: Schemas.MethodArgs.ClassAttendanceQueryContext;
-      },
+      args: {
+        values: {
+          termId: number;
+          classId: number;
+          professorId: number;
+          date: Date;
+        };
+      } & QueryArgs,
     ) {
-      const { classId, date } = args.queryContext.values;
+      const { classId, date } = args.values;
 
       //  * get the class along with enrollments
       const classOffering = await this.queryClassOffering({
@@ -257,8 +270,8 @@ export namespace AttendanceData {
         });
 
       const enrollments = await this.queryEnrollments({
-        values: { classOfferingId: classOffering.id },
         ...args,
+        values: { classOfferingId: classOffering.id },
       });
 
       if (enrollments.length) {

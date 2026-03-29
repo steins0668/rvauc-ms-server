@@ -97,11 +97,23 @@ export async function handleViewRecords(req: Request, res: Response) {
     }
   }
 
-  const queryContext = Schemas.MethodArgs.attendanceQueryContext.parse({
-    role: user.role,
-    scope: "class",
-    values,
-  });
+  let queryContext: Schemas.MethodArgs.AttendanceQuery.All;
+
+  try {
+    queryContext = Schemas.MethodArgs.AttendanceQuery.all.parse({
+      roleScope: `${user.role}-${query.scope}`,
+      role: user.role,
+      scope: query.scope,
+      values,
+    });
+  } catch (error) {
+    logger.log("error", "Failed attempt to access resource.", error);
+
+    return res.status(403).json({
+      success: false,
+      message: "Unable to access this resource. Please check your inputs.",
+    });
+  }
 
   const queried = await attendanceDataService.getAttendance({
     constraints: { limit: 6 },
