@@ -28,8 +28,6 @@ export namespace TimeUtil {
       zone: "Asia/Manila",
     }).startOf("day");
 
-    console.log(phMidnight.toISO());
-
     const startTimeMs = phMidnight.plus({ seconds: startTime }).toMillis();
     const endTimeMs = phMidnight.plus({ seconds: endTime }).toMillis();
 

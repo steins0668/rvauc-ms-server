@@ -57,8 +57,6 @@ export async function handleGetClassList(req: Request, res: Response) {
   const date = new Date(query.date);
   const { payload: user } = auth;
 
-  console.log(user);
-
   const queried = await classSchedService.getForTerm({
     userId: user.id,
     role: user.role,
