@@ -2,6 +2,7 @@ import z from "zod";
 import { Clock } from "../../../../utils";
 import { Data } from "./data";
 import { Core } from "../../core";
+import { Auth } from "../../../auth";
 
 export namespace Schemas {
   export namespace RequestBody {
@@ -82,5 +83,49 @@ export namespace Schemas {
       typeof studentAttendanceDetailed
     >;
     export type ClassAttendanceRecord = z.infer<typeof classAttendanceRecord>;
+  }
+
+  export namespace MethodArgs {
+    export const studentAttendanceQueryContext = z
+      .strictObject({
+        role: z.literal(Auth.Core.Data.Records.roles.student),
+        scope: z.literal("class"),
+        values: z
+          .strictObject({
+            termId: z.number(),
+            classId: z.number(),
+            studentId: z.number(),
+            date: z.date(),
+          })
+          .strip(),
+      })
+      .strip();
+
+    export const classAttendanceQueryContext = z
+      .strictObject({
+        role: z.literal(Auth.Core.Data.Records.roles.professor),
+        scope: z.literal("class"),
+        values: z
+          .strictObject({
+            termId: z.number(),
+            classId: z.number(),
+            professorId: z.number(),
+            date: z.date(),
+          })
+          .strip(),
+      })
+      .strip();
+    export const attendanceQueryContext = z.discriminatedUnion("role", [
+      studentAttendanceQueryContext,
+      classAttendanceQueryContext,
+    ]);
+
+    export type StudentAttendanceQueryContext = z.infer<
+      typeof studentAttendanceQueryContext
+    >;
+    export type ClassAttendanceQueryContext = z.infer<
+      typeof classAttendanceQueryContext
+    >;
+    export type AttendanceQueryContext = z.infer<typeof attendanceQueryContext>;
   }
 }

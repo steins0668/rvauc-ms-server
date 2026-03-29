@@ -33,9 +33,9 @@ export const attendanceRecords = sqliteTable(
     uniqueIndex("uidx_attendance_records_student_id_class_id_date_ph").on(
       t.studentId,
       t.classId,
-      t.datePh
+      t.datePh,
     ),
-  ]
+  ],
 );
 
 export const attendanceRecordsRelations = relations(
@@ -49,5 +49,5 @@ export const attendanceRecordsRelations = relations(
       fields: [attendanceRecords.classId],
       references: [classes.id],
     }),
-  })
+  }),
 );

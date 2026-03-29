@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { Clock, TimeUtil } from "../../../../../utils";
 import { Auth } from "../../../../auth";
-import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 import { Data } from "../data";
 import { StrictValidatedRequest } from "../../../../../interfaces";
@@ -74,32 +73,40 @@ export async function handleViewRecords(req: Request, res: Response) {
   const { payload: user } = auth;
 
   logger.log("debug", "Attempting to get attendance records...");
-  const queried =
-    user.role === "student"
-      ? await attendanceDataService.getAttendance({
-          constraints: { limit: 6 },
-          queryContext: {
-            role: user.role,
-            values: {
-              classId: params.classId,
-              termId: term.id,
-              studentId: user.id,
-            },
-          },
-        })
-      : await attendanceDataService.getAttendance({
-          constraints: { limit: 6 },
-          queryContext: {
-            role: user.role,
-            scope: "class",
-            values: {
-              classId: params.classId,
-              termId: term.id,
-              date: finalDate,
-              professorId: user.id,
-            },
-          },
-        });
+
+  let values: { [key: string]: any } = {
+    classId: params.classId,
+    termId: term.id,
+    date: finalDate,
+  };
+
+  switch (user.role) {
+    case "student": {
+      values = { ...values, studentId: user.id };
+      break;
+    }
+    case "professor": {
+      values = { ...values, professorId: user.id };
+      break;
+    }
+    default: {
+      throw new Auth.Core.Errors.Authentication.ErrorClass({
+        name: "AUTHENTICATION_FORBIDDEN_ROLE_ERROR",
+        message: "Role not supported.",
+      });
+    }
+  }
+
+  const queryContext = Schemas.MethodArgs.attendanceQueryContext.parse({
+    role: user.role,
+    scope: "class",
+    values,
+  });
+
+  const queried = await attendanceDataService.getAttendance({
+    constraints: { limit: 6 },
+    queryContext,
+  });
 
   if (!queried.success) {
     const { error } = queried;

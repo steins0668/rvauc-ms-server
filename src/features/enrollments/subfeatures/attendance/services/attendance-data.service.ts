@@ -32,7 +32,11 @@ export namespace AttendanceData {
       this._classOfferingRepo = args.classOfferingRepo;
     }
 
-    async getAttendance(args: QueryArgs & { queryContext: QueryContext }) {
+    async getAttendance(
+      args: QueryArgs & {
+        queryContext: Schemas.MethodArgs.AttendanceQueryContext;
+      },
+    ) {
       const { queryContext } = args;
 
       switch (queryContext.role) {
@@ -90,7 +94,9 @@ export namespace AttendanceData {
     }
 
     async getClassAttendance(
-      args: QueryArgs & { queryContext: ClassAttendanceQueryContext },
+      args: QueryArgs & {
+        queryContext: Schemas.MethodArgs.ClassAttendanceQueryContext;
+      },
     ) {
       let queried;
       try {
@@ -227,7 +233,9 @@ export namespace AttendanceData {
      * as well as the attendance records linked to each enrollment.
      */
     private async queryClassAttendance(
-      args: QueryArgs & { queryContext: ClassAttendanceQueryContext },
+      args: QueryArgs & {
+        queryContext: Schemas.MethodArgs.ClassAttendanceQueryContext;
+      },
     ) {
       const { classId, date } = args.queryContext.values;
 
@@ -423,29 +431,30 @@ export namespace AttendanceData {
     }
   }
 
-  const { roles } = Auth.Core.Data.Records;
-  type RolesRecord = typeof roles;
-  type Role = keyof typeof roles;
+  // const { roles } = Auth.Core.Data.Records;
+  // type RolesRecord = typeof roles;
+  // type Role = keyof typeof roles;
 
-  type StudentAttendanceQueryContext = {
-    role: RolesRecord["student"];
-    values: { termId: number; classId: number; studentId: number };
-  };
+  // type StudentAttendanceQueryContext = {
+  //   role: RolesRecord["student"];
+  //   scope: "class";
+  //   values: { termId: number; classId: number; studentId: number };
+  // };
 
-  type ClassAttendanceQueryContext = {
-    role: RolesRecord["professor"];
-    scope: "class";
-    values: {
-      termId: number;
-      professorId: number;
-      classId: number;
-      date: Date;
-    };
-  };
+  // type ClassAttendanceQueryContext = {
+  //   role: RolesRecord["professor"];
+  //   scope: "class";
+  //   values: {
+  //     termId: number;
+  //     professorId: number;
+  //     classId: number;
+  //     date: Date;
+  //   };
+  // };
 
-  type QueryContext = {
-    role: Role;
-  } & (StudentAttendanceQueryContext | ClassAttendanceQueryContext);
+  // type QueryContext = {
+  //   role: Role;
+  // } & (StudentAttendanceQueryContext | ClassAttendanceQueryContext);
 
   type Constraints = { limit: number; page: number };
   type QueryArgs = {
