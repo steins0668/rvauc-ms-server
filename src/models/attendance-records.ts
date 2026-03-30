@@ -5,7 +5,7 @@ import {
   sqliteTable,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { classes, students } from "./schema";
+import { classes, classOfferings, students } from "./schema";
 
 export const attendanceRecords = sqliteTable(
   "attendance_records",
@@ -20,6 +20,12 @@ export const attendanceRecords = sqliteTable(
     classId: integer("class_id")
       .notNull()
       .references(() => classes.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
+    classOfferingId: integer("class_offering_id")
+      .notNull()
+      .references(() => classOfferings.id, {
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
@@ -48,6 +54,10 @@ export const attendanceRecordsRelations = relations(
     class: one(classes, {
       fields: [attendanceRecords.classId],
       references: [classes.id],
+    }),
+    classOffering: one(classOfferings, {
+      fields: [attendanceRecords.classOfferingId],
+      references: [classOfferings.id],
     }),
   }),
 );

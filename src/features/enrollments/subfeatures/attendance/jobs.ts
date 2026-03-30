@@ -50,6 +50,7 @@ export namespace Jobs {
         (e) => ({
           studentId: e.studentId,
           classId: classOffering.classId,
+          classOfferingId: classOffering.id,
           status: "absent",
           recordedAt: dateIso,
           recordedMs: timeMs,

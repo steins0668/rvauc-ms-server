@@ -119,6 +119,7 @@ export async function handleNewRecord(
     value: {
       studentId: student.id,
       classId: classOffering.classId,
+      classOfferingId: classOffering.id,
       status: getAttendanceStatus({
         attendanceDate: finalDate,
         schedStartTime: classOffering.startTime,
