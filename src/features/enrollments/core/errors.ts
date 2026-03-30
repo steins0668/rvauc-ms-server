@@ -5,22 +5,26 @@ import { isError, StatusCode } from "../../../utils";
 export namespace Errors {
   export namespace EnrollmentData {
     export type ErrorName =
+      | "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR"
       | "ENROLLMENT_DATA_DTO_CONVERSION_ERROR"
       | "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR"
       | "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR"
       | "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR"
       | "ENROLLMENT_DATA_QUERY_ERROR"
-      | "ENROLLMENT_DATA_STORE_ERROR";
+      | "ENROLLMENT_DATA_STORE_ERROR"
+      | "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR";
 
     export class ErrorClass extends BaseError<ErrorName> {}
 
     export const statusCodeMap: Exhaustive<ErrorName> = {
+      ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR: 404,
       ENROLLMENT_DATA_DTO_CONVERSION_ERROR: 500,
       ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR: 404,
       ENROLLMENT_DATA_NO_CLASS_LIST_ERROR: 404,
       ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR: 404,
       ENROLLMENT_DATA_QUERY_ERROR: 500,
       ENROLLMENT_DATA_STORE_ERROR: 500,
+      ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR: 404,
     };
 
     export function normalizeError<E extends ErrorName>({
