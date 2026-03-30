@@ -20,7 +20,6 @@ export namespace Schemas {
     export const attendanceRecord = z
       .strictObject({
         date: z.iso.datetime().default(Clock.now().toISOString()),
-        scope: z.enum(Data.AttendanceQuery.scope),
       })
       .strip();
 
