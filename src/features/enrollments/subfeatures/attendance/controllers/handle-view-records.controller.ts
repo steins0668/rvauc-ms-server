@@ -135,6 +135,9 @@ export function _handlewViewRecords<
         roleScopeValues = { professorId: user.id };
         break;
       }
+      case "professor-student": {
+        roleScopeValues = { professorId: user.id };
+      }
     }
 
     logger.log("debug", "Resolving query context...");

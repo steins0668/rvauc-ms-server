@@ -13,23 +13,33 @@ export namespace AttendanceData {
   export async function create() {
     const context = await createContext();
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
+    const classRepo = new CoreRepositories.Class(context);
     const classOfferingRepo = new CoreRepositories.ClassOffering(context);
+    const studentRepo = new Auth.Repositories.Student(context);
     return new Service({
       attendanceRecordRepo,
+      classRepo,
       classOfferingRepo,
+      studentRepo,
     });
   }
 
   export class Service {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
+    private readonly _classRepo: CoreRepositories.Class;
     private readonly _classOfferingRepo: CoreRepositories.ClassOffering;
+    private readonly _studentRepo: Auth.Repositories.Student;
 
     constructor(args: {
       attendanceRecordRepo: Repositories.AttendanceRecord;
+      classRepo: CoreRepositories.Class;
       classOfferingRepo: CoreRepositories.ClassOffering;
+      studentRepo: Auth.Repositories.Student;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
+      this._classRepo = args.classRepo;
       this._classOfferingRepo = args.classOfferingRepo;
+      this._studentRepo = args.studentRepo;
     }
 
     async getAttendance(
@@ -54,6 +64,8 @@ export namespace AttendanceData {
             values: queryContext.values,
           });
         }
+        case "professor-student": {
+        }
         default:
           throw new Auth.Core.Errors.Authentication.ErrorClass({
             name: "AUTHENTICATION_FORBIDDEN_ROLE_ERROR",
@@ -62,12 +74,12 @@ export namespace AttendanceData {
       }
     }
 
-    async getStudentAttendance(args: {
-      dbOrTx?: DbOrTx | undefined;
-      constraints?: { limit?: number; page?: number };
-      classId: number;
-      studentId: number;
-    }) {
+    private async getStudentAttendance(
+      args: QueryArgs & {
+        classId: number;
+        studentId: number;
+      },
+    ) {
       let queried;
 
       try {
@@ -96,7 +108,7 @@ export namespace AttendanceData {
       }
     }
 
-    async getClassAttendance(
+    private async getClassAttendance(
       args: QueryArgs & {
         values: {
           termId: number;
@@ -133,6 +145,73 @@ export namespace AttendanceData {
       }
     }
 
+    private async getStudentClassRecord(
+      args: QueryArgs & {
+        values: {
+          termId: number;
+          classId: number;
+          studentId: number;
+          date: Date;
+        };
+      },
+    ) {
+      const { dbOrTx, constraints, values } = args;
+
+      let student;
+
+      try {
+        student = await this.queryStudents({
+          dbOrTx,
+          constraints: { limit: 1 },
+          values: { studentIds: [values.studentId] },
+        }).then((result) => result[0]);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
+            message: "Failed querying students table.",
+            err,
+          }),
+        );
+      }
+
+      if (!student)
+        return ResultBuilder.fail(
+          new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR",
+            message: "Student with the specified id does not exist.",
+          }),
+        );
+
+      let class_;
+
+      try {
+        class_ = await this.queryClasses({
+          dbOrTx: args.dbOrTx,
+          constraints: { limit: 1 },
+          values: { classIds: [values.classId] },
+        }).then((result) => result[0]);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
+            message: "Failed querying classes table",
+            err,
+          }),
+        );
+      }
+
+      if (!class_)
+        return ResultBuilder.fail(
+          new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
+            message: "Class with specified id does not exist.",
+          }),
+        );
+
+      //  todo: get attendance record and class offering for each attendance
+    }
+
     private toStudentAttendanceDto(
       raw: Awaited<ReturnType<typeof this.queryStudentAttendance>>[number],
     ) {
@@ -149,12 +228,12 @@ export namespace AttendanceData {
     /**
      * @description orchestrates queries to retrieve data for the attendance record linked to a classId and studentId
      */
-    private async queryStudentAttendance(args: {
-      dbOrTx?: DbOrTx | undefined;
-      constraints?: { limit?: number; page?: number };
-      classId: number;
-      studentId: number;
-    }) {
+    private async queryStudentAttendance(
+      args: QueryArgs & {
+        classId: number;
+        studentId: number;
+      },
+    ) {
       const { dbOrTx, constraints, classId, studentId } = args;
 
       const { limit = 6, page = 1 } = constraints ?? {};
@@ -442,6 +521,57 @@ export namespace AttendanceData {
           }),
       });
     }
+
+    private async queryStudents(
+      args: QueryArgs & { values: { studentIds: number[] } },
+    ) {
+      const { limit = 6, page = 1 } = args.constraints ?? {};
+
+      return await this._studentRepo.execQuery({
+        dbOrTx: args.dbOrTx,
+        fn: async (query) =>
+          query.findMany({
+            where: (s, { inArray }) => inArray(s.id, args.values.studentIds),
+            orderBy: (s, { asc }) => asc(s.studentNumber), //   ! should be user input eventually
+            limit,
+            offset: (page - 1) * limit,
+            columns: { studentNumber: true, yearLevel: true, block: true },
+            with: {
+              user: {
+                columns: {
+                  surname: true,
+                  firstName: true,
+                  middleName: true,
+                  gender: true,
+                },
+              },
+              department: {
+                columns: { name: true },
+                with: { college: { columns: { name: true } } },
+              },
+            },
+          }),
+      });
+    }
+
+    private async queryClasses(
+      args: QueryArgs & { values: { classIds: number[] } },
+    ) {
+      const { limit = 6, page = 1 } = args.constraints ?? {};
+
+      return await this._classRepo.execQuery({
+        dbOrTx: args.dbOrTx,
+        fn: async (query) =>
+          query.findMany({
+            where: (c, { inArray }) => inArray(c.id, args.values.classIds),
+            orderBy: (c, { asc }) => asc(c.id), //  ! should be user input eventually
+            limit,
+            offset: (page - 1) * limit,
+            columns: { id: true, classNumber: true, professorId: true },
+            with: { course: { columns: { code: true, name: true } } },
+          }),
+      });
+    }
   }
 
   // const { roles } = Auth.Core.Data.Records;
@@ -471,7 +601,7 @@ export namespace AttendanceData {
 
   type Constraints = { limit: number; page: number };
   type QueryArgs = {
-    constraints?: Partial<Constraints>;
+    constraints?: Partial<Constraints> | undefined;
     dbOrTx?: DbOrTx | undefined;
   };
 }
