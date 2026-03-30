@@ -25,6 +25,7 @@ export namespace Schemas {
         surname: z.string(),
         firstName: z.string(),
         middleName: z.string(),
+        gender: z.string(),
       })
       .strip();
 

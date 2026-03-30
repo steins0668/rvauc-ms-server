@@ -83,8 +83,17 @@ export namespace Schemas {
       })
       .strip();
 
+    export const studentAttendanceRecord = z.array(
+      z
+        .strictObject({
+          classOfferingDetails: Core.Schemas.Dto.classOfferingDetails,
+          attendance: studentAttendance,
+        })
+        .strip(),
+    );
+
     //  todo: reference only, to be removed
-    export const studentAttendanceRecord = z
+    export const studentClassRecord = z
       .strictObject({
         classDetails: Core.Schemas.Dto.classDetails,
         student: z
