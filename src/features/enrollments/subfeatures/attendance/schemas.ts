@@ -40,7 +40,7 @@ export namespace Schemas {
   }
 
   export namespace Dto {
-    export const studentAttendance = z
+    export const base = z
       .strictObject({
         id: z.number(),
         status: z.enum(Data.attendanceStatus),
@@ -48,86 +48,56 @@ export namespace Schemas {
         time: z.string(),
       })
       .strip();
+    export type Base = z.infer<typeof base>;
 
     export const registeredAttendance = z
       .strictObject({
-        ...studentAttendance.shape,
+        ...base.shape,
         isNew: z.boolean(),
       })
       .strip();
-
-    export const studentAttendanceDetailed = z
-      .strictObject({
-        attendance: studentAttendance,
-        student: z
-          .strictObject({
-            //  * student data
-            studentNumber: z.string(),
-            yearLevel: z.number(),
-            block: z.string(),
-            //  * user data
-            surname: z.string(),
-            firstName: z.string(),
-            middleName: z.string(),
-            gender: z.string(),
-          })
-          .strip(),
-      })
-      .strip();
-
-    export const classAttendanceRecord = z
-      .strictObject({
-        attendanceRecord: z.array(studentAttendanceDetailed),
-        scheduledClass: Core.Schemas.Dto.scheduledClass,
-      })
-      .strip();
-
-    export const studentAttendanceRecord = z.array(
-      z
-        .strictObject({
-          classOfferingDetails: Core.Schemas.Dto.classOfferingDetails,
-          attendance: studentAttendance,
-        })
-        .strip(),
-    );
-
-    //  todo: reference only, to be removed
-    export const studentClassRecord = z
-      .strictObject({
-        classDetails: Core.Schemas.Dto.ClassDetails.withProfessor,
-        student: z
-          .strictObject({
-            //  * student data
-            studentNumber: z.string(),
-            yearLevel: z.number(),
-            block: z.string(),
-            //  * user data
-            surname: z.string(),
-            firstName: z.string(),
-            middleName: z.string(),
-            gender: z.string(),
-          })
-          .strip(),
-        attendanceRecord: z.array(
-          z
-            .strictObject({
-              classOfferingDetails: Core.Schemas.Dto.classOfferingDetails,
-              attendance: studentAttendance,
-            })
-            .strip(),
-        ),
-      })
-      .strip();
-
-    export type StudentAttendance = z.infer<typeof studentAttendance>;
     export type RegisteredAttendance = z.infer<typeof registeredAttendance>;
-    export type StudentAttendanceDetailed = z.infer<
-      typeof studentAttendanceDetailed
-    >;
-    export type ClassAttendanceRecord = z.infer<typeof classAttendanceRecord>;
-    export type StudentAttendanceRecord = z.infer<
-      typeof studentAttendanceRecord
-    >;
+    export namespace ClassAttendance {
+      export const studentView = base;
+      export type StudentView = z.infer<typeof studentView>;
+
+      export const professorView = z
+        .strictObject({
+          attendanceRecords: z.array(
+            z
+              .strictObject({
+                record: studentView,
+                student: Core.Schemas.Dto.student,
+              })
+              .strip(),
+          ),
+          scheduledClass: Core.Schemas.Dto.scheduledClass,
+        })
+        .strip();
+      export type ProfessorView = z.infer<typeof professorView>;
+    }
+
+    export namespace StudentAttendance {
+      export const attendanceRecords = z.array(
+        z
+          .strictObject({
+            classOfferingDetails: Core.Schemas.Dto.classOfferingDetails,
+            record: base,
+          })
+          .strip(),
+      );
+
+      export const professorView = z
+        .strictObject({
+          classDetails: Core.Schemas.Dto.ClassDetails.base,
+          student: Core.Schemas.Dto.student,
+          attendanceRecords,
+        })
+        .strip();
+
+      export type AttendanceRecords = z.infer<typeof attendanceRecords>;
+      export type ProfessorView = z.infer<typeof professorView>;
+    }
   }
 
   export namespace MethodArgs {

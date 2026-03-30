@@ -58,20 +58,20 @@ export namespace AttendanceData {
       switch (queryContext.roleScope) {
         case "student-class": {
           const { values } = queryContext;
-          return await this.getStudentAttendance({
+          return await this.getClassAttendanceStudentView({
             ...args,
             classId: values.classId,
             studentId: values.studentId,
           });
         }
         case "professor-class": {
-          return await this.getClassAttendance({
+          return await this.getClassAttendanceProfessorView({
             ...args,
             values: queryContext.values,
           });
         }
         case "professor-student": {
-          return await this.getStudentClassRecord({
+          return await this.getStudentAttendanceProfessorView({
             ...args,
             values: queryContext.values,
           });
@@ -84,41 +84,7 @@ export namespace AttendanceData {
       }
     }
 
-    private async getStudentAttendance(
-      args: QueryArgs & {
-        classId: number;
-        studentId: number;
-      },
-    ) {
-      let queried;
-
-      try {
-        queried = await this.queryStudentAttendance(args);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed getting attendance records for student.",
-            err,
-          }),
-        );
-      }
-
-      try {
-        const dtoList = queried.map((raw) => this.toStudentAttendanceDto(raw));
-        return ResultBuilder.success({ attendanceRecord: dtoList });
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw attendance to dto",
-            err,
-          }),
-        );
-      }
-    }
-
-    private async getClassAttendance(
+    private async getClassAttendanceProfessorView(
       args: QueryArgs & {
         values: {
           termId: number;
@@ -142,7 +108,7 @@ export namespace AttendanceData {
       }
 
       try {
-        const dtoList = this.toClassAttendanceRecordDto(queried);
+        const dtoList = this.toClassAttendanceProfessorViewDto(queried);
         return ResultBuilder.success(dtoList);
       } catch (err) {
         return ResultBuilder.fail(
@@ -154,8 +120,42 @@ export namespace AttendanceData {
         );
       }
     }
+    private async getClassAttendanceStudentView(
+      args: QueryArgs & {
+        classId: number;
+        studentId: number;
+      },
+    ) {
+      let queried;
 
-    private async getStudentClassRecord(
+      try {
+        queried = await this.queryStudentAttendance(args);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
+            message: "Failed getting attendance records for student.",
+            err,
+          }),
+        );
+      }
+
+      try {
+        const dtoList = queried.map((raw) =>
+          this.toClassAttendanceStudentViewDto(raw),
+        );
+        return ResultBuilder.success({ attendanceRecord: dtoList });
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+            message: "Failed converting raw attendance to dto",
+            err,
+          }),
+        );
+      }
+    }
+    private async getStudentAttendanceProfessorView(
       args: QueryArgs & {
         values: {
           termId: number;
@@ -246,11 +246,71 @@ export namespace AttendanceData {
         );
 
       return ResultBuilder.success(
-        this.toStudentClassRecordDto(class_, student, attendanceRecord),
+        this.toStudentAttendanceProfessorViewDto(
+          class_,
+          student,
+          attendanceRecord,
+        ),
       );
     }
 
-    private toStudentAttendanceDto(
+    /**
+     * @description transforms the data retrieved by `queryClassAttendance` into a dto. Normalizes missing
+     * attendance records by setting "absent" as the default value for the "status" field and "N/A" for the others.
+     */
+    private toClassAttendanceProfessorViewDto(
+      raw: Awaited<ReturnType<typeof this.queryClassAttendance>>,
+    ): Schemas.Dto.ClassAttendance.ProfessorView {
+      const { classOffering, enrollments, attendanceRecords: ars } = raw;
+      const { professor, course, ...classMetadata } = classOffering.class;
+
+      const attendanceMap = new Map<number, (typeof ars)[number]>();
+
+      for (const ar of ars) attendanceMap.set(ar.studentId, ar);
+
+      const attendanceRecords = enrollments.map((e) => {
+        const { student } = e;
+
+        const studentAttendance = attendanceMap.get(student.id);
+
+        const status =
+          studentAttendance?.status ?? Data.attendanceStatus.absent;
+        const date = studentAttendance?.datePh ?? "N/A";
+        const time = studentAttendance?.recordedAt
+          ? TimeUtil.toPhTime(new Date(studentAttendance.recordedAt))
+          : "N/A";
+
+        return {
+          student: {
+            ...student,
+            department: student.department ?? "No department.",
+          },
+          record: {
+            id: studentAttendance?.id ?? 0,
+            status,
+            date,
+            time,
+          },
+        };
+      });
+
+      const dto = {
+        attendanceRecords,
+        scheduledClass: {
+          room: classOffering.rooms?.name ?? "N/A",
+          ...classOffering,
+          classId: classMetadata.id,
+          classNumber: classMetadata.classNumber,
+          courseCode: course.code,
+          courseName: course.name,
+          professor: { ...professor.user },
+        },
+      };
+
+      return Schemas.Dto.ClassAttendance.professorView.parse(dto);
+    }
+
+    private toClassAttendanceStudentViewDto(
       raw: Awaited<ReturnType<typeof this.queryStudentAttendance>>[number],
     ) {
       const dto = {
@@ -260,18 +320,17 @@ export namespace AttendanceData {
         time: TimeUtil.toPhTime(new Date(raw.recordedAt)),
       };
 
-      return Schemas.Dto.studentAttendance.parse(dto);
+      return Schemas.Dto.ClassAttendance.studentView.parse(dto);
     }
 
-    private toStudentClassRecordDto(
+    private toStudentAttendanceProfessorViewDto(
       class_: Awaited<ReturnType<typeof this.queryClasses>>[number],
       student: Awaited<ReturnType<typeof this.queryStudents>>[number],
       attendanceRecords: Awaited<
         ReturnType<typeof this.queryAttendanceRecordsWithClassOfferings>
       >,
-    ) {
+    ): Schemas.Dto.StudentAttendance.ProfessorView {
       const { course } = class_;
-      const { Dto } = Core.Schemas;
       return {
         classDetails: {
           class: {
@@ -290,25 +349,28 @@ export namespace AttendanceData {
           middleName: student.user.middleName,
           gender: student.user.gender,
         },
-        attendanceRecord: attendanceRecords.map((ar) => {
-          return {
-            classOfferingDetails: {
-              id: ar.classOffering.id,
-              weekDay: ar.classOffering.weekDay,
-              room: ar.classOffering.rooms?.name ?? "N/A",
-              startTimeText: ar.classOffering.startTimeText,
-              endTimeText: ar.classOffering.endTimeText,
-              startTime: ar.classOffering.startTime,
-              endTime: ar.classOffering.endTime,
-            },
-            attendance: {
-              id: ar.id,
-              status: ar.status,
-              date: ar.datePh,
-              time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
-            },
-          };
-        }),
+        attendanceRecords:
+          Schemas.Dto.StudentAttendance.attendanceRecords.parse(
+            attendanceRecords.map((ar) => {
+              return {
+                classOfferingDetails: {
+                  id: ar.classOffering.id,
+                  weekDay: ar.classOffering.weekDay,
+                  room: ar.classOffering.rooms?.name ?? "N/A",
+                  startTimeText: ar.classOffering.startTimeText,
+                  endTimeText: ar.classOffering.endTimeText,
+                  startTime: ar.classOffering.startTime,
+                  endTime: ar.classOffering.endTime,
+                },
+                record: {
+                  id: ar.id,
+                  status: ar.status,
+                  date: ar.datePh,
+                  time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
+                },
+              };
+            }),
+          ),
       };
     }
 
@@ -343,62 +405,6 @@ export namespace AttendanceData {
             offset: (page - 1) * limit,
           }),
       });
-    }
-
-    /**
-     * @description transforms the data retrieved by `queryClassAttendance` into a dto. Normalizes missing
-     * attendance records by setting "absent" as the default value for the "status" field and "N/A" for the others.
-     */
-    private toClassAttendanceRecordDto(
-      raw: Awaited<ReturnType<typeof this.queryClassAttendance>>,
-    ): Schemas.Dto.ClassAttendanceRecord {
-      const { classOffering, enrollments, attendanceRecords } = raw;
-      const { professor, course, ...classMetadata } = classOffering.class;
-
-      const attendanceMap = new Map<
-        number,
-        (typeof attendanceRecords)[number]
-      >();
-
-      for (const ar of attendanceRecords) attendanceMap.set(ar.studentId, ar);
-
-      const attendanceRecord = enrollments.map((e) => {
-        const { student } = e;
-
-        const studentAttendance = attendanceMap.get(student.id);
-
-        const status =
-          studentAttendance?.status ?? Data.attendanceStatus.absent;
-        const date = studentAttendance?.datePh ?? "N/A";
-        const time = studentAttendance?.recordedAt
-          ? TimeUtil.toPhTime(new Date(studentAttendance.recordedAt))
-          : "N/A";
-
-        return {
-          student: { ...student },
-          attendance: {
-            id: studentAttendance?.id ?? 0,
-            status,
-            date,
-            time,
-          },
-        } as Schemas.Dto.StudentAttendanceDetailed;
-      });
-
-      const dto: Schemas.Dto.ClassAttendanceRecord = {
-        attendanceRecord,
-        scheduledClass: {
-          room: classOffering.rooms?.name ?? "N/A",
-          ...classOffering,
-          classId: classMetadata.id,
-          classNumber: classMetadata.classNumber,
-          courseCode: course.code,
-          courseName: course.name,
-          professor: { ...professor.user },
-        },
-      };
-
-      return Schemas.Dto.classAttendanceRecord.parse(dto);
     }
 
     /**
@@ -523,7 +529,7 @@ export namespace AttendanceData {
       const { dbOrTx = await createContext() } = args;
       const { limit = 6, page = 1 } = args.constraints ?? {};
 
-      const { enrollments, students, users } = Schema;
+      const { departments, enrollments, students, users } = Schema;
       const { eq } = RepositoryUtil.filters;
       const { asc } = RepositoryUtil.orderOperators;
 
@@ -532,6 +538,7 @@ export namespace AttendanceData {
           student: {
             id: students.id,
             studentNumber: students.studentNumber,
+            department: departments.name,
             yearLevel: students.yearLevel,
             block: students.block,
             gender: users.gender,
@@ -542,6 +549,7 @@ export namespace AttendanceData {
         })
         .from(enrollments)
         .innerJoin(students, eq(enrollments.studentId, students.id))
+        .leftJoin(departments, eq(students.departmentId, departments.id))
         .innerJoin(users, eq(students.id, users.id))
         .where(eq(enrollments.classOfferingId, args.values.classOfferingId))
         .orderBy(
