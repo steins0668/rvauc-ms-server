@@ -1,0 +1,1 @@
+ALTER TABLE `attendance_records` ADD `class_offering_id` integer NOT NULL DEFAULT 1 REFERENCES class_offerings(id);
