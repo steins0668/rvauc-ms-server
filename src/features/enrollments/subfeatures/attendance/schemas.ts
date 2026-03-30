@@ -94,7 +94,7 @@ export namespace Schemas {
     //  todo: reference only, to be removed
     export const studentClassRecord = z
       .strictObject({
-        classDetails: Core.Schemas.Dto.classDetails,
+        classDetails: Core.Schemas.Dto.ClassDetails.withProfessor,
         student: z
           .strictObject({
             //  * student data
