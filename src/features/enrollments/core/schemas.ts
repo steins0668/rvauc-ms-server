@@ -2,6 +2,85 @@ import z from "zod";
 
 export namespace Schemas {
   export namespace Dto {
+    export const class_ = z
+      .strictObject({
+        id: z.number(),
+        classNumber: z.coerce.string(), //  ! coerced incase column type changes
+      })
+      .strip();
+
+    export const course = z
+      .strictObject({
+        code: z.coerce.string(), //  ! coerced incase column type changes
+        name: z.string(),
+      })
+      .strip();
+
+    export const professor = z
+      .strictObject({
+        //  * professor data
+        college: z.string(),
+        facultyRank: z.string(),
+        //  * user data
+        surname: z.string(),
+        firstName: z.string(),
+        middleName: z.string(),
+      })
+      .strip();
+
+    export const student = z
+      .strictObject({
+        //  * student data
+        studentNumber: z.string(),
+        department: z.string(),
+        yearLevel: z.number(),
+        block: z.string(),
+        //  * user data
+        surname: z.string(),
+        firstName: z.string(),
+        middleName: z.string(),
+        gender: z.string(),
+      })
+      .strip();
+
+    //  todo: reference only, to be removed
+    export const classDetails = z.strictObject({
+      //  * class metadata
+      class: z
+        .strictObject({
+          id: z.number(),
+          classNumber: z.coerce.string(), //  ! coerced incase column type changes
+        })
+        .strip(),
+      //  * course metadata
+      course: z
+        .strictObject({
+          code: z.coerce.string(), //  ! coerced incase column type changes
+          name: z.string(),
+        })
+        .strip(),
+      //  * professor metadata
+      professor: z
+        .strictObject({
+          surname: z.string(),
+          firstName: z.string(),
+          middleName: z.string(),
+        })
+        .strip(),
+    });
+
+    export const classOfferingDetails = z
+      .strictObject({
+        id: z.number(),
+        weekDay: z.string(),
+        room: z.preprocess((r) => r ?? undefined, z.string().default("N/A")),
+        startTimeText: z.string(),
+        endTimeText: z.string(),
+        startTime: z.number(),
+        endTime: z.number(),
+      })
+      .strip();
+
     export const scheduledClass = z
       .strictObject({
         //  * class offering metadata
@@ -40,6 +119,8 @@ export namespace Schemas {
       })
       .strip();
 
+    export type ClassDetails = z.infer<typeof classDetails>;
+    export type ClassOfferingDetails = z.infer<typeof classOfferingDetails>;
     export type ScheduledClass = z.infer<typeof scheduledClass>;
     export type Enrollments = z.infer<typeof enrollments>;
   }

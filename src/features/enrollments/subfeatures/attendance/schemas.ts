@@ -32,7 +32,12 @@ export namespace Schemas {
       .strictObject({ classId: z.coerce.number() })
       .strip();
 
+    export const studentId = z
+      .strictObject({ studentId: z.coerce.number() })
+      .strip();
+
     export type ClassId = z.infer<typeof classId>;
+    export type StudentId = z.infer<typeof studentId>;
   }
 
   export namespace Dto {
@@ -78,12 +83,43 @@ export namespace Schemas {
       })
       .strip();
 
+    //  todo: reference only, to be removed
+    export const studentAttendanceRecord = z
+      .strictObject({
+        classDetails: Core.Schemas.Dto.classDetails,
+        student: z
+          .strictObject({
+            //  * student data
+            studentNumber: z.string(),
+            yearLevel: z.number(),
+            block: z.string(),
+            //  * user data
+            surname: z.string(),
+            firstName: z.string(),
+            middleName: z.string(),
+            gender: z.string(),
+          })
+          .strip(),
+        attendanceRecord: z.array(
+          z
+            .strictObject({
+              classOfferingDetails: Core.Schemas.Dto.classOfferingDetails,
+              attendance: studentAttendance,
+            })
+            .strip(),
+        ),
+      })
+      .strip();
+
     export type StudentAttendance = z.infer<typeof studentAttendance>;
     export type RegisteredAttendance = z.infer<typeof registeredAttendance>;
     export type StudentAttendanceDetailed = z.infer<
       typeof studentAttendanceDetailed
     >;
     export type ClassAttendanceRecord = z.infer<typeof classAttendanceRecord>;
+    export type StudentAttendanceRecord = z.infer<
+      typeof studentAttendanceRecord
+    >;
   }
 
   export namespace MethodArgs {
@@ -130,7 +166,26 @@ export namespace Schemas {
         })
         .strip();
 
-      export const professorVariants = [professorClass] as const;
+      export const professorStudent = z
+        .strictObject({
+          roleScope: z.literal(Data.AttendanceQuery.roleScope.professorStudent),
+          role: z.literal(Auth.Core.Data.Records.roles.professor),
+          scope: z.literal(Data.AttendanceQuery.scope.student),
+          values: z
+            .strictObject({
+              ...defaultValues.shape,
+              classId: z.number(),
+              professorId: z.number(),
+              studentId: z.number(),
+            })
+            .strip(),
+        })
+        .strip();
+
+      export const professorVariants = [
+        professorClass,
+        professorStudent,
+      ] as const;
 
       export const professorAttendanceQuery = z.discriminatedUnion(
         "roleScope",
@@ -147,6 +202,7 @@ export namespace Schemas {
         typeof studentAttendanceQuery
       >;
       export type ProfessorClass = z.infer<typeof professorClass>;
+      export type ProfessorStudent = z.infer<typeof professorStudent>;
       export type ProfessorAttendanceQuery = z.infer<
         typeof professorAttendanceQuery
       >;
