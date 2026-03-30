@@ -14,6 +14,12 @@ export const Routes = Router();
 Routes.use(Middlewares.attachAttendanceDataService);
 Routes.use(Middlewares.attachAttendanceRegistrationService);
 
+/**
+ * GET /view-records/class/:classId
+ *
+ * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
+ * @returns {import("./schemas").Schemas.Dto.ClassAttendance.StudentView} for students
+ */
 Routes.get(
   "/view-records/class/:classId",
   Auth.Core.Middlewares.validateJwt("full"),
@@ -38,6 +44,11 @@ Routes.get(
   }),
 );
 
+/**
+ * GET /view-records/class/:classId/student/:studentId
+ *
+ * @returns {import('./schemas').Schemas.Dto.StudentAttendance.ProfessorView} for professors
+ */
 Routes.get(
   "/view-records/class/:classId/student/:studentId",
   Auth.Core.Middlewares.validateJwt("full"),
