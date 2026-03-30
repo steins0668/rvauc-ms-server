@@ -1,3 +1,4 @@
+import { SQLWrapper } from "drizzle-orm";
 import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { Enums } from "../../../../../data";
 import { Schema } from "../../../../../models";
@@ -8,7 +9,6 @@ import { Repositories as CoreRepositories } from "../../../repositories";
 import { Data } from "../data";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
-import { SQLWrapper } from "drizzle-orm";
 
 export namespace AttendanceData {
   export async function create() {
@@ -56,16 +56,14 @@ export namespace AttendanceData {
       const { queryContext } = args;
 
       switch (queryContext.roleScope) {
-        case "student-class": {
-          const { values } = queryContext;
-          return await this.getClassAttendanceStudentView({
-            ...args,
-            classId: values.classId,
-            studentId: values.studentId,
-          });
-        }
         case "professor-class": {
           return await this.getClassAttendanceProfessorView({
+            ...args,
+            values: queryContext.values,
+          });
+        }
+        case "student-class": {
+          return await this.getClassAttendanceStudentView({
             ...args,
             values: queryContext.values,
           });
@@ -94,22 +92,90 @@ export namespace AttendanceData {
         };
       },
     ) {
-      let queried;
+      const { termId, classId, professorId, date } = args.values;
+
+      let classOffering;
+
+      //  * get the class along with enrollments
       try {
-        queried = await this.queryClassAttendance(args);
+        classOffering = await this.queryClassOfferingWithClass({
+          values: { classId, date },
+          dbOrTx: args.dbOrTx,
+        });
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
             name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed getting attendance records for class.",
+            message: "Failed querying class_offerings table.",
             err,
           }),
         );
       }
 
+      if (!classOffering)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
+          message:
+            "Provided class has no existing schedule at the provided date.",
+        });
+
+      let enrollmentsWithStudents;
+
       try {
-        const dtoList = this.toClassAttendanceProfessorViewDto(queried);
-        return ResultBuilder.success(dtoList);
+        enrollmentsWithStudents = await this.queryEnrollmentsWithStudents({
+          ...args,
+          values: { classOfferingId: classOffering.id },
+        });
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
+            message: "Failed querying enrollments table.",
+            err,
+          }),
+        );
+      }
+
+      let attendanceRecords: Awaited<
+        ReturnType<typeof this.queryAttendanceRecords>
+      > = [];
+
+      if (enrollmentsWithStudents.length) {
+        const studentIds = enrollmentsWithStudents.map((e) => e.student.id);
+
+        const { startTime, endTime } = classOffering;
+        const timeRange = TimeUtil.getPhTimeRange(
+          date,
+          startTime - 30 * 60,
+          endTime,
+        );
+
+        //  * get attendance records matching the schedule of the class
+
+        try {
+          attendanceRecords = await this.queryAttendanceRecords({
+            ...args,
+            values: { classId, timeRange, studentIds },
+          });
+        } catch (err) {
+          return ResultBuilder.fail(
+            Core.Errors.EnrollmentData.normalizeError({
+              name: "ENROLLMENT_DATA_QUERY_ERROR",
+              message: "Failed querying attendance_records table.",
+              err,
+            }),
+          );
+        }
+      }
+
+      try {
+        return ResultBuilder.success(
+          this.toClassAttendanceProfessorViewDto(
+            classOffering,
+            enrollmentsWithStudents,
+            attendanceRecords,
+          ),
+        );
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -122,14 +188,24 @@ export namespace AttendanceData {
     }
     private async getClassAttendanceStudentView(
       args: QueryArgs & {
-        classId: number;
-        studentId: number;
+        values: {
+          classId: number;
+          studentId: number;
+        };
       },
     ) {
+      const { classId, studentId } = args.values;
+
       let queried;
 
       try {
-        queried = await this.queryStudentAttendance(args);
+        queried = await this.queryAttendanceRecords({
+          ...args,
+          values: {
+            classId,
+            studentIds: [studentId],
+          },
+        });
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -141,10 +217,8 @@ export namespace AttendanceData {
       }
 
       try {
-        const dtoList = queried.map((raw) =>
-          this.toClassAttendanceStudentViewDto(raw),
-        );
-        return ResultBuilder.success({ attendanceRecord: dtoList });
+        const dto = this.toClassAttendanceStudentViewDto(queried);
+        return ResultBuilder.success(dto);
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -259,43 +333,51 @@ export namespace AttendanceData {
      * attendance records by setting "absent" as the default value for the "status" field and "N/A" for the others.
      */
     private toClassAttendanceProfessorViewDto(
-      raw: Awaited<ReturnType<typeof this.queryClassAttendance>>,
+      classOffering: NonNullable<
+        Awaited<ReturnType<typeof this.queryClassOfferingWithClass>>
+      >,
+      enrollmentsWithStudents: Awaited<
+        ReturnType<typeof this.queryEnrollmentsWithStudents>
+      >,
+      attendanceRecords: Awaited<
+        ReturnType<typeof this.queryAttendanceRecords>
+      >,
     ): Schemas.Dto.ClassAttendance.ProfessorView {
-      const { classOffering, enrollments, attendanceRecords: ars } = raw;
       const { professor, course, ...classMetadata } = classOffering.class;
 
-      const attendanceMap = new Map<number, (typeof ars)[number]>();
+      const attendanceMap = new Map<
+        number,
+        (typeof attendanceRecords)[number]
+      >();
 
-      for (const ar of ars) attendanceMap.set(ar.studentId, ar);
-
-      const attendanceRecords = enrollments.map((e) => {
-        const { student } = e;
-
-        const studentAttendance = attendanceMap.get(student.id);
-
-        const status =
-          studentAttendance?.status ?? Data.attendanceStatus.absent;
-        const date = studentAttendance?.datePh ?? "N/A";
-        const time = studentAttendance?.recordedAt
-          ? TimeUtil.toPhTime(new Date(studentAttendance.recordedAt))
-          : "N/A";
-
-        return {
-          student: {
-            ...student,
-            department: student.department ?? "No department.",
-          },
-          record: {
-            id: studentAttendance?.id ?? 0,
-            status,
-            date,
-            time,
-          },
-        };
-      });
+      for (const ar of attendanceRecords) attendanceMap.set(ar.studentId, ar);
 
       const dto = {
-        attendanceRecords,
+        attendanceRecords: enrollmentsWithStudents.map((e) => {
+          const { student } = e;
+
+          const studentAttendance = attendanceMap.get(student.id);
+
+          const status =
+            studentAttendance?.status ?? Data.attendanceStatus.absent;
+          const date = studentAttendance?.datePh ?? "N/A";
+          const time = studentAttendance?.recordedAt
+            ? TimeUtil.toPhTime(new Date(studentAttendance.recordedAt))
+            : "N/A";
+
+          return {
+            student: {
+              ...student,
+              department: student.department ?? "No department.",
+            },
+            record: {
+              id: studentAttendance?.id ?? 0,
+              status,
+              date,
+              time,
+            },
+          };
+        }),
         scheduledClass: {
           room: classOffering.rooms?.name ?? "N/A",
           ...classOffering,
@@ -311,13 +393,19 @@ export namespace AttendanceData {
     }
 
     private toClassAttendanceStudentViewDto(
-      raw: Awaited<ReturnType<typeof this.queryStudentAttendance>>[number],
+      attendanceRecords: Awaited<
+        ReturnType<typeof this.queryAttendanceRecords>
+      >,
     ) {
       const dto = {
-        id: raw.id,
-        status: raw.status,
-        date: raw.datePh,
-        time: TimeUtil.toPhTime(new Date(raw.recordedAt)),
+        attendanceRecords: attendanceRecords.map((ar) => {
+          return {
+            id: ar.id,
+            status: ar.status,
+            date: ar.datePh,
+            time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
+          };
+        }),
       };
 
       return Schemas.Dto.ClassAttendance.studentView.parse(dto);
@@ -375,103 +463,11 @@ export namespace AttendanceData {
     }
 
     /**
-     * @description orchestrates queries to retrieve data for the attendance record linked to a classId and studentId
-     */
-    private async queryStudentAttendance(
-      args: QueryArgs & {
-        classId: number;
-        studentId: number;
-      },
-    ) {
-      const { dbOrTx, constraints, classId, studentId } = args;
-
-      const { limit = 6, page = 1 } = constraints ?? {};
-
-      const { and, eq } = RepositoryUtil.filters;
-
-      return this._attendanceRecordRepo.execQuery({
-        dbOrTx,
-        fn: (query) =>
-          query.findMany({
-            where: (ar) =>
-              and(eq(ar.studentId, studentId), eq(ar.classId, classId)),
-            columns: {
-              classId: false,
-              studentId: false,
-              recordCount: false,
-            },
-            orderBy: (ar, { desc }) => desc(ar.recordedMs), //  ! sort by latest
-            limit,
-            offset: (page - 1) * limit,
-          }),
-      });
-    }
-
-    /**
-     * @description orchestrates queries across multiple tables to retrieve data including: the current class
-     * offering matching the set date and time and classId, the enrollments(and student) linked to the class offering,
-     * as well as the attendance records linked to each enrollment.
-     */
-    private async queryClassAttendance(
-      args: {
-        values: {
-          termId: number;
-          classId: number;
-          professorId: number;
-          date: Date;
-        };
-      } & QueryArgs,
-    ) {
-      const { classId, date } = args.values;
-
-      //  * get the class along with enrollments
-      const classOffering = await this.queryClassOffering({
-        values: { classId, date },
-        dbOrTx: args.dbOrTx,
-      });
-
-      let attendanceRecords: Awaited<
-        ReturnType<typeof this.queryAttendanceRecords>
-      > = [];
-
-      if (!classOffering)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-          message:
-            "Provided class has no existing schedule at the provided date.",
-        });
-
-      const enrollments = await this.queryEnrollments({
-        ...args,
-        values: { classOfferingId: classOffering.id },
-      });
-
-      if (enrollments.length) {
-        const studentIds = enrollments.map((e) => e.student.id);
-
-        const { startTime, endTime } = classOffering;
-        const timeRange = TimeUtil.getPhTimeRange(
-          date,
-          startTime - 30 * 60,
-          endTime,
-        );
-
-        //  * get attendance records matching the schedule of the class
-        attendanceRecords = await this.queryAttendanceRecords({
-          ...args,
-          values: { classId, timeRange, studentIds },
-        });
-      }
-
-      return { classOffering, enrollments, attendanceRecords };
-    }
-
-    /**
-     * @description helper for `queryClassAttendance`. Queries the class offering schedule linked to the class
+     * @description Queries the class offering schedule linked to the class
      * id that best matches the current date and time.
      * ! ALERT: current system design does not allow for cross-day schedules (e.g. 11:00 PM - 1:00 AM)
      */
-    private async queryClassOffering(args: {
+    private async queryClassOfferingWithClass(args: {
       values: { classId: number; date: Date };
       dbOrTx?: DbOrTx | undefined;
     }) {
@@ -518,10 +514,10 @@ export namespace AttendanceData {
     }
 
     /**
-     * @description helper for `queryClassAttendance`. Queries enrollments linked to a class offering.
+     * @description Queries enrollments linked to a class offering.
      * Paginated.
      */
-    private async queryEnrollments(
+    private async queryEnrollmentsWithStudents(
       args: QueryArgs & {
         values: { classOfferingId: number };
       },
@@ -563,54 +559,48 @@ export namespace AttendanceData {
     }
 
     /**
-     * @description helper for `queryClassAttendance`. Queries attendance records matching a class id, time range, and
+     * @description Queries attendance records matching a class id, time range, and
      * a set of student ids
      */
     private async queryAttendanceRecords(args: {
       values: {
         classId: number;
-        timeRange: { startTimeMs: number; endTimeMs: number };
+        timeRange?:
+          | Partial<{ startTimeMs: number; endTimeMs: number }>
+          | undefined;
         studentIds: number[];
       };
       dbOrTx?: DbOrTx | undefined;
     }) {
-      const { dbOrTx = await createContext() } = args;
       const { classId, timeRange, studentIds } = args.values;
-
-      const { attendanceRecords: ar } = Schema;
-      const { inArray, and, eq, gte, lte } = RepositoryUtil.filters;
-      const { desc } = RepositoryUtil.orderOperators;
-
-      const { id, studentId, status, recordedAt, datePh } = ar;
-
-      await dbOrTx
-        .select({ id, studentId, status, recordedAt, datePh })
-        .from(ar)
-        .where(
-          and(
-            inArray(ar.studentId, studentIds),
-            eq(ar.classId, classId),
-            and(
-              gte(ar.recordedMs, timeRange.startTimeMs),
-              lte(ar.recordedMs, timeRange.endTimeMs),
-            ),
-          ),
-        )
-        .orderBy(desc(ar.recordedMs));
 
       return await this._attendanceRecordRepo.execQuery({
         dbOrTx: args.dbOrTx,
         fn: (query) =>
           query.findMany({
-            where: (ar, { inArray, and, eq, gte, lte }) =>
-              and(
+            where: (ar, { inArray, and, eq, gte, lte }) => {
+              const conditions: (SQLWrapper | undefined)[] = [
                 inArray(ar.studentId, studentIds),
                 eq(ar.classId, classId),
-                and(
-                  gte(ar.recordedMs, timeRange.startTimeMs),
-                  lte(ar.recordedMs, timeRange.endTimeMs),
-                ),
-              ),
+              ];
+
+              if (timeRange) {
+                const timeRangeConditions: (SQLWrapper | undefined)[] = [];
+
+                if (timeRange.startTimeMs)
+                  timeRangeConditions.push(
+                    gte(ar.recordedMs, timeRange.startTimeMs),
+                  );
+                if (timeRange.endTimeMs)
+                  timeRangeConditions.push(
+                    lte(ar.recordedMs, timeRange.endTimeMs),
+                  );
+
+                conditions.push(and(...timeRangeConditions));
+              }
+
+              return and(...conditions);
+            },
             orderBy: (ar, { desc }) => desc(ar.recordedMs),
             columns: {
               classId: false,
@@ -644,13 +634,22 @@ export namespace AttendanceData {
                 inArray(ar.studentId, studentIds),
                 eq(ar.classId, classId),
               ];
-              if (timeRange)
-                conditions.push(
-                  and(
+
+              if (timeRange) {
+                const timeRangeConditions: (SQLWrapper | undefined)[] = [];
+
+                if (timeRange.startTimeMs)
+                  timeRangeConditions.push(
                     gte(ar.recordedMs, timeRange.startTimeMs),
+                  );
+                if (timeRange.endTimeMs)
+                  timeRangeConditions.push(
                     lte(ar.recordedMs, timeRange.endTimeMs),
-                  ),
-                );
+                  );
+
+                conditions.push(and(...timeRangeConditions));
+              }
+
               return and(...conditions);
             },
             orderBy: (ar, { desc }) => desc(ar.recordedMs),
@@ -726,31 +725,6 @@ export namespace AttendanceData {
       });
     }
   }
-
-  // const { roles } = Auth.Core.Data.Records;
-  // type RolesRecord = typeof roles;
-  // type Role = keyof typeof roles;
-
-  // type StudentAttendanceQueryContext = {
-  //   role: RolesRecord["student"];
-  //   scope: "class";
-  //   values: { termId: number; classId: number; studentId: number };
-  // };
-
-  // type ClassAttendanceQueryContext = {
-  //   role: RolesRecord["professor"];
-  //   scope: "class";
-  //   values: {
-  //     termId: number;
-  //     professorId: number;
-  //     classId: number;
-  //     date: Date;
-  //   };
-  // };
-
-  // type QueryContext = {
-  //   role: Role;
-  // } & (StudentAttendanceQueryContext | ClassAttendanceQueryContext);
 
   type Constraints = { limit: number; page: number };
   type QueryArgs = {

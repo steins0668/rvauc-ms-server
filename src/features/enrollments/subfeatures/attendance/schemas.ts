@@ -58,7 +58,9 @@ export namespace Schemas {
       .strip();
     export type RegisteredAttendance = z.infer<typeof registeredAttendance>;
     export namespace ClassAttendance {
-      export const studentView = base;
+      export const studentView = z
+        .strictObject({ attendanceRecords: z.array(base) })
+        .strip();
       export type StudentView = z.infer<typeof studentView>;
 
       export const professorView = z
