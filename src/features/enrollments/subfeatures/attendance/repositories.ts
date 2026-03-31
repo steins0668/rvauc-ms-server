@@ -1,7 +1,8 @@
 import { and, eq, or, sql, SQL } from "drizzle-orm";
-import { DbContext } from "../../../../db/create-context";
+import { DbContext, DbOrTx } from "../../../../db/create-context";
 import { attendanceRecords } from "../../../../models";
 import { Repository } from "../../../../services";
+import { BaseRepositoryType } from "../../../../types";
 import { RepositoryUtil } from "../../../../utils";
 import { Types } from "./types";
 
@@ -11,8 +12,83 @@ export namespace Repositories {
       super(context, attendanceRecords);
     }
 
+    public async queryMinimalShapeWithClassOfferings(args: {
+      constraints?: BaseRepositoryType.QueryConstraints;
+      where?:
+        | NonNullable<
+            Parameters<DbContext["query"]["attendanceRecords"]["findMany"]>[0]
+          >["where"]
+        | undefined;
+      orderBy?:
+        | NonNullable<
+            Parameters<DbContext["query"]["attendanceRecords"]["findMany"]>[0]
+          >["orderBy"]
+        | undefined;
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { where, orderBy, dbOrTx } = args;
+      const { limit = 6, offset = undefined } = args.constraints ?? {};
+
+      return await (dbOrTx ?? this._dbContext).query.attendanceRecords.findMany(
+        {
+          where,
+          orderBy,
+          limit,
+          offset,
+          columns: {
+            classId: false,
+            classOfferingId: false,
+            recordCount: false,
+            recordedMs: false,
+          },
+          with: {
+            classOffering: {
+              columns: {
+                classId: false,
+                roomId: false,
+              },
+              with: { rooms: { columns: { name: true } } },
+            },
+          },
+        },
+      );
+    }
+
+    public async queryMinimalShape(args: {
+      constraints?: BaseRepositoryType.QueryConstraints;
+      where?:
+        | NonNullable<
+            Parameters<DbContext["query"]["attendanceRecords"]["findMany"]>[0]
+          >["where"]
+        | undefined;
+      orderBy?:
+        | NonNullable<
+            Parameters<DbContext["query"]["attendanceRecords"]["findMany"]>[0]
+          >["orderBy"]
+        | undefined;
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { where, orderBy, dbOrTx } = args;
+      const { limit = 6, offset = undefined } = args.constraints ?? {};
+
+      return await (dbOrTx ?? this._dbContext).query.attendanceRecords.findMany(
+        {
+          where,
+          orderBy,
+          limit,
+          offset,
+          columns: {
+            classId: false,
+            classOfferingId: false,
+            recordCount: false,
+            recordedMs: false,
+          },
+        },
+      );
+    }
+
     public async execInsert<T>(
-      args: Types.Repository.InsertArgs.AttendanceRecord<T>
+      args: Types.Repository.InsertArgs.AttendanceRecord<T>,
     ) {
       const insert = (args.dbOrTx ?? this._dbContext).insert(attendanceRecords);
       return await args.fn({
@@ -24,30 +100,30 @@ export namespace Repositories {
     }
 
     public async execQuery<T>(
-      args: Types.Repository.QueryArgs.AttendanceRecord<T>
+      args: Types.Repository.QueryArgs.AttendanceRecord<T>,
     ) {
       const query = (args.dbOrTx ?? this._dbContext).query.attendanceRecords;
       return await args.fn(query, AttendanceRecord.buildWhereClause);
     }
 
     public async execUpdate<T>(
-      args: Types.Repository.UpdateArgs.AttendanceRecord<T>
+      args: Types.Repository.UpdateArgs.AttendanceRecord<T>,
     ) {
       const update = (args.dbOrTx ?? this._dbContext).update(attendanceRecords);
       return await args.fn(update, AttendanceRecord.buildWhereClause);
     }
 
     public async execDelete<T>(
-      args: Types.Repository.DeleteArgs.AttendanceRecord<T>
+      args: Types.Repository.DeleteArgs.AttendanceRecord<T>,
     ) {
       const deleteBase = (args.dbOrTx ?? this._dbContext).delete(
-        attendanceRecords
+        attendanceRecords,
       );
       return await args.fn(deleteBase, AttendanceRecord.buildWhereClause);
     }
 
     public static buildWhereClause(
-      filter?: Types.Repository.QueryFilters.AttendanceRecord
+      filter?: Types.Repository.QueryFilters.AttendanceRecord,
     ): SQL | undefined {
       const conditions = [];
 
@@ -91,13 +167,13 @@ export namespace Repositories {
     }
 
     public static sqlWhere(
-      builder: Types.Repository.WhereBuilders.AttendanceRecord
+      builder: Types.Repository.WhereBuilders.AttendanceRecord,
     ) {
       return builder(attendanceRecords, RepositoryUtil.filters);
     }
 
     public static sqlOrderBy(
-      builder: Types.Repository.OrderBuilders.AttendanceRecord
+      builder: Types.Repository.OrderBuilders.AttendanceRecord,
     ) {
       return builder(attendanceRecords, RepositoryUtil.orderOperators);
     }
