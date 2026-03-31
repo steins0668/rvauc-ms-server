@@ -68,7 +68,7 @@ export namespace Schemas {
           attendanceRecords: z.array(
             z
               .strictObject({
-                record: studentView,
+                record: base,
                 student: Core.Schemas.Dto.student,
               })
               .strip(),
