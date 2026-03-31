@@ -297,33 +297,46 @@ export namespace ClassSchedule {
     }
 
     private toDto(
-      classOffering: NonNullable<
+      rawClassOffering: NonNullable<
         Awaited<
           ReturnType<Repositories.ClassOffering["queryWithClassAndProfessor"]>
         >[0]
       >,
-    ) {
-      const { course, professor } = classOffering.class;
+    ): Schemas.Dto.ClassOfferingDetails & {
+      class: Schemas.Dto.Class_;
+      course: Schemas.Dto.Course;
+      professor: Schemas.Dto.Professor;
+    } {
+      const { course, professor } = rawClassOffering.class;
 
       const dto = {
+        //  * class offering metadata
+        id: rawClassOffering.id,
+        weekDay: rawClassOffering.weekDay,
+        room: rawClassOffering.rooms?.name ?? "N/A",
+        startTimeText: rawClassOffering.startTimeText,
+        endTimeText: rawClassOffering.endTimeText,
+        startTime: rawClassOffering.startTime,
+        endTime: rawClassOffering.endTime,
         //  * class metadata
-        id: classOffering.id,
-        classId: classOffering.class.id,
-        weekDay: classOffering.weekDay,
-        room: classOffering.rooms?.name,
-        startTimeText: classOffering.startTimeText,
-        endTimeText: classOffering.endTimeText,
-        startTime: classOffering.startTime,
-        endTime: classOffering.endTime,
-        classNumber: classOffering.class.classNumber,
-        //  * course metadata
-        courseCode: course.code,
-        courseName: course.name,
+        class: {
+          id: rawClassOffering.class.id,
+          classNumber: rawClassOffering.class.classNumber,
+        },
+        //  * course metadata,
+        course: {
+          code: course.code,
+          name: course.name,
+        },
         //  * professor metadata
-        professor: professor.user,
+        professor: {
+          ...professor.user,
+          college: professor.college.name,
+          facultyRank: professor.facultyRank,
+        },
       };
 
-      return Schemas.Dto.scheduledClass.parse(dto);
+      return dto;
     }
   }
 }

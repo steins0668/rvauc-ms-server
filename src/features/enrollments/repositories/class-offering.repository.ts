@@ -40,13 +40,15 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
           with: {
             course: { columns: { code: true, name: true } },
             professor: {
-              columns: {},
+              columns: { facultyRank: true },
               with: {
+                college: { columns: { name: true } },
                 user: {
                   columns: {
                     firstName: true,
                     middleName: true,
                     surname: true,
+                    gender: true,
                   },
                 },
               },

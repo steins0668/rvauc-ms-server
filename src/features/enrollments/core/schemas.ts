@@ -1,21 +1,7 @@
-import z, { TypeOf } from "zod";
+import z from "zod";
 
 export namespace Schemas {
   export namespace Dto {
-    export const class_ = z
-      .strictObject({
-        id: z.number(),
-        classNumber: z.coerce.string(), //  ! coerced incase column type changes
-      })
-      .strip();
-
-    export const course = z
-      .strictObject({
-        code: z.coerce.string(), //  ! coerced incase column type changes
-        name: z.string(),
-      })
-      .strip();
-
     export const professor = z
       .strictObject({
         //  * professor data
@@ -44,42 +30,19 @@ export namespace Schemas {
       })
       .strip();
 
-    export namespace ClassDetails {
-      export const base = z
-        .strictObject({
-          //  * class metadata
-          class: z
-            .strictObject({
-              id: z.number(),
-              classNumber: z.coerce.string(), //  ! coerced incase column type changes
-            })
-            .strip(),
-          //  * course metadata
-          course: z
-            .strictObject({
-              code: z.coerce.string(), //  ! coerced incase column type changes
-              name: z.string(),
-            })
-            .strip(),
-        })
-        .strip();
+    export const class_ = z
+      .strictObject({
+        id: z.number(),
+        classNumber: z.coerce.string(), //  ! coerced incase column type changes
+      })
+      .strip();
 
-      export const withProfessor = z
-        .strictObject({
-          ...base.shape,
-          professor: z
-            .strictObject({
-              surname: z.string(),
-              firstName: z.string(),
-              middleName: z.string(),
-            })
-            .strip(),
-        })
-        .strip();
-
-      export type Base = z.infer<typeof base>;
-      export type WithProfessor = z.infer<typeof withProfessor>;
-    }
+    export const course = z
+      .strictObject({
+        code: z.coerce.string(), //  ! coerced incase column type changes
+        name: z.string(),
+      })
+      .strip();
 
     export const classOfferingDetails = z
       .strictObject({
@@ -131,8 +94,10 @@ export namespace Schemas {
       })
       .strip();
 
+    export type Class_ = z.infer<typeof class_>;
+    export type Course = z.infer<typeof course>;
     export type ClassOfferingDetails = z.infer<typeof classOfferingDetails>;
-    export type ScheduledClass = z.infer<typeof scheduledClass>;
     export type Enrollments = z.infer<typeof enrollments>;
+    export type Professor = z.infer<typeof professor>;
   }
 }

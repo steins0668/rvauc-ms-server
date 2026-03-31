@@ -427,11 +427,14 @@ export namespace AttendanceData {
         scheduledClass: {
           room: classOffering.rooms?.name ?? "N/A",
           ...classOffering,
-          classId: classMetadata.id,
-          classNumber: classMetadata.classNumber,
-          courseCode: course.code,
-          courseName: course.name,
-          professor: { ...professor.user },
+          class: {
+            id: classMetadata.id,
+            classNumber: classMetadata.classNumber,
+          },
+          course: {
+            name: course.name,
+            code: course.code,
+          },
         },
       };
 

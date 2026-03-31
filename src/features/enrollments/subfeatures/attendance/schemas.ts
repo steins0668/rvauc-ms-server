@@ -73,7 +73,13 @@ export namespace Schemas {
               })
               .strip(),
           ),
-          scheduledClass: Core.Schemas.Dto.scheduledClass,
+          scheduledClass: z
+            .strictObject({
+              ...Core.Schemas.Dto.classOfferingDetails.shape,
+              class: Core.Schemas.Dto.class_,
+              course: Core.Schemas.Dto.course,
+            })
+            .strip(),
         })
         .strip();
       export type ProfessorView = z.infer<typeof professorView>;
@@ -91,7 +97,12 @@ export namespace Schemas {
 
       export const professorView = z
         .strictObject({
-          classDetails: Core.Schemas.Dto.ClassDetails.base,
+          classDetails: z
+            .strictObject({
+              class: Core.Schemas.Dto.class_,
+              course: Core.Schemas.Dto.course,
+            })
+            .strip(),
           student: Core.Schemas.Dto.student,
           attendanceRecords,
         })
