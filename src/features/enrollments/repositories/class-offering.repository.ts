@@ -11,6 +11,41 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     super(context, classOfferings);
   }
 
+  public async queryWithClass(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classOfferings"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classOfferings"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { where, orderBy, dbOrTx } = args;
+    const { limit = 6, offset = undefined } = args.constraints ?? {};
+
+    return await (dbOrTx ?? this._dbContext).query.classOfferings.findMany({
+      orderBy,
+      limit,
+      offset,
+      where,
+      columns: { classId: false },
+      with: {
+        class: {
+          columns: { id: true, classNumber: true },
+          with: {
+            course: { columns: { code: true, name: true } },
+          },
+        },
+        rooms: { columns: { name: true } },
+      },
+    });
+  }
+
   public async queryWithClassAndProfessor(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:

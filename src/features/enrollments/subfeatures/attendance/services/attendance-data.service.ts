@@ -111,7 +111,7 @@ export namespace AttendanceData {
         const seconds = TimeUtil.secondsSinceMidnightPh(date);
 
         classOffering = await this._classOfferingRepo
-          .queryWithClassAndProfessor({
+          .queryWithClass({
             constraints: { limit: 1 },
             orderBy: (co, { desc }) => desc(co.startTime),
             where: (co, { and, eq, lte }) =>
@@ -389,9 +389,7 @@ export namespace AttendanceData {
     private toClassAttendanceProfessorViewDto(
       classOffering: NonNullable<
         Awaited<
-          ReturnType<
-            CoreRepositories.ClassOffering["queryWithClassAndProfessor"]
-          >
+          ReturnType<CoreRepositories.ClassOffering["queryWithClass"]>
         >[number]
       >,
       enrollmentsWithStudents: Awaited<
@@ -401,7 +399,7 @@ export namespace AttendanceData {
         ReturnType<typeof this.queryAttendanceRecords>
       >,
     ): Schemas.Dto.ClassAttendance.ProfessorView {
-      const { professor, course, ...class_ } = classOffering.class;
+      const { course, ...class_ } = classOffering.class;
 
       const attendanceMap = new Map<
         number,
