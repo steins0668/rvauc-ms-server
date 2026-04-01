@@ -218,6 +218,7 @@ export namespace AttendanceData {
         );
       }
     }
+
     private async getClassAttendanceStudentView(
       args: QueryArgs & {
         values: {
@@ -263,6 +264,7 @@ export namespace AttendanceData {
         );
       }
     }
+
     private async getStudentAttendanceProfessorView(
       args: QueryArgs & {
         values: {
@@ -361,13 +363,23 @@ export namespace AttendanceData {
           }),
         );
 
-      return ResultBuilder.success(
-        this.toStudentAttendanceProfessorViewDto(
-          class_,
-          student,
-          attendanceRecord,
-        ),
-      );
+      try {
+        return ResultBuilder.success(
+          this.toStudentAttendanceProfessorViewDto(
+            class_,
+            student,
+            attendanceRecord,
+          ),
+        );
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+            message: "Failed converting raw attendance dto.",
+            err,
+          }),
+        );
+      }
     }
 
     /**
@@ -476,7 +488,7 @@ export namespace AttendanceData {
       >,
     ): Schemas.Dto.StudentAttendance.ProfessorView {
       const { course } = class_;
-      return {
+      return Schemas.Dto.StudentAttendance.professorView.parse({
         class: {
           id: class_.id,
           classNumber: class_.classNumber,
@@ -492,29 +504,26 @@ export namespace AttendanceData {
           middleName: student.user.middleName,
           gender: student.user.gender,
         },
-        attendanceRecords:
-          Schemas.Dto.StudentAttendance.attendanceRecords.parse(
-            attendanceRecords.map((ar) => {
-              return {
-                classOffering: {
-                  id: ar.classOffering.id,
-                  weekDay: ar.classOffering.weekDay,
-                  room: ar.classOffering.rooms?.name ?? "N/A",
-                  startTimeText: ar.classOffering.startTimeText,
-                  endTimeText: ar.classOffering.endTimeText,
-                  startTime: ar.classOffering.startTime,
-                  endTime: ar.classOffering.endTime,
-                },
-                record: {
-                  id: ar.id,
-                  status: ar.status,
-                  date: ar.datePh,
-                  time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
-                },
-              };
-            }),
-          ),
-      };
+        attendanceRecords: attendanceRecords.map((ar) => {
+          return {
+            classOffering: {
+              id: ar.classOffering.id,
+              weekDay: ar.classOffering.weekDay,
+              room: ar.classOffering.rooms?.name ?? "N/A",
+              startTimeText: ar.classOffering.startTimeText,
+              endTimeText: ar.classOffering.endTimeText,
+              startTime: ar.classOffering.startTime,
+              endTime: ar.classOffering.endTime,
+            },
+            record: {
+              id: ar.id,
+              status: ar.status,
+              date: ar.datePh,
+              time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
+            },
+          };
+        }),
+      });
     }
 
     /**

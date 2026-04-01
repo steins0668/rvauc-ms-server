@@ -73,11 +73,7 @@ export namespace Schemas {
               })
               .strip(),
           ),
-          class: z.strictObject({
-            ...Core.Schemas.Dto.class_.shape,
-            course: Core.Schemas.Dto.course,
-            offering: Core.Schemas.Dto.classOffering,
-          }),
+          class: Core.Schemas.Dto.scheduledClass,
         })
         .strip();
       export type ProfessorView = z.infer<typeof professorView>;

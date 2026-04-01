@@ -70,5 +70,35 @@ export namespace Schemas {
     export type EnrollmentMinimal = z.infer<typeof enrollmentMinimal>;
     export type Professor = z.infer<typeof professor>;
     export type Student = z.infer<typeof student>;
+
+    export const scheduledClass = z
+      .strictObject({
+        ...class_.shape,
+        course: course,
+        offering: classOffering,
+      })
+      .strip();
+
+    export type ScheduledClass = z.infer<typeof scheduledClass>;
+
+    export const scheduledClassWithProfessor = z
+      .strictObject({
+        ...scheduledClass.shape,
+        professor: professor,
+      })
+      .strip();
+
+    export type ScheduledClassWithProfessor = z.infer<
+      typeof scheduledClassWithProfessor
+    >;
+
+    export const classEndDetection = z
+      .strictObject({
+        class: scheduledClassWithProfessor,
+        enrollments: z.array(enrollmentMinimal),
+      })
+      .strip();
+
+    export type ClassEndDetection = z.infer<typeof classEndDetection>;
   }
 }

@@ -251,18 +251,11 @@ export namespace ClassEndDetection {
 
     private toDto(
       classOffering: NonNullable<Awaited<ReturnType<typeof this.queryOne>>>,
-    ): {
-      class: Schemas.Dto.Class_ & {
-        course: Schemas.Dto.Course;
-        offering: Schemas.Dto.ClassOffering;
-        professor: Schemas.Dto.Professor;
-      };
-      enrollments: Schemas.Dto.EnrollmentMinimal[];
-    } {
+    ): Schemas.Dto.ClassEndDetection {
       const { class: class_, enrollments } = classOffering;
       const { course, professor } = class_;
 
-      return {
+      return Schemas.Dto.classEndDetection.parse({
         class: {
           id: class_.id,
           classNumber: class_.classNumber,
@@ -286,7 +279,7 @@ export namespace ClassEndDetection {
           },
         },
         enrollments,
-      };
+      });
     }
 
     private async queryOne(args: {
