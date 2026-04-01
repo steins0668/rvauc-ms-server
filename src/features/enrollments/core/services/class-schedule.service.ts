@@ -85,6 +85,55 @@ export namespace ClassSchedule {
       }
     }
 
+    public async getForNowOrNext(args: {
+      dbOrTx?: DbOrTx | undefined;
+      date: Date;
+      termId: number;
+      userId: number;
+      role: keyof typeof roles;
+    }) {
+      let result;
+      try {
+        result = await this._classOfferingRepo
+          .queryWithClassAndProfessor({
+            where: this.whereClassOffering({ ...args, mode: "now-or-next" }),
+            orderBy: (co, { asc }) => asc(co.startTime),
+            constraints: { limit: 1 },
+            dbOrTx: args.dbOrTx,
+          })
+          .then((result) => result[0]);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
+            message: "Failed querying the `enrollments` table.",
+            err,
+          }),
+        );
+      }
+
+      if (!result)
+        return ResultBuilder.fail(
+          new Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR",
+            message: `This ${args.role} does not have any more classes for today.`,
+          }),
+        );
+
+      try {
+        const parsed = this.toDto(result);
+        return ResultBuilder.success(parsed);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+            message: "Failed converting raw query data into enrollment DTO",
+            err,
+          }),
+        );
+      }
+    }
+
     public async getForToday(args: {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
@@ -183,13 +232,18 @@ export namespace ClassSchedule {
       }
     }
 
+    /**
+     * ! when using this method, select queries MUST be ordered ascending by startTime. otherwise the time filtering gets messed up.
+     * @param args
+     * @returns
+     */
     private whereClassOffering(args: {
       dbOrTx?: DbOrTx | undefined;
       date: Date;
       termId: number;
       userId: number;
       role: keyof typeof roles;
-      mode: "term" | "today" | "now";
+      mode: "term" | "today" | "now" | "now-or-next";
     }): Types.Repository.WhereBuilders.ClassOffering {
       const { dbOrTx, date, userId, termId, role, mode } = args;
 
@@ -238,6 +292,19 @@ export namespace ClassSchedule {
               and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
               //  ! class starts in 30 minutes
               and(gt(co.startTime, seconds), lte(co.startTime, offsetSeconds)),
+            ),
+          );
+        }
+
+        if (mode === "now-or-next") {
+          const seconds = TimeUtil.secondsSinceMidnightPh(date);
+
+          conditions.push(
+            or(
+              //  ! class currently in sesion
+              and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
+              //  ! next class
+              gt(co.startTime, seconds),
             ),
           );
         }

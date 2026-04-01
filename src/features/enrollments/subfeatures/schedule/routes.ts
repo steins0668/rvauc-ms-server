@@ -14,6 +14,13 @@ Routes.get(
 );
 
 Routes.get(
+  "/get-schedule/current-or-next",
+  Auth.Core.Middlewares.validateJwt("full"),
+  validateRequest({ query: Schemas.RequestQuery.userSchedule }),
+  Controllers.handleGetCurrentOrNext,
+);
+
+Routes.get(
   "/get-class-list",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({ query: Schemas.RequestQuery.userSchedule }),
