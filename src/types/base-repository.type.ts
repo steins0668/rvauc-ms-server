@@ -10,12 +10,12 @@ export namespace BaseRepositoryType {
   export type DeleteArgs<
     TDeleteBuilder extends object,
     TFilterConverter extends AnyFunc,
-    TResult = ResultSet
+    TResult = ResultSet,
   > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (
       deleteBase: TDeleteBuilder,
-      converter: TFilterConverter
+      converter: TFilterConverter,
     ) => Promise<TResult>;
   };
 
@@ -23,7 +23,7 @@ export namespace BaseRepositoryType {
     TTable extends SQLiteTable,
     TInsertBuilder extends object,
     TFilterConverter extends AnyFunc,
-    TResult = ResultSet
+    TResult = ResultSet,
   > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (args: {
@@ -37,12 +37,12 @@ export namespace BaseRepositoryType {
   export type UpdateArgs<
     TUpdateBuilder extends object,
     TFilterConverter extends AnyFunc,
-    TResult = ResultSet
+    TResult = ResultSet,
   > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (
       update: TUpdateBuilder,
-      converter: TFilterConverter
+      converter: TFilterConverter,
     ) => Promise<TResult>;
   };
 
@@ -50,7 +50,7 @@ export namespace BaseRepositoryType {
     TTable extends SQLiteTable,
     TFilterConverter extends AnyFunc,
     TOrderConfigurator extends AnyFunc,
-    TResult
+    TResult,
   > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (args: {
@@ -67,7 +67,7 @@ export namespace BaseRepositoryType {
     TSelectBase extends object,
     TFilterConverter extends AnyFunc,
     TOrderConfigurator extends AnyFunc,
-    TSubQuery
+    TSubQuery,
   > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (args: {
@@ -85,25 +85,29 @@ export namespace BaseRepositoryType {
   export type QueryArgs<
     TRelationalQueryBuilder extends object,
     TFilterConverter extends AnyFunc,
-    TResult = ResultSet
+    TResult = ResultSet,
   > = {
     dbOrTx?: DbOrTx | undefined;
     fn: (
       query: TRelationalQueryBuilder,
-      converter: TFilterConverter
+      converter: TFilterConverter,
     ) => Promise<TResult>;
   };
+
+  export type QueryConstraints =
+    | Partial<{ limit: number; offset: number }>
+    | undefined;
 
   export type Filters = typeof RepositoryUtil.filters;
 
   export type WhereBuilder<TTable extends SQLiteTable> = (
     table: TTable,
-    filters: Filters
+    filters: Filters,
   ) => SQL | undefined;
 
   export type QueryFilter<
     TTable extends SQLiteTable,
-    TModel = InferSelectModel<TTable>
+    TModel = InferSelectModel<TTable>,
   > = {
     filterType?: "and" | "or" | undefined;
   } & PartialWithUndefined<TModel> & {
@@ -113,17 +117,17 @@ export namespace BaseRepositoryType {
     };
 
   export type BuildWhereClause<TTable extends SQLiteTable> = (
-    filter?: QueryFilter<TTable>
+    filter?: QueryFilter<TTable>,
   ) => SQL | undefined;
 
   export type OrderOperators = typeof RepositoryUtil.orderOperators;
 
   export type OrderBuilder<TTable extends SQLiteTable> = (
     table: TTable,
-    operators: OrderOperators
+    operators: OrderOperators,
   ) => SQL;
 
   export type BuildOrder<TTable extends SQLiteTable> = (
-    configureOrder: OrderBuilder<TTable>
+    configureOrder: OrderBuilder<TTable>,
   ) => SQL;
 }

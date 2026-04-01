@@ -1,14 +1,69 @@
 import { and, eq, or, sql, SQL } from "drizzle-orm";
-import { DbContext } from "../../../db/create-context";
+import { DbContext, DbOrTx } from "../../../db/create-context";
+import { Schema } from "../../../models";
 import { enrollments } from "../../../models";
 import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
 import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
+import { ResultSet } from "@libsql/client/.";
+import { SQLiteSelectBase } from "drizzle-orm/sqlite-core";
 
 export class Enrollment extends Repository<Types.Tables.Enrollment> {
   public constructor(context: DbContext) {
     super(context, enrollments);
+  }
+
+  /**
+   * @description Selects a student linked to the current enrollment/s.
+   */
+  public async selectStudentsFromEnrollments(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?: SQL;
+    orderBy?: Parameters<
+      SQLiteSelectBase<
+        "enrollments",
+        "async",
+        ResultSet,
+        Types.Tables.Enrollment["_"]["columns"]
+      >["orderBy"]
+    >;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { where, orderBy } = args;
+    const { limit = 6, offset = 0 } = args.constraints ?? {};
+
+    const { departments, enrollments, students, users } = Schema;
+    const { eq } = RepositoryUtil.filters;
+
+    const query = (args.dbOrTx ?? this._dbContext)
+      .select({
+        student: {
+          id: students.id,
+          studentNumber: students.studentNumber,
+          department: departments.name,
+          yearLevel: students.yearLevel,
+          block: students.block,
+          gender: users.gender,
+          surname: users.surname,
+          firstName: users.firstName,
+          middleName: users.middleName,
+        },
+      })
+      .from(enrollments)
+      .innerJoin(students, eq(enrollments.studentId, students.id))
+      .leftJoin(departments, eq(students.departmentId, departments.id))
+      .innerJoin(users, eq(students.id, users.id))
+      .limit(limit)
+      .offset(offset);
+
+    if (where !== undefined) query.where(where);
+    if (orderBy !== undefined)
+      Array.isArray(orderBy)
+        ? query.orderBy(...orderBy)
+        : query.orderBy(orderBy);
+
+    return await query;
   }
 
   public async execInsert<T>(args: Types.Repository.InsertArgs.Enrollment<T>) {
@@ -62,7 +117,7 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
   }
 
   public static buildWhereClause(
-    filter?: Types.Repository.QueryFilters.Enrollment
+    filter?: Types.Repository.QueryFilters.Enrollment,
   ): SQL | undefined {
     const conditions = [];
 

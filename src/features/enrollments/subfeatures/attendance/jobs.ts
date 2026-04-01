@@ -19,7 +19,7 @@ export namespace Jobs {
 
     const { result: term } = termQ;
 
-    const date = Clock.now();
+    const date = new Date();
     const dateIso = date.toISOString();
     const timeMs = date.getTime();
     const timePh = TimeUtil.toPhTime(date);
@@ -50,11 +50,12 @@ export namespace Jobs {
         (e) => ({
           studentId: e.studentId,
           classId: classOffering.classId,
+          classOfferingId: classOffering.id,
           status: "absent",
           recordedAt: dateIso,
           recordedMs: timeMs,
           datePh: datePh,
-        })
+        }),
       );
 
       attendanceRecords.push(...records);

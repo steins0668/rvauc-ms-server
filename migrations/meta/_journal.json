@@ -274,6 +274,27 @@
       "when": 1774612329693,
       "tag": "0038_cute_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "6",
+      "when": 1774853001905,
+      "tag": "0039_bored_annihilus",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "6",
+      "when": 1774862309787,
+      "tag": "0040_lyrical_microchip",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "6",
+      "when": 1774862337450,
+      "tag": "0041_glossy_iron_fist",
+      "breakpoints": true
     }
   ]
 }

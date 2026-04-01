@@ -1,3 +1,5 @@
+import { DateTime } from "luxon";
+
 export namespace TimeUtil {
   export function secondsSinceMidnightPh(date: Date) {
     const [hours, minutes, seconds] = date
@@ -12,6 +14,24 @@ export namespace TimeUtil {
       .map((value) => Number(value) ?? 0);
 
     return hours! * 3600 + minutes! * 60 + seconds!;
+  }
+
+  /**
+   * returns a time range in UTC milliseconds based on ph timezone
+   */
+  export function getPhTimeRange(
+    date: Date,
+    startTime: number,
+    endTime: number,
+  ) {
+    const phMidnight = DateTime.fromJSDate(date, {
+      zone: "Asia/Manila",
+    }).startOf("day");
+
+    const startTimeMs = phMidnight.plus({ seconds: startTime }).toMillis();
+    const endTimeMs = phMidnight.plus({ seconds: endTime }).toMillis();
+
+    return { startTimeMs, endTimeMs };
   }
 
   /**

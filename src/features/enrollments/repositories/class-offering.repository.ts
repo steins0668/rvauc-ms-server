@@ -1,17 +1,102 @@
-import { and, eq, or, sql, SQL } from "drizzle-orm";
-import { DbContext } from "../../../db/create-context";
+import { and, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
+import { DbContext, DbOrTx } from "../../../db/create-context";
 import { classOfferings } from "../../../models";
 import { Repository } from "../../../services";
 import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
+import { BaseRepositoryType } from "../../../types";
 
 export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
   public constructor(context: DbContext) {
     super(context, classOfferings);
   }
 
+  public async queryWithClass(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classOfferings"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classOfferings"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { where, orderBy, dbOrTx } = args;
+    const { limit = 6, offset = undefined } = args.constraints ?? {};
+
+    return await (dbOrTx ?? this._dbContext).query.classOfferings.findMany({
+      orderBy,
+      limit,
+      offset,
+      where,
+      columns: { classId: false },
+      with: {
+        class: {
+          columns: { id: true, classNumber: true },
+          with: {
+            course: { columns: { code: true, name: true } },
+          },
+        },
+        rooms: { columns: { name: true } },
+      },
+    });
+  }
+
+  public async queryWithClassAndProfessor(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classOfferings"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classOfferings"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { where, orderBy, dbOrTx } = args;
+    const { limit = 6, offset = undefined } = args.constraints ?? {};
+
+    return await (dbOrTx ?? this._dbContext).query.classOfferings.findMany({
+      orderBy,
+      limit,
+      offset,
+      where,
+      columns: { classId: false },
+      with: {
+        class: {
+          columns: { id: true, classNumber: true },
+          with: {
+            course: { columns: { code: true, name: true } },
+            professor: {
+              columns: { facultyRank: true },
+              with: {
+                college: { columns: { name: true } },
+                user: {
+                  columns: {
+                    firstName: true,
+                    middleName: true,
+                    surname: true,
+                    gender: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        rooms: { columns: { name: true } },
+      },
+    });
+  }
+
   public async execInsert<T>(
-    args: Types.Repository.InsertArgs.ClassOffering<T>
+    args: Types.Repository.InsertArgs.ClassOffering<T>,
   ) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(classOfferings);
     return await args.fn({
@@ -53,21 +138,21 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
   }
 
   public async execUpdate<T>(
-    args: Types.Repository.UpdateArgs.ClassOffering<T>
+    args: Types.Repository.UpdateArgs.ClassOffering<T>,
   ) {
     const update = (args.dbOrTx ?? this._dbContext).update(classOfferings);
     return await args.fn(update, ClassOffering.buildWhereClause);
   }
 
   public async execDelete<T>(
-    args: Types.Repository.DeleteArgs.ClassOffering<T>
+    args: Types.Repository.DeleteArgs.ClassOffering<T>,
   ) {
     const deleteBase = (args.dbOrTx ?? this._dbContext).delete(classOfferings);
     return await args.fn(deleteBase, ClassOffering.buildWhereClause);
   }
 
   public static buildWhereClause(
-    filter?: Types.Repository.QueryFilters.ClassOffering
+    filter?: Types.Repository.QueryFilters.ClassOffering,
   ): SQL | undefined {
     const conditions = [];
 
@@ -101,7 +186,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
   }
 
   public static sqlOrderBy(
-    builder: Types.Repository.OrderBuilders.ClassOffering
+    builder: Types.Repository.OrderBuilders.ClassOffering,
   ) {
     return builder(classOfferings, RepositoryUtil.orderOperators);
   }

@@ -45,11 +45,14 @@ export namespace ClassSchedule {
     }) {
       let result;
       try {
-        result = await this.queryOne({
-          dbOrTx: args.dbOrTx,
-          where: this.whereClassOffering({ ...args, mode: "now" }),
-          orderBy: (co, { asc }) => asc(co.startTime),
-        });
+        result = await this._classOfferingRepo
+          .queryWithClassAndProfessor({
+            where: this.whereClassOffering({ ...args, mode: "now" }),
+            orderBy: (co, { asc }) => asc(co.startTime),
+            constraints: { limit: 1 },
+            dbOrTx: args.dbOrTx,
+          })
+          .then((result) => result[0]);
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
@@ -91,11 +94,11 @@ export namespace ClassSchedule {
     }) {
       let result;
       try {
-        result = await this.queryMany({
-          dbOrTx: args.dbOrTx,
+        result = await this._classOfferingRepo.queryWithClassAndProfessor({
           where: this.whereClassOffering({ ...args, mode: "today" }),
-          orderBy: this.orderByStartTimeAscending(),
+          orderBy: (co, { asc }) => asc(co.startTime),
           constraints: { limit: 50 },
+          dbOrTx: args.dbOrTx,
         });
       } catch (err) {
         return ResultBuilder.fail(
@@ -138,11 +141,11 @@ export namespace ClassSchedule {
     }) {
       let result;
       try {
-        result = await this.queryMany({
-          dbOrTx: args.dbOrTx,
+        result = await this._classOfferingRepo.queryWithClassAndProfessor({
           where: this.whereClassOffering({ ...args, mode: "term" }),
-          orderBy: this.orderByStartTimeAscending(),
+          orderBy: (co, { asc }) => asc(co.startTime),
           constraints: { limit: 50 },
+          dbOrTx: args.dbOrTx,
         });
       } catch (err) {
         return ResultBuilder.fail(
@@ -243,10 +246,6 @@ export namespace ClassSchedule {
       };
     }
 
-    private orderByStartTimeAscending(): Types.Repository.OrderBuilders.ClassOffering {
-      return (co, { asc }) => asc(co.startTime);
-    }
-
     private classSubquery(args: {
       dbOrTx?: DbOrTx | undefined;
       classId: SQLiteColumn;
@@ -298,89 +297,47 @@ export namespace ClassSchedule {
     }
 
     private toDto(
-      classOffering: NonNullable<Awaited<ReturnType<typeof this.queryOne>>>,
-    ) {
+      classOffering: NonNullable<
+        Awaited<
+          ReturnType<Repositories.ClassOffering["queryWithClassAndProfessor"]>
+        >[0]
+      >,
+    ): {
+      class: Schemas.Dto.Class_ & {
+        course: Schemas.Dto.Course;
+        offering: Schemas.Dto.ClassOffering;
+        professor: Schemas.Dto.Professor;
+      };
+    } {
+      const { class: class_, rooms } = classOffering;
       const { course, professor } = classOffering.class;
 
       const dto = {
-        //  * class metadata
-        id: classOffering.id,
-        classId: classOffering.class.id,
-        weekDay: classOffering.weekDay,
-        room: classOffering.rooms?.name,
-        startTimeText: classOffering.startTimeText,
-        endTimeText: classOffering.endTimeText,
-        startTime: classOffering.startTime,
-        endTime: classOffering.endTime,
-        classNumber: classOffering.class.classNumber,
-        //  * course metadata
-        courseCode: course.code,
-        courseName: course.name,
-        //  * professor metadata
-        professor: professor.user,
+        class: {
+          id: class_.id,
+          classNumber: class_.classNumber,
+          course,
+          offering: {
+            id: classOffering.id,
+            weekDay: classOffering.weekDay,
+            room: rooms?.name ?? "N/A",
+            startTimeText: classOffering.startTimeText,
+            endTimeText: classOffering.endTimeText,
+            startTime: classOffering.startTime,
+            endTime: classOffering.endTime,
+          },
+          professor: {
+            surname: professor.user.surname,
+            firstName: professor.user.firstName,
+            middleName: professor.user.middleName,
+            gender: professor.user.gender,
+            college: professor.college.name,
+            facultyRank: professor.facultyRank,
+          },
+        },
       };
 
-      return Schemas.Dto.scheduledClass.parse(dto);
-    }
-
-    private async queryOne(args: {
-      dbOrTx?: DbOrTx | undefined;
-      where?: Types.Repository.WhereBuilders.ClassOffering;
-      orderBy?: Types.Repository.OrderBuilders.ClassOffering;
-    }) {
-      const { dbOrTx, where, orderBy } = args;
-      return await this.queryMany({
-        dbOrTx,
-        where,
-        orderBy,
-        constraints: { limit: 1 },
-      }).then((result) => result[0]);
-    }
-
-    private async queryMany(args: {
-      dbOrTx?: DbOrTx | undefined;
-      constraints?: Partial<{ page: number; limit: number }>;
-      where?: Types.Repository.WhereBuilders.ClassOffering | undefined;
-      orderBy?: Types.Repository.OrderBuilders.ClassOffering | undefined;
-    }) {
-      const { dbOrTx, constraints, where, orderBy } = args;
-
-      const { page = 1, limit = 6 } = constraints ?? {};
-
-      return await this._classOfferingRepo.execQuery({
-        dbOrTx,
-        fn: async (query) =>
-          query.findMany({
-            where,
-            orderBy: orderBy
-              ? Repositories.ClassOffering.sqlOrderBy(orderBy)
-              : undefined,
-            columns: { classId: false },
-            with: {
-              class: {
-                columns: { id: true, classNumber: true },
-                with: {
-                  course: { columns: { code: true, name: true } },
-                  professor: {
-                    columns: {},
-                    with: {
-                      user: {
-                        columns: {
-                          firstName: true,
-                          middleName: true,
-                          surname: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-              rooms: { columns: { name: true } },
-            },
-            limit,
-            offset: (page - 1) * limit,
-          }),
-      });
+      return dto;
     }
   }
 }

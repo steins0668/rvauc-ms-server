@@ -1,12 +1,53 @@
 import { and, eq, or, SQL } from "drizzle-orm";
-import type { DbContext, TxContext } from "../../../db/create-context";
+import type { DbContext, DbOrTx, TxContext } from "../../../db/create-context";
 import { students } from "../../../models";
 import { Repository } from "../../../services";
+import { BaseRepositoryType } from "../../../types";
 import { Types } from "../types";
 
 export class StudentRepository extends Repository<Types.Tables.Student> {
   public constructor(context: DbContext) {
     super(context, students);
+  }
+
+  public async queryWithUserAndDepartment(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["students"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["students"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { where, orderBy, dbOrTx } = args;
+    const { limit = 6, offset = undefined } = args.constraints ?? {};
+
+    return await (dbOrTx ?? this._dbContext).query.students.findMany({
+      where,
+      orderBy,
+      limit,
+      offset,
+      columns: { studentNumber: true, yearLevel: true, block: true },
+      with: {
+        user: {
+          columns: {
+            surname: true,
+            firstName: true,
+            middleName: true,
+            gender: true,
+          },
+        },
+        department: {
+          columns: { name: true },
+          with: { college: { columns: { name: true } } },
+        },
+      },
+    });
   }
 
   /**
@@ -62,7 +103,7 @@ export class StudentRepository extends Repository<Types.Tables.Student> {
    * conditions are set.
    */
   protected buildWhereClause(
-    filter?: Types.Repository.QueryFilters.Student
+    filter?: Types.Repository.QueryFilters.Student,
   ): SQL | undefined {
     const conditions = [];
 

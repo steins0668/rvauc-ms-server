@@ -1,5 +1,5 @@
 import { and, eq, or, sql, SQL } from "drizzle-orm";
-import { DbContext } from "../../../db/create-context";
+import { DbContext, DbOrTx } from "../../../db/create-context";
 import { classes } from "../../../models";
 import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
@@ -9,6 +9,33 @@ import { Types } from "../types";
 export class Class extends Repository<Types.Tables.Class> {
   public constructor(context: DbContext) {
     super(context, classes);
+  }
+
+  public async queryWithCourse(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classes"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classes"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { where, orderBy, dbOrTx } = args;
+    const { limit = 6, offset = undefined } = args.constraints ?? {};
+
+    return await (dbOrTx ?? this._dbContext).query.classes.findMany({
+      where,
+      orderBy,
+      limit,
+      offset,
+      columns: { id: true, classNumber: true, professorId: true },
+      with: { course: { columns: { code: true, name: true } } },
+    });
   }
 
   public async execInsert<T>(args: Types.Repository.InsertArgs.Class<T>) {
@@ -49,7 +76,7 @@ export class Class extends Repository<Types.Tables.Class> {
   }
 
   public static buildWhereClause(
-    filter?: Types.Repository.QueryFilters.Class
+    filter?: Types.Repository.QueryFilters.Class,
   ): SQL | undefined {
     const conditions = [];
 
@@ -74,7 +101,7 @@ export class Class extends Repository<Types.Tables.Class> {
   }
 
   public static sqlOrderBy(
-    builder: BaseRepositoryType.OrderBuilder<Types.Tables.Class>
+    builder: BaseRepositoryType.OrderBuilder<Types.Tables.Class>,
   ) {
     return builder(classes, RepositoryUtil.orderOperators);
   }
