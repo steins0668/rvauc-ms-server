@@ -56,7 +56,7 @@ export namespace ClassEndDetection {
             name: "ENROLLMENT_DATA_QUERY_ERROR",
             message: "Failed querying the `enrollments` table.",
             err,
-          })
+          }),
         );
       }
 
@@ -65,7 +65,7 @@ export namespace ClassEndDetection {
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
             message: "There is no class that has already ended.",
-          })
+          }),
         );
 
       try {
@@ -77,7 +77,7 @@ export namespace ClassEndDetection {
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
             message: "Failed converting raw query data into enrollment DTO",
             err,
-          })
+          }),
         );
       }
     }
@@ -101,7 +101,7 @@ export namespace ClassEndDetection {
             name: "ENROLLMENT_DATA_QUERY_ERROR",
             message: "Failed querying the `enrollments` table.",
             err,
-          })
+          }),
         );
       }
 
@@ -110,7 +110,7 @@ export namespace ClassEndDetection {
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR",
             message: "There are no classes for today.",
-          })
+          }),
         );
 
       try {
@@ -122,7 +122,7 @@ export namespace ClassEndDetection {
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
             message: "Failed converting raw query data into enrollment DTO",
             err,
-          })
+          }),
         );
       }
     }
@@ -146,7 +146,7 @@ export namespace ClassEndDetection {
             name: "ENROLLMENT_DATA_QUERY_ERROR",
             message: "Failed querying the `enrollments` table.",
             err,
-          })
+          }),
         );
       }
 
@@ -155,7 +155,7 @@ export namespace ClassEndDetection {
           new Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR",
             message: "There are no classes for this week.",
-          })
+          }),
         );
 
       try {
@@ -167,7 +167,7 @@ export namespace ClassEndDetection {
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
             message: "Failed converting raw query data into enrollments DTO",
             err,
-          })
+          }),
         );
       }
     }
@@ -243,37 +243,50 @@ export namespace ClassEndDetection {
             .where(
               and(
                 eq(e.classOfferingId, classOfferingId),
-                eq(e.status, Data.enrollmentStatus.enrolled)
-              )
+                eq(e.status, Data.enrollmentStatus.enrolled),
+              ),
             ),
       });
     }
 
     private toDto(
-      classOffering: NonNullable<Awaited<ReturnType<typeof this.queryOne>>>
-    ) {
-      const { course, professor } = classOffering.class;
-
-      const dto = {
-        //  * class metadata
-        id: classOffering.id,
-        classId: classOffering.class.id,
-        weekDay: classOffering.weekDay,
-        startTimeText: classOffering.startTimeText,
-        endTimeText: classOffering.endTimeText,
-        startTime: classOffering.startTime,
-        endTime: classOffering.endTime,
-        classNumber: classOffering.class.classNumber,
-        //  * course metadata
-        courseCode: course.code,
-        courseName: course.name,
-        //  * professor metadata
-        professor: professor.user,
-        //  * enrollments
-        enrollments: classOffering.enrollments,
+      classOffering: NonNullable<Awaited<ReturnType<typeof this.queryOne>>>,
+    ): {
+      class: Schemas.Dto.Class_ & {
+        course: Schemas.Dto.Course;
+        offering: Schemas.Dto.ClassOffering;
+        professor: Schemas.Dto.Professor;
       };
+      enrollments: Schemas.Dto.EnrollmentMinimal[];
+    } {
+      const { class: class_, enrollments } = classOffering;
+      const { course, professor } = class_;
 
-      return Schemas.Dto.enrollments.parse(dto);
+      return {
+        class: {
+          id: class_.id,
+          classNumber: class_.classNumber,
+          course,
+          offering: {
+            id: classOffering.id,
+            weekDay: classOffering.weekDay,
+            room: classOffering.rooms?.name ?? "N/A",
+            startTimeText: classOffering.startTimeText,
+            endTimeText: classOffering.endTimeText,
+            startTime: classOffering.startTime,
+            endTime: classOffering.endTime,
+          },
+          professor: {
+            surname: professor.user.surname,
+            firstName: professor.user.firstName,
+            middleName: professor.user.middleName,
+            gender: professor.user.gender,
+            college: professor.college.name,
+            facultyRank: professor.facultyRank,
+          },
+        },
+        enrollments,
+      };
     }
 
     private async queryOne(args: {
@@ -308,7 +321,7 @@ export namespace ClassEndDetection {
             orderBy: orderBy
               ? Repositories.ClassOffering.sqlOrderBy(orderBy)
               : undefined,
-            columns: { classId: false },
+            columns: { classId: false, roomId: false },
             with: {
               enrollments: {
                 columns: { id: true, studentId: true, status: true },
@@ -318,19 +331,22 @@ export namespace ClassEndDetection {
                 with: {
                   course: { columns: { code: true, name: true } },
                   professor: {
-                    columns: {},
+                    columns: { facultyRank: true },
                     with: {
+                      college: { columns: { name: true } },
                       user: {
                         columns: {
                           firstName: true,
                           middleName: true,
                           surname: true,
+                          gender: true,
                         },
                       },
                     },
                   },
                 },
               },
+              rooms: { columns: { name: true } },
             },
             limit,
             offset: (page - 1) * limit,
