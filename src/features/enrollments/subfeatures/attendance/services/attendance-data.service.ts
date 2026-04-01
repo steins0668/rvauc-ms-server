@@ -389,7 +389,7 @@ export namespace AttendanceData {
         ReturnType<typeof this.queryAttendanceRecords>
       >,
     ): Schemas.Dto.ClassAttendance.ProfessorView {
-      const { professor, course, ...classMetadata } = classOffering.class;
+      const { professor, course, ...class_ } = classOffering.class;
 
       const attendanceMap = new Map<
         number,
@@ -425,12 +425,17 @@ export namespace AttendanceData {
           };
         }),
         class: {
-          id: classMetadata.id,
-          classNumber: classMetadata.classNumber,
+          id: class_.id,
+          classNumber: class_.classNumber,
           course,
           offering: {
-            ...classOffering,
+            id: classOffering.id,
+            weekDay: classOffering.weekDay,
             room: classOffering.rooms?.name ?? "N/A",
+            startTimeText: classOffering.startTimeText,
+            endTimeText: classOffering.endTimeText,
+            startTime: classOffering.startTime,
+            endTime: classOffering.endTime,
           },
         },
       };

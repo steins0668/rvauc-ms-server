@@ -297,7 +297,7 @@ export namespace ClassSchedule {
     }
 
     private toDto(
-      rawClassOffering: NonNullable<
+      classOffering: NonNullable<
         Awaited<
           ReturnType<Repositories.ClassOffering["queryWithClassAndProfessor"]>
         >[0]
@@ -309,8 +309,8 @@ export namespace ClassSchedule {
         professor: Schemas.Dto.Professor;
       };
     } {
-      const { class: class_, rooms } = rawClassOffering;
-      const { course, professor } = rawClassOffering.class;
+      const { class: class_, rooms } = classOffering;
+      const { course, professor } = classOffering.class;
 
       const dto = {
         class: {
@@ -318,11 +318,19 @@ export namespace ClassSchedule {
           classNumber: class_.classNumber,
           course,
           offering: {
-            ...rawClassOffering,
+            id: classOffering.id,
+            weekDay: classOffering.weekDay,
             room: rooms?.name ?? "N/A",
+            startTimeText: classOffering.startTimeText,
+            endTimeText: classOffering.endTimeText,
+            startTime: classOffering.startTime,
+            endTime: classOffering.endTime,
           },
           professor: {
-            ...professor.user,
+            surname: professor.user.surname,
+            firstName: professor.user.firstName,
+            middleName: professor.user.middleName,
+            gender: professor.user.gender,
             college: professor.college.name,
             facultyRank: professor.facultyRank,
           },
