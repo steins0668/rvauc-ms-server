@@ -57,9 +57,19 @@ export namespace Schemas {
       })
       .strip();
     export type RegisteredAttendance = z.infer<typeof registeredAttendance>;
+
+    export const summary = z
+      .strictObject({
+        present: z.number(),
+        absent: z.number(),
+        late: z.number(),
+        excused: z.number(),
+      })
+      .strip();
+
     export namespace ClassAttendance {
       export const studentView = z
-        .strictObject({ attendanceRecords: z.array(base) })
+        .strictObject({ attendanceRecords: z.array(base), summary: summary })
         .strip();
       export type StudentView = z.infer<typeof studentView>;
 
@@ -74,6 +84,7 @@ export namespace Schemas {
               .strip(),
           ),
           class: Core.Schemas.Dto.scheduledClass,
+          summary: summary,
         })
         .strip();
       export type ProfessorView = z.infer<typeof professorView>;
@@ -99,6 +110,7 @@ export namespace Schemas {
             .strip(),
           student: Core.Schemas.Dto.student,
           attendanceRecords,
+          summary: summary,
         })
         .strip();
 

@@ -1,10 +1,13 @@
-import { and, eq, or, sql, SQL } from "drizzle-orm";
+import { ResultSet } from "@libsql/client/.";
+import { and, count, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
+import { SQLiteSelectBase } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx } from "../../../../db/create-context";
 import { attendanceRecords } from "../../../../models";
 import { Repository } from "../../../../services";
 import { BaseRepositoryType } from "../../../../types";
 import { RepositoryUtil } from "../../../../utils";
 import { Types } from "./types";
+import { Data } from "./data";
 
 export namespace Repositories {
   export class AttendanceRecord extends Repository<Types.Tables.AttendanceRecord> {
@@ -85,6 +88,31 @@ export namespace Repositories {
           },
         },
       );
+    }
+
+    public async selectSummary(args: {
+      where?: SQL | undefined;
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { where, dbOrTx } = args;
+      const { eq } = RepositoryUtil.filters;
+
+      const { present, absent, late, excused } = Data.attendanceStatus;
+
+      const query = (dbOrTx ?? this._dbContext)
+        .select({
+          present: sql<number>`count(case when ${attendanceRecords.status} = ${present} then 1 end)`,
+          absent: sql<number>`count(case when ${attendanceRecords.status} = ${absent} then 1 end)`,
+          late: sql<number>`count(case when ${attendanceRecords.status} = ${late} then 1 end)`,
+          excused: sql<number>`count(case when ${attendanceRecords.status} = ${excused} then 1 end)`,
+        })
+        .from(attendanceRecords);
+
+      if (where) query.where(where);
+
+      console.log(query.toSQL());
+
+      return await query.then((r) => r[0]);
     }
 
     public async execInsert<T>(
