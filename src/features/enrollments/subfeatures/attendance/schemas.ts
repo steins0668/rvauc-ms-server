@@ -73,13 +73,11 @@ export namespace Schemas {
               })
               .strip(),
           ),
-          scheduledClass: z
-            .strictObject({
-              ...Core.Schemas.Dto.classOfferingDetails.shape,
-              class: Core.Schemas.Dto.class_,
-              course: Core.Schemas.Dto.course,
-            })
-            .strip(),
+          class: z.strictObject({
+            ...Core.Schemas.Dto.class_.shape,
+            course: Core.Schemas.Dto.course,
+            offering: Core.Schemas.Dto.classOffering,
+          }),
         })
         .strip();
       export type ProfessorView = z.infer<typeof professorView>;
@@ -89,7 +87,7 @@ export namespace Schemas {
       export const attendanceRecords = z.array(
         z
           .strictObject({
-            classOfferingDetails: Core.Schemas.Dto.classOfferingDetails,
+            classOffering: Core.Schemas.Dto.classOffering,
             record: base,
           })
           .strip(),
@@ -97,9 +95,9 @@ export namespace Schemas {
 
       export const professorView = z
         .strictObject({
-          classDetails: z
+          class: z
             .strictObject({
-              class: Core.Schemas.Dto.class_,
+              ...Core.Schemas.Dto.class_.shape,
               course: Core.Schemas.Dto.course,
             })
             .strip(),

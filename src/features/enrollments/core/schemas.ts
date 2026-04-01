@@ -44,7 +44,7 @@ export namespace Schemas {
       })
       .strip();
 
-    export const classOfferingDetails = z
+    export const classOffering = z
       .strictObject({
         id: z.number(),
         weekDay: z.string(),
@@ -94,10 +94,23 @@ export namespace Schemas {
       })
       .strip();
 
+    export const enrollmentMinimal = z
+      .strictObject({
+        id: z.number(),
+        student: z
+          .strictObject({
+            id: z.number(),
+          })
+          .strip(),
+        status: z.string(),
+      })
+      .strip();
+
     export type Class_ = z.infer<typeof class_>;
     export type Course = z.infer<typeof course>;
-    export type ClassOfferingDetails = z.infer<typeof classOfferingDetails>;
+    export type ClassOffering = z.infer<typeof classOffering>;
     export type Enrollments = z.infer<typeof enrollments>;
+    export type EnrollmentMinimal = z.infer<typeof enrollmentMinimal>;
     export type Professor = z.infer<typeof professor>;
   }
 }

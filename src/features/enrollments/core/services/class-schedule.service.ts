@@ -302,37 +302,30 @@ export namespace ClassSchedule {
           ReturnType<Repositories.ClassOffering["queryWithClassAndProfessor"]>
         >[0]
       >,
-    ): Schemas.Dto.ClassOfferingDetails & {
-      class: Schemas.Dto.Class_;
-      course: Schemas.Dto.Course;
-      professor: Schemas.Dto.Professor;
+    ): {
+      class: Schemas.Dto.Class_ & {
+        course: Schemas.Dto.Course;
+        offering: Schemas.Dto.ClassOffering;
+        professor: Schemas.Dto.Professor;
+      };
     } {
+      const { class: class_, rooms } = rawClassOffering;
       const { course, professor } = rawClassOffering.class;
 
       const dto = {
-        //  * class offering metadata
-        id: rawClassOffering.id,
-        weekDay: rawClassOffering.weekDay,
-        room: rawClassOffering.rooms?.name ?? "N/A",
-        startTimeText: rawClassOffering.startTimeText,
-        endTimeText: rawClassOffering.endTimeText,
-        startTime: rawClassOffering.startTime,
-        endTime: rawClassOffering.endTime,
-        //  * class metadata
         class: {
-          id: rawClassOffering.class.id,
-          classNumber: rawClassOffering.class.classNumber,
-        },
-        //  * course metadata,
-        course: {
-          code: course.code,
-          name: course.name,
-        },
-        //  * professor metadata
-        professor: {
-          ...professor.user,
-          college: professor.college.name,
-          facultyRank: professor.facultyRank,
+          id: class_.id,
+          classNumber: class_.classNumber,
+          course,
+          offering: {
+            ...rawClassOffering,
+            room: rooms?.name ?? "N/A",
+          },
+          professor: {
+            ...professor.user,
+            college: professor.college.name,
+            facultyRank: professor.facultyRank,
+          },
         },
       };
 

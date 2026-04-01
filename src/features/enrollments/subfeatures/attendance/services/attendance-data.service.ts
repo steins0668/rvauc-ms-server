@@ -424,16 +424,13 @@ export namespace AttendanceData {
             },
           };
         }),
-        scheduledClass: {
-          room: classOffering.rooms?.name ?? "N/A",
-          ...classOffering,
-          class: {
-            id: classMetadata.id,
-            classNumber: classMetadata.classNumber,
-          },
-          course: {
-            name: course.name,
-            code: course.code,
+        class: {
+          id: classMetadata.id,
+          classNumber: classMetadata.classNumber,
+          course,
+          offering: {
+            ...classOffering,
+            room: classOffering.rooms?.name ?? "N/A",
           },
         },
       };
@@ -475,11 +472,9 @@ export namespace AttendanceData {
     ): Schemas.Dto.StudentAttendance.ProfessorView {
       const { course } = class_;
       return {
-        classDetails: {
-          class: {
-            id: class_.id,
-            classNumber: class_.classNumber,
-          },
+        class: {
+          id: class_.id,
+          classNumber: class_.classNumber,
           course: { code: course.code, name: course.name },
         },
         student: {
@@ -496,7 +491,7 @@ export namespace AttendanceData {
           Schemas.Dto.StudentAttendance.attendanceRecords.parse(
             attendanceRecords.map((ar) => {
               return {
-                classOfferingDetails: {
+                classOffering: {
                   id: ar.classOffering.id,
                   weekDay: ar.classOffering.weekDay,
                   room: ar.classOffering.rooms?.name ?? "N/A",
