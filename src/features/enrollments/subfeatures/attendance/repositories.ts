@@ -112,7 +112,9 @@ export namespace Repositories {
 
       console.log(query.toSQL());
 
-      return await query.then((r) => r[0]);
+      return await query.then(
+        (r) => r[0] ?? { present: 0, absent: 0, late: 0, excused: 0 },
+      );
     }
 
     public async execInsert<T>(

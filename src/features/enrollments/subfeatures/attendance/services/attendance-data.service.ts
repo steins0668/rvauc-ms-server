@@ -369,7 +369,7 @@ export namespace AttendanceData {
 
       let summary: Awaited<
         ReturnType<Repositories.AttendanceRecord["selectSummary"]>
-      >;
+      > = { present: 0, absent: 0, late: 0, excused: 0 };
 
       try {
         if (attendanceRecord.length) {
