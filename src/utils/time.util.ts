@@ -34,6 +34,14 @@ export namespace TimeUtil {
     return { startTimeMs, endTimeMs };
   }
 
+  export function getTimeRange(date: Date, startTime: number, endTime: number) {
+    const UTCMidnight = new Date(date);
+    UTCMidnight.setHours(0, 0, 0, 0);
+    const startTimeMs = UTCMidnight.getTime() + startTime;
+    const endTimeMs = UTCMidnight.getTime() + endTime;
+    return { startTimeMs, endTimeMs };
+  }
+
   /**
    * to yyyy-mm-dd format
    * @param date
