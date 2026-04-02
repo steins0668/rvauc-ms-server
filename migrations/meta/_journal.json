@@ -295,6 +295,13 @@
       "when": 1774862337450,
       "tag": "0041_glossy_iron_fist",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "6",
+      "when": 1775126639445,
+      "tag": "0042_yellow_freak",
+      "breakpoints": true
     }
   ]
 }

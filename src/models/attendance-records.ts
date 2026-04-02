@@ -36,11 +36,9 @@ export const attendanceRecords = sqliteTable(
     datePh: text("date_ph").notNull(), //  ! Ph date (yyyy-mm-dd)
   },
   (t) => [
-    uniqueIndex("uidx_attendance_records_student_id_class_id_date_ph").on(
-      t.studentId,
-      t.classId,
-      t.datePh,
-    ),
+    uniqueIndex(
+      "uidx_attendance_records_student_id_class_id_class_offering_id_date_ph",
+    ).on(t.studentId, t.classId, t.classOfferingId, t.datePh),
   ],
 );
 
