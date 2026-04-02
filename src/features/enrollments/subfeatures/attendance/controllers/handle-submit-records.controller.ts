@@ -3,6 +3,7 @@ import { StrictValidatedRequest } from "../../../../../interfaces";
 import { Clock } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Schemas } from "../schemas";
+import { Core } from "../../../core";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
@@ -10,6 +11,7 @@ export async function handleSubmitRecords(req: Request, res: Response) {
   const {
     auth,
     validated: { params, body },
+    classSchedService,
     attendanceRegistrationService,
     termDataService,
     requestLogger: logger,
@@ -54,28 +56,37 @@ export async function handleSubmitRecords(req: Request, res: Response) {
     });
   }
 
-  const serverDate = Clock.now();
-  const clientDate = new Date(body.date);
+  const classQuery = await classSchedService.getForNow({
+    date: body.date,
+    role: auth.payload.role,
+    termId: term.id,
+    userId: auth.payload.id,
+  });
 
-  const MAX_DRIFT_MS = 30 * 1000; //  30 seconds max time drift
-  const drift = Math.abs(serverDate.getTime() - clientDate.getTime());
-  const isInvalidTime = drift > MAX_DRIFT_MS;
+  if (!classQuery.success) {
+    const { error } = classQuery;
 
-  if (isInvalidTime) {
-    logger.log(
-      "info",
-      "Server-client time drift has exceeded maximum threshold. Falling back to server time...",
-    );
+    logger.log("error", "Failed querying classes.", error);
+
+    const message =
+      error.name === "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR"
+        ? `The ${auth.payload.role} does not have any active classes for this date.`
+        : internalErrMessage;
+
+    return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
+      success: false,
+      message,
+    });
   }
-
-  const finalDate = isInvalidTime ? serverDate : clientDate;
 
   logger.log("debug", "Attempting to update records...");
   const tx = await attendanceRegistrationService.updateOrNewRecords({
+    classDto: classQuery.result,
     values: {
       classId: params.classId,
       classOfferingId: params.classOfferingId,
-      date: finalDate,
+      currentDate: Clock.now(),
+      professorId: auth.payload.id,
       records: body.records,
     },
   });

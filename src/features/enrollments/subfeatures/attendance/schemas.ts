@@ -21,6 +21,7 @@ export namespace Schemas {
         records: z.array(
           z
             .strictObject({
+              recordedDate: z.coerce.date(),
               studentId: z.number(),
               status: z.enum(Data.attendanceStatus),
             })

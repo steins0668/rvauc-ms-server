@@ -1,6 +1,7 @@
 import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { Schema } from "../../../../../models";
 import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
+import { Repositories as CoreRepositories } from "../../../repositories";
 import { Core } from "../../../core";
 import { Data } from "../data";
 import { Repositories } from "../repositories";
@@ -11,33 +12,81 @@ export namespace AttendanceRegistration {
   export async function create() {
     const context = await createContext();
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
-    return new Service(attendanceRecordRepo);
+    const classOfferingRepo = new CoreRepositories.ClassOffering(context);
+    return new Service({ attendanceRecordRepo, classOfferingRepo });
   }
 
   export class Service {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
-    public constructor(attendanceRecordRepo: Repositories.AttendanceRecord) {
-      this._attendanceRecordRepo = attendanceRecordRepo;
+    private readonly _classOfferingRepo: CoreRepositories.ClassOffering;
+
+    public constructor(args: {
+      attendanceRecordRepo: Repositories.AttendanceRecord;
+      classOfferingRepo: CoreRepositories.ClassOffering;
+    }) {
+      this._attendanceRecordRepo = args.attendanceRecordRepo;
+      this._classOfferingRepo = args.classOfferingRepo;
     }
 
     public async updateOrNewRecords(args: {
+      classDto: (Awaited<
+        ReturnType<Core.Services.ClassSchedule.Service["getForNow"]>
+      > & { success: true })["result"];
       values: {
         classId: number;
         classOfferingId: number;
-        date: Date;
+        currentDate: Date;
+        professorId?: number | undefined;
         records: {
+          recordedDate: Date;
           studentId: number;
           status: keyof typeof Data.attendanceStatus;
         }[];
       };
       dbOrTx?: DbOrTx | undefined;
     }) {
-      const { values, dbOrTx } = args;
+      type AttendanceRecords = {
+        recordedAt: string;
+        recordedMs: number;
+        datePh: string;
+        recordedDate: Date;
+        studentId: number;
+        status: "present" | "late" | "absent" | "excused";
+      }[];
 
-      let recordsToUpdate = [];
-      let recordsToInsert = [];
+      const { classDto, values, dbOrTx } = args;
 
-      const datePh = TimeUtil.toPhDate(values.date);
+      const { class: class_, sessionDate } = classDto;
+
+      const isWithinSchedule = (recordedDate: Date) => {
+        //  add start time and end time to midnight to get schedule
+        const { startTimeMs, endTimeMs } = TimeUtil.getTimeRange(
+          recordedDate,
+          class_.offering.startTime,
+          class_.offering.endTime,
+        );
+
+        const offsetMs = startTimeMs - 30 * 60; // ! accepting attendance 30 mins before class
+        const recordedMs = recordedDate.getTime();
+
+        return offsetMs <= recordedMs && recordedMs < endTimeMs;
+      };
+
+      const normalizeRecord = (r: (typeof args.values.records)[number]) => {
+        return {
+          ...r,
+          recordedAt: r.recordedDate.toISOString(),
+          recordedMs: r.recordedDate.getTime(),
+          datePh: TimeUtil.toPhDate(r.recordedDate),
+        };
+      };
+
+      let recordsToUpdate: AttendanceRecords = [];
+      let recordsToInsert: AttendanceRecords = [];
+      let rejectedRecords: AttendanceRecords = [];
+
+      const createdOrUpdatedAt = values.currentDate.toISOString();
+      const datePh = TimeUtil.toPhDate(sessionDate);
 
       const txPromise = this._attendanceRecordRepo.execTransaction(
         async (tx) => {
@@ -50,23 +99,33 @@ export namespace AttendanceRegistration {
               datePh,
               studentIds,
             },
-            dbOrTx,
+            dbOrTx: tx,
           });
 
-          recordsToUpdate = values.records.filter((r) =>
-            existingStudentIds.has(r.studentId),
-          );
+          for (const r of values.records) {
+            const normalized = normalizeRecord(r);
 
-          recordsToInsert = values.records.filter(
-            (r) => !existingStudentIds.has(r.studentId),
-          );
+            const exists = existingStudentIds.has(r.studentId);
+
+            const isSameDate = TimeUtil.toPhDate(r.recordedDate) === datePh;
+
+            if (!isSameDate || !isWithinSchedule(r.recordedDate)) {
+              rejectedRecords.push(normalized);
+              continue;
+            }
+
+            exists
+              ? recordsToUpdate.push(normalized)
+              : recordsToInsert.push(normalized);
+          }
 
           const updated = await this.updateRecords({
             dbOrTx: tx,
             values: {
               classId: values.classId,
               classOfferingId: values.classOfferingId,
-              datePh,
+              updatedAt: createdOrUpdatedAt,
+              updatedByUserId: values.professorId,
               records: recordsToUpdate,
             },
           });
@@ -80,9 +139,12 @@ export namespace AttendanceRegistration {
                 classOfferingId: values.classOfferingId,
                 studentId: r.studentId,
                 status: r.status,
-                recordedAt: values.date.toISOString(),
-                recordedMs: values.date.getTime(),
-                datePh,
+                createdAt: createdOrUpdatedAt,
+                recordedAt: r.recordedAt,
+                recordedMs: r.recordedMs,
+                updatedAt: createdOrUpdatedAt,
+                updatedByUserId: values.professorId ?? null,
+                datePh: r.datePh,
               };
             }),
           });
@@ -95,9 +157,10 @@ export namespace AttendanceRegistration {
       try {
         const result = await txPromise;
 
-        return ResultBuilder.success(
-          this.toUpdateOrNewRecordDto(result.updated, result.inserted),
-        );
+        return ResultBuilder.success({
+          ...this.toUpdateOrNewRecordDto(result.updated, result.inserted),
+          rejected: rejectedRecords,
+        });
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -256,8 +319,12 @@ export namespace AttendanceRegistration {
       values: {
         classId: number;
         classOfferingId: number;
-        datePh: string;
+        updatedByUserId?: number | undefined;
+        updatedAt: string;
         records: {
+          datePh: string;
+          recordedAt: string;
+          recordedMs: number;
           studentId: number;
           status: keyof typeof Data.attendanceStatus;
         }[];
@@ -275,13 +342,19 @@ export namespace AttendanceRegistration {
           dbOrTx: args.dbOrTx,
           fn: async (update) =>
             update
-              .set({ status: r.status })
+              .set({
+                recordedAt: r.recordedAt,
+                recordedMs: r.recordedMs,
+                status: r.status,
+                updatedAt: values.updatedAt,
+                updatedByUserId: values.updatedByUserId,
+              })
               .where(
                 and(
                   eq(ar.studentId, r.studentId),
                   eq(ar.classId, values.classId),
                   eq(ar.classOfferingId, values.classOfferingId),
-                  eq(ar.datePh, values.datePh),
+                  eq(ar.datePh, r.datePh),
                 ),
               )
               .returning(),
@@ -290,7 +363,7 @@ export namespace AttendanceRegistration {
         if (res.length === 0)
           throw new Core.Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_UPDATE_ERROR",
-            message: `Attendance record with class_id: ${values.classId}, class_offering_id: ${values.classOfferingId}, and student_id: ${r.studentId} for date: ${values.datePh} not found.`,
+            message: `Attendance record with class_id: ${values.classId}, class_offering_id: ${values.classOfferingId}, and student_id: ${r.studentId} for date: ${r.datePh} not found.`,
           });
 
         updated.push(...res);
