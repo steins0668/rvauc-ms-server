@@ -12,7 +12,9 @@ export namespace Errors {
       | "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR"
       | "ENROLLMENT_DATA_QUERY_ERROR"
       | "ENROLLMENT_DATA_STORE_ERROR"
-      | "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR";
+      | "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR"
+      | "ENROLLMENT_DATA_TRANSACTION_ERROR"
+      | "ENROLLMENT_DATA_UPDATE_ERROR";
 
     export class ErrorClass extends BaseError<ErrorName> {}
 
@@ -25,6 +27,8 @@ export namespace Errors {
       ENROLLMENT_DATA_QUERY_ERROR: 500,
       ENROLLMENT_DATA_STORE_ERROR: 500,
       ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR: 404,
+      ENROLLMENT_DATA_TRANSACTION_ERROR: 500,
+      ENROLLMENT_DATA_UPDATE_ERROR: 500,
     };
 
     export function normalizeError<E extends ErrorName>({
