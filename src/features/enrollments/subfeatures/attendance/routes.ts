@@ -6,7 +6,7 @@ import { Schemas } from "./schemas";
 import { Controllers } from "./controllers";
 import { Middlewares } from "./middlewares";
 
-const { classId, studentId } = Schemas.RequestParams;
+const { classId, classOfferingId, studentId } = Schemas.RequestParams;
 const { attendanceRecord } = Schemas.RequestQuery;
 
 export const Routes = Router();
@@ -78,4 +78,14 @@ Routes.post(
   Auth.Core.Middlewares.validateJwt("minimal"),
   validateRequest({ body: Schemas.RequestBody.newRecord }),
   Controllers.handleNewRecord,
+);
+
+Routes.post(
+  "/records/class/:classId/class-offering/:classOfferingId",
+  Auth.Core.Middlewares.validateJwt("full"),
+  validateRequest({
+    params: classId.extend(classOfferingId.shape),
+    body: Schemas.RequestBody.recordSubmission,
+  }),
+  Controllers.handleSubmitRecords,
 );

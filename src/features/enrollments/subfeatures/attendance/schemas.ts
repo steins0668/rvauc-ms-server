@@ -14,6 +14,22 @@ export namespace Schemas {
       .strip();
 
     export type NewRecord = z.infer<typeof newRecord>;
+
+    export const recordSubmission = z
+      .strictObject({
+        date: z.coerce.date(),
+        records: z.array(
+          z
+            .strictObject({
+              studentId: z.number(),
+              status: z.enum(Data.attendanceStatus),
+            })
+            .strip(),
+        ),
+      })
+      .strip();
+
+    export type RecordSubmission = z.infer<typeof recordSubmission>;
   }
 
   export namespace RequestQuery {
@@ -31,11 +47,16 @@ export namespace Schemas {
       .strictObject({ classId: z.coerce.number() })
       .strip();
 
+    export const classOfferingId = z
+      .strictObject({ classOfferingId: z.coerce.number() })
+      .strip();
+
     export const studentId = z
       .strictObject({ studentId: z.coerce.number() })
       .strip();
 
     export type ClassId = z.infer<typeof classId>;
+    export type ClassOfferingId = z.infer<typeof classOfferingId>;
     export type StudentId = z.infer<typeof studentId>;
   }
 
