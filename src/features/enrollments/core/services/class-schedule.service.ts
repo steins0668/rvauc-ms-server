@@ -73,7 +73,7 @@ export namespace ClassSchedule {
 
       try {
         const parsed = this.toDto(result);
-        return ResultBuilder.success(parsed);
+        return ResultBuilder.success({ ...parsed, sessionDate: args.date });
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({

@@ -295,6 +295,27 @@
       "when": 1774862337450,
       "tag": "0041_glossy_iron_fist",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "6",
+      "when": 1775126639445,
+      "tag": "0042_yellow_freak",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "6",
+      "when": 1775133928238,
+      "tag": "0043_tearful_gateway",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "6",
+      "when": 1775143174758,
+      "tag": "0044_flimsy_warbound",
+      "breakpoints": true
     }
   ]
 }

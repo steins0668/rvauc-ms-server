@@ -1,6 +1,9 @@
 import { createContext, DbOrTx } from "../../../../../db/create-context";
-import { ResultBuilder, TimeUtil } from "../../../../../utils";
+import { Schema } from "../../../../../models";
+import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
+import { Repositories as CoreRepositories } from "../../../repositories";
 import { Core } from "../../../core";
+import { Data } from "../data";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
 import { Types } from "../types";
@@ -9,13 +12,165 @@ export namespace AttendanceRegistration {
   export async function create() {
     const context = await createContext();
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
-    return new Service(attendanceRecordRepo);
+    return new Service({ attendanceRecordRepo });
   }
 
   export class Service {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
-    public constructor(attendanceRecordRepo: Repositories.AttendanceRecord) {
-      this._attendanceRecordRepo = attendanceRecordRepo;
+
+    public constructor(args: {
+      attendanceRecordRepo: Repositories.AttendanceRecord;
+    }) {
+      this._attendanceRecordRepo = args.attendanceRecordRepo;
+    }
+
+    public async updateOrNewRecords(args: {
+      classDto: (Awaited<
+        ReturnType<Core.Services.ClassSchedule.Service["getForNow"]>
+      > & { success: true })["result"];
+      values: {
+        classId: number;
+        classOfferingId: number;
+        currentDate: Date;
+        professorId?: number | undefined;
+        records: {
+          recordedDate: Date;
+          studentId: number;
+          status: keyof typeof Data.attendanceStatus;
+        }[];
+      };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      type AttendanceRecords = {
+        recordedAt: string;
+        recordedMs: number;
+        datePh: string;
+        recordedDate: Date;
+        studentId: number;
+        status: "present" | "late" | "absent" | "excused";
+      }[];
+
+      const { classDto, values, dbOrTx } = args;
+
+      const { class: class_, sessionDate } = classDto;
+
+      const isWithinSchedule = (recordedDate: Date) => {
+        //  add start time and end time to midnight to get schedule
+        const { startTimeMs, endTimeMs } = TimeUtil.getTimeRange(
+          recordedDate,
+          class_.offering.startTime,
+          class_.offering.endTime,
+        );
+
+        const offsetMs = startTimeMs - 30 * 60; // ! accepting attendance 30 mins before class
+        const recordedMs = recordedDate.getTime();
+
+        return offsetMs <= recordedMs && recordedMs < endTimeMs;
+      };
+
+      const normalizeRecord = (r: (typeof values.records)[number]) => {
+        return {
+          ...r,
+          recordedAt: r.recordedDate.toISOString(),
+          recordedMs: r.recordedDate.getTime(),
+          datePh: TimeUtil.toPhDate(r.recordedDate),
+        };
+      };
+
+      const organizeRecords = (existingStudentIds: Set<number>) => {
+        let updates: AttendanceRecords = [];
+        let inserts: AttendanceRecords = [];
+        let rejects: AttendanceRecords = [];
+
+        for (const r of values.records) {
+          const normalized = normalizeRecord(r);
+
+          const exists = existingStudentIds.has(r.studentId);
+
+          const isSameDate = TimeUtil.toPhDate(r.recordedDate) === datePh;
+
+          if (!isSameDate || !isWithinSchedule(r.recordedDate)) {
+            rejects.push(normalized);
+            continue;
+          }
+
+          exists ? updates.push(normalized) : inserts.push(normalized);
+        }
+
+        return { updates, inserts, rejects };
+      };
+
+      const createdOrUpdatedAt = values.currentDate.toISOString();
+      const datePh = TimeUtil.toPhDate(sessionDate);
+
+      const txPromise = this._attendanceRecordRepo.execTransaction(
+        async (tx) => {
+          const studentIds = values.records.map((r) => r.studentId);
+
+          const existingStudentIds = await this.getExistingRecords({
+            values: {
+              classId: values.classId,
+              classOfferingId: values.classOfferingId,
+              datePh,
+              studentIds,
+            },
+            dbOrTx: tx,
+          });
+
+          const organizedRecords = organizeRecords(existingStudentIds);
+
+          const updated = await this.updateRecords({
+            dbOrTx: tx,
+            values: {
+              classId: values.classId,
+              classOfferingId: values.classOfferingId,
+              updatedAt: createdOrUpdatedAt,
+              updatedByUserId: values.professorId,
+              records: organizedRecords.updates,
+            },
+          });
+
+          const inserted = await this.insertRecords({
+            dbOrTx: tx,
+            onConflict: "doNothing",
+            values: organizedRecords.inserts.map((r) => {
+              return {
+                classId: values.classId,
+                classOfferingId: values.classOfferingId,
+                studentId: r.studentId,
+                status: r.status,
+                createdAt: createdOrUpdatedAt,
+                recordedAt: r.recordedAt,
+                recordedMs: r.recordedMs,
+                updatedAt: createdOrUpdatedAt,
+                updatedByUserId: values.professorId ?? null,
+                datePh: r.datePh,
+              };
+            }),
+          });
+
+          return { updated, inserted, rejected: organizedRecords.rejects };
+        },
+        dbOrTx,
+      );
+
+      try {
+        const result = await txPromise;
+
+        return ResultBuilder.success({
+          ...this.toUpdateOrNewRecordDto(result.updated, result.inserted),
+          rejected: result.rejected,
+        });
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_TRANSACTION_ERROR",
+            message:
+              "Failed to update and/or insert in attendance_records table.",
+            err,
+          }),
+        );
+      }
     }
 
     public async newRecord(args: {
@@ -48,12 +203,12 @@ export namespace AttendanceRegistration {
             name: "ENROLLMENT_DATA_STORE_ERROR",
             message: `Failed storing ${args.values.length} new attendance records`,
             err,
-          })
+          }),
         );
       }
 
       try {
-        const dtoList = inserted.map((raw) => this.toDto(raw));
+        const dtoList = inserted.map((raw) => this.toNewRecordDto(raw));
         return ResultBuilder.success(dtoList);
       } catch (err) {
         return ResultBuilder.fail(
@@ -61,13 +216,13 @@ export namespace AttendanceRegistration {
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
             message: "Failed converting raw attendance to dto",
             err,
-          })
+          }),
         );
       }
     }
 
-    private toDto(
-      raw: NonNullable<Awaited<ReturnType<typeof this.insertRecords>>[number]>
+    private toNewRecordDto(
+      raw: NonNullable<Awaited<ReturnType<typeof this.insertRecords>>[number]>,
     ) {
       const dto = {
         id: raw.id,
@@ -78,6 +233,21 @@ export namespace AttendanceRegistration {
       };
 
       return Schemas.Dto.registeredAttendance.parse(dto);
+    }
+
+    private toUpdateOrNewRecordDto(
+      updated: Awaited<ReturnType<typeof this.updateRecords>>,
+      inserted: Awaited<ReturnType<typeof this.insertRecords>>,
+    ) {
+      return [...updated, ...inserted].map((r) => {
+        return {
+          id: r.id,
+          status: r.status,
+          date: r.datePh,
+          time: TimeUtil.toPhTime(new Date(r.recordedAt)),
+          isNew: r.recordCount === 1,
+        };
+      });
     }
 
     private async insertRecords(args: {
@@ -91,19 +261,115 @@ export namespace AttendanceRegistration {
         fn: async ({ table: ar, insert, sql }) => {
           let insertion = insert.values(values);
 
-          const targets = [sql`student_id`, sql`class_id`, sql`date_ph`];
+          const targets = [
+            sql`student_id`,
+            sql`class_id`,
+            sql`class_offering_id`,
+            sql`date_ph`,
+          ];
 
           insertion =
             onConflict === "doNothing"
               ? insertion.onConflictDoNothing({ target: targets })
               : insertion.onConflictDoUpdate({
-                  target: [ar.studentId, ar.classId, ar.datePh],
+                  target: [
+                    ar.studentId,
+                    ar.classId,
+                    ar.classOfferingId,
+                    ar.datePh,
+                  ],
                   set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
                 });
 
           return insertion.returning();
         },
       });
+    }
+
+    private async getExistingRecords(args: {
+      values: {
+        classId: number;
+        classOfferingId: number;
+        datePh: string;
+        studentIds: number[];
+      };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { values, dbOrTx } = args;
+
+      return await this._attendanceRecordRepo
+        .execQuery({
+          dbOrTx,
+          fn: async (query) =>
+            query.findMany({
+              where: (ar, { and, eq, inArray }) =>
+                and(
+                  inArray(ar.studentId, values.studentIds),
+                  eq(ar.classId, values.classId),
+                  eq(ar.classOfferingId, values.classOfferingId),
+                  eq(ar.datePh, values.datePh),
+                ),
+              columns: { studentId: true },
+            }),
+        })
+        .then((r) => new Set(r.map((r) => r.studentId)));
+    }
+
+    private async updateRecords(args: {
+      values: {
+        classId: number;
+        classOfferingId: number;
+        updatedByUserId?: number | undefined;
+        updatedAt: string;
+        records: {
+          datePh: string;
+          recordedAt: string;
+          recordedMs: number;
+          studentId: number;
+          status: keyof typeof Data.attendanceStatus;
+        }[];
+      };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { values } = args;
+      const { attendanceRecords: ar } = Schema;
+      const { and, eq } = RepositoryUtil.filters;
+
+      const updated = [];
+
+      for (const r of args.values.records) {
+        const res = await this._attendanceRecordRepo.execUpdate({
+          dbOrTx: args.dbOrTx,
+          fn: async (update) =>
+            update
+              .set({
+                recordedAt: r.recordedAt,
+                recordedMs: r.recordedMs,
+                status: r.status,
+                updatedAt: values.updatedAt,
+                updatedByUserId: values.updatedByUserId,
+              })
+              .where(
+                and(
+                  eq(ar.studentId, r.studentId),
+                  eq(ar.classId, values.classId),
+                  eq(ar.classOfferingId, values.classOfferingId),
+                  eq(ar.datePh, r.datePh),
+                ),
+              )
+              .returning(),
+        });
+
+        if (res.length === 0)
+          throw new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_UPDATE_ERROR",
+            message: `Attendance record with class_id: ${values.classId}, class_offering_id: ${values.classOfferingId}, and student_id: ${r.studentId} for date: ${r.datePh} not found.`,
+          });
+
+        updated.push(...res);
+      }
+
+      return updated;
     }
   }
 }

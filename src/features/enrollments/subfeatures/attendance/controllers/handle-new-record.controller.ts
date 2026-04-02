@@ -125,8 +125,10 @@ export async function handleNewRecord(
         schedStartTime: class_.offering.startTime,
         schedEndTime: class_.offering.endTime,
       }),
+      createdAt: finalDate.toISOString(),
       recordedAt: finalDate.toISOString(),
       recordedMs: finalDate.getTime(),
+      updatedAt: finalDate.toISOString(),
       datePh: TimeUtil.toPhDate(finalDate),
     },
   });

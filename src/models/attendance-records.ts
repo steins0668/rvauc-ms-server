@@ -5,7 +5,7 @@ import {
   sqliteTable,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { classes, classOfferings, students } from "./schema";
+import { classes, classOfferings, students, users } from "./schema";
 
 export const attendanceRecords = sqliteTable(
   "attendance_records",
@@ -30,17 +30,21 @@ export const attendanceRecords = sqliteTable(
         onUpdate: "cascade",
       }),
     status: text("status").notNull(),
+    createdAt: text("created_at").notNull(),
     recordCount: integer("record_count").notNull().default(1),
     recordedAt: text("recorded_at").notNull(), //  ! complete ISO date
     recordedMs: integer("recorded_ms").notNull(), //  ! epoch ms
+    updatedAt: text("updated_at").notNull(),
+    updatedByUserId: integer("updated_by_user_id").references(() => users.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
     datePh: text("date_ph").notNull(), //  ! Ph date (yyyy-mm-dd)
   },
   (t) => [
-    uniqueIndex("uidx_attendance_records_student_id_class_id_date_ph").on(
-      t.studentId,
-      t.classId,
-      t.datePh,
-    ),
+    uniqueIndex(
+      "uidx_attendance_records_student_id_class_id_class_offering_id_date_ph",
+    ).on(t.studentId, t.classId, t.classOfferingId, t.datePh),
   ],
 );
 
@@ -58,6 +62,10 @@ export const attendanceRecordsRelations = relations(
     classOffering: one(classOfferings, {
       fields: [attendanceRecords.classOfferingId],
       references: [classOfferings.id],
+    }),
+    updatedByUser: one(users, {
+      fields: [attendanceRecords.updatedByUserId],
+      references: [users.id],
     }),
   }),
 );

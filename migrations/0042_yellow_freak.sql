@@ -1,0 +1,2 @@
+DROP INDEX `uidx_attendance_records_student_id_class_id_date_ph`;--> statement-breakpoint
+CREATE UNIQUE INDEX `uidx_attendance_records_student_id_class_id_class_offering_id_date_ph` ON `attendance_records` (`student_id`,`class_id`,`class_offering_id`,`date_ph`);
