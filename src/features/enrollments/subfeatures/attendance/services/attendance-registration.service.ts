@@ -72,7 +72,7 @@ export namespace AttendanceRegistration {
         return offsetMs <= recordedMs && recordedMs < endTimeMs;
       };
 
-      const normalizeRecord = (r: (typeof args.values.records)[number]) => {
+      const normalizeRecord = (r: (typeof values.records)[number]) => {
         return {
           ...r,
           recordedAt: r.recordedDate.toISOString(),
@@ -81,9 +81,28 @@ export namespace AttendanceRegistration {
         };
       };
 
-      let recordsToUpdate: AttendanceRecords = [];
-      let recordsToInsert: AttendanceRecords = [];
-      let rejectedRecords: AttendanceRecords = [];
+      const organizeRecords = (existingStudentIds: Set<number>) => {
+        let updates: AttendanceRecords = [];
+        let inserts: AttendanceRecords = [];
+        let rejects: AttendanceRecords = [];
+
+        for (const r of values.records) {
+          const normalized = normalizeRecord(r);
+
+          const exists = existingStudentIds.has(r.studentId);
+
+          const isSameDate = TimeUtil.toPhDate(r.recordedDate) === datePh;
+
+          if (!isSameDate || !isWithinSchedule(r.recordedDate)) {
+            rejects.push(normalized);
+            continue;
+          }
+
+          exists ? updates.push(normalized) : inserts.push(normalized);
+        }
+
+        return { updates, inserts, rejects };
+      };
 
       const createdOrUpdatedAt = values.currentDate.toISOString();
       const datePh = TimeUtil.toPhDate(sessionDate);
@@ -102,22 +121,7 @@ export namespace AttendanceRegistration {
             dbOrTx: tx,
           });
 
-          for (const r of values.records) {
-            const normalized = normalizeRecord(r);
-
-            const exists = existingStudentIds.has(r.studentId);
-
-            const isSameDate = TimeUtil.toPhDate(r.recordedDate) === datePh;
-
-            if (!isSameDate || !isWithinSchedule(r.recordedDate)) {
-              rejectedRecords.push(normalized);
-              continue;
-            }
-
-            exists
-              ? recordsToUpdate.push(normalized)
-              : recordsToInsert.push(normalized);
-          }
+          const organizedRecords = organizeRecords(existingStudentIds);
 
           const updated = await this.updateRecords({
             dbOrTx: tx,
@@ -126,14 +130,14 @@ export namespace AttendanceRegistration {
               classOfferingId: values.classOfferingId,
               updatedAt: createdOrUpdatedAt,
               updatedByUserId: values.professorId,
-              records: recordsToUpdate,
+              records: organizedRecords.updates,
             },
           });
 
           const inserted = await this.insertRecords({
             dbOrTx: tx,
             onConflict: "doNothing",
-            values: recordsToInsert.map((r) => {
+            values: organizedRecords.inserts.map((r) => {
               return {
                 classId: values.classId,
                 classOfferingId: values.classOfferingId,
@@ -149,7 +153,7 @@ export namespace AttendanceRegistration {
             }),
           });
 
-          return { updated, inserted };
+          return { updated, inserted, rejected: organizedRecords.rejects };
         },
         dbOrTx,
       );
@@ -159,7 +163,7 @@ export namespace AttendanceRegistration {
 
         return ResultBuilder.success({
           ...this.toUpdateOrNewRecordDto(result.updated, result.inserted),
-          rejected: rejectedRecords,
+          rejected: result.rejected,
         });
       } catch (err) {
         return ResultBuilder.fail(
