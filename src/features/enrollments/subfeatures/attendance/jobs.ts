@@ -43,14 +43,14 @@ export namespace Jobs {
 
     const attendanceRecords: Types.InsertModels.AttendanceRecord[] = [];
 
-    for (const classOffering of endedClasses) {
-      const { enrollments } = classOffering;
+    for (const class_ of endedClasses) {
+      const { enrollments } = class_;
 
       const records: Types.InsertModels.AttendanceRecord[] = enrollments.map(
         (e) => ({
           studentId: e.studentId,
-          classId: classOffering.classId,
-          classOfferingId: classOffering.id,
+          classId: class_.class.id,
+          classOfferingId: class_.class.offering.id,
           status: "absent",
           recordedAt: dateIso,
           recordedMs: timeMs,
