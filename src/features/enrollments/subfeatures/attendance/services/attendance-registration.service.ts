@@ -12,20 +12,16 @@ export namespace AttendanceRegistration {
   export async function create() {
     const context = await createContext();
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
-    const classOfferingRepo = new CoreRepositories.ClassOffering(context);
-    return new Service({ attendanceRecordRepo, classOfferingRepo });
+    return new Service({ attendanceRecordRepo });
   }
 
   export class Service {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
-    private readonly _classOfferingRepo: CoreRepositories.ClassOffering;
 
     public constructor(args: {
       attendanceRecordRepo: Repositories.AttendanceRecord;
-      classOfferingRepo: CoreRepositories.ClassOffering;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
-      this._classOfferingRepo = args.classOfferingRepo;
     }
 
     public async updateOrNewRecords(args: {
