@@ -75,15 +75,15 @@ export async function handleNewRecord(
   const { payload: student } = auth;
 
   logger.log("debug", "Attempting to get student's ongoing classs...");
-  const queriedClassOffering = await classSchedService.getForNow({
+  const classQuery = await classSchedService.getForNow({
     userId: student.id,
     role: student.role,
     date: finalDate,
     termId: term.id,
   });
 
-  if (!queriedClassOffering.success) {
-    const { error } = queriedClassOffering;
+  if (!classQuery.success) {
+    const { error } = classQuery;
 
     logger.log("error", "Failed querying enrollments.", error);
 
@@ -98,9 +98,9 @@ export async function handleNewRecord(
     });
   }
 
-  const { result: classOffering } = queriedClassOffering;
+  const { class: class_ } = classQuery.result;
 
-  if (classOffering.room !== body.room) {
+  if (class_.offering.room !== body.room) {
     logger.log(
       "error",
       "Student attempted to take attendance in the wrong room.",
@@ -118,12 +118,12 @@ export async function handleNewRecord(
     onConflict: "doUpdate",
     value: {
       studentId: student.id,
-      classId: classOffering.classId,
-      classOfferingId: classOffering.id,
+      classId: class_.id,
+      classOfferingId: class_.offering.id,
       status: getAttendanceStatus({
         attendanceDate: finalDate,
-        schedStartTime: classOffering.startTime,
-        schedEndTime: classOffering.endTime,
+        schedStartTime: class_.offering.startTime,
+        schedEndTime: class_.offering.endTime,
       }),
       recordedAt: finalDate.toISOString(),
       recordedMs: finalDate.getTime(),
@@ -159,7 +159,7 @@ export async function handleNewRecord(
   logger.log("info", message);
   return res.status(201).json({
     success: true,
-    result: { enrollment: classOffering, attendance },
+    result: { enrollment: class_, attendance },
     message,
   });
 }
