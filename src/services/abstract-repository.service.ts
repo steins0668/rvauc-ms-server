@@ -2,12 +2,12 @@ import { asc, desc, SQL } from "drizzle-orm";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { SQLiteTable } from "drizzle-orm/sqlite-core";
 import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
-import type { DbContext, TxContext } from "../db/create-context";
+import type { DbContext, DbOrTx, TxContext } from "../db/create-context";
 
 export abstract class Repository<
   TTable extends SQLiteTable,
   TSelectResult = InferSelectModel<TTable>,
-  TInsertModel = InferInsertModel<TTable>
+  TInsertModel = InferInsertModel<TTable>,
 > {
   protected _dbContext: DbContext;
   protected _table: SQLiteTable;
@@ -18,9 +18,10 @@ export abstract class Repository<
   }
 
   public async execTransaction<T>(
-    fn: (tx: TxContext) => Promise<T>
+    fn: (tx: TxContext) => Promise<T>,
+    dbOrTx?: DbOrTx | undefined,
   ): Promise<T> {
-    return this._dbContext.transaction(async (tx) => fn(tx));
+    return (dbOrTx ?? this._dbContext).transaction(async (tx) => fn(tx));
   }
 
   /**
