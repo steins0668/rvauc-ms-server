@@ -21,7 +21,6 @@ export namespace Jobs {
 
     const date = new Date();
     const dateIso = date.toISOString();
-    const timeMs = date.getTime();
     const timePh = TimeUtil.toPhTime(date);
     const datePh = TimeUtil.toPhDate(date);
 
@@ -45,6 +44,13 @@ export namespace Jobs {
 
     for (const class_ of endedClasses) {
       const { enrollments } = class_;
+      const { offering } = class_.class;
+
+      const base = new Date(date);
+      base.setHours(0, 0, 0, 0);
+
+      const recordedMs = base.getTime() + offering.endTime;
+      const recordedDate = new Date(recordedMs);
 
       const records: Types.InsertModels.AttendanceRecord[] = enrollments.map(
         (e) => ({
@@ -52,8 +58,10 @@ export namespace Jobs {
           classId: class_.class.id,
           classOfferingId: class_.class.offering.id,
           status: "absent",
-          recordedAt: dateIso,
-          recordedMs: timeMs,
+          createdAt: dateIso,
+          recordedAt: recordedDate.toISOString(),
+          recordedMs: recordedDate.getTime(),
+          updatedAt: dateIso,
           datePh: datePh,
         }),
       );
