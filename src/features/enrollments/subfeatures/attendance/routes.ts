@@ -44,13 +44,55 @@ Routes.get(
   }),
 );
 
+Routes.post(
+  "/new-record",
+  Auth.Core.Middlewares.validateJwt("minimal"),
+  validateRequest({ body: Schemas.RequestBody.newRecord }),
+  Controllers.handleNewRecord,
+);
+
 /**
- * GET /view-records/class/:classId/student/:studentId
+ * ! past this point are new endpoints. some does exactly the same as the endpoints above but have been renamed for clarity.
+ * todo: remove the endpoints above once the client has implemented the new endpoints
+ */
+
+/**
+ * GET
+ *
+ * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
+ * @returns {import("./schemas").Schemas.Dto.ClassAttendance.StudentView} for students
+ */
+Routes.get(
+  "/records/class/:classId",
+  Auth.Core.Middlewares.validateJwt("full"),
+  validateRequest({
+    params: classId,
+    query: attendanceRecord,
+  }),
+  Controllers._handlewViewRecords({
+    allowedRoles: ["student", "professor"],
+    scope: "class",
+    extractInput: (req) => {
+      const { validated } = req as StrictValidatedRequest<
+        Schemas.RequestParams.ClassId,
+        {},
+        {},
+        {}
+      >;
+      const { params } = validated;
+
+      return { classId: params.classId };
+    },
+  }),
+);
+
+/**
+ * GET
  *
  * @returns {import('./schemas').Schemas.Dto.StudentAttendance.ProfessorView} for professors
  */
 Routes.get(
-  "/view-records/class/:classId/student/:studentId",
+  "/records/class/:classId/student/:studentId",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
     params: classId.extend(studentId.shape),
@@ -74,13 +116,6 @@ Routes.get(
 );
 
 Routes.post(
-  "/new-record",
-  Auth.Core.Middlewares.validateJwt("minimal"),
-  validateRequest({ body: Schemas.RequestBody.newRecord }),
-  Controllers.handleNewRecord,
-);
-
-Routes.post(
   "/records/class/:classId/class-offering/:classOfferingId",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
@@ -88,4 +123,11 @@ Routes.post(
     body: Schemas.RequestBody.recordSubmission,
   }),
   Controllers.handleSubmitRecords,
+);
+
+Routes.post(
+  "/new-record",
+  Auth.Core.Middlewares.validateJwt("minimal"),
+  validateRequest({ body: Schemas.RequestBody.newRecord }),
+  Controllers.handleNewRecord,
 );
