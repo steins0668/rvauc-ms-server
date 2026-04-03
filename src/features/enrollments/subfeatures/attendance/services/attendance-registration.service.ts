@@ -44,6 +44,12 @@ export namespace AttendanceRegistration {
 
       const { class: class_, sessionDate } = classDto;
 
+      const uniqueRecords = new Map<number, (typeof values.records)[number]>();
+
+      for (const r of values.records) uniqueRecords.set(r.studentId, r);
+
+      values.records = Array.from(uniqueRecords.values());
+
       const isWithinSchedule = (recordedDate: Date) => {
         //  add start time and end time to midnight to get schedule
         const { startTimeMs, endTimeMs } = TimeUtil.getTimeRange(
@@ -78,11 +84,11 @@ export namespace AttendanceRegistration {
         for (const r of values.records) {
           const normalized = normalizeRecord(r);
 
-          const exists = existingStudentIds.has(r.studentId);
+          const exists = existingStudentIds.has(normalized.studentId);
 
-          const isSameDate = TimeUtil.toPhDate(r.recordedDate) === datePh;
+          const isSameDate = normalized.datePh === datePh;
 
-          if (!isSameDate || !isWithinSchedule(r.recordedDate)) {
+          if (!isSameDate || !isWithinSchedule(normalized.recordedDate)) {
             rejects.push(normalized);
             continue;
           }
