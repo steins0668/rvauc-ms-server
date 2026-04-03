@@ -165,7 +165,7 @@ export function handleViewRecords<
 
     logger.log("debug", "Attempting to get attendance records...");
     const queried = await attendanceDataService.getAttendance({
-      constraints: { limit: 6 },
+      constraints: { limit: query.limit, page: query.page },
       queryContext,
     });
 

@@ -37,6 +37,8 @@ export namespace Schemas {
     export const attendanceRecord = z
       .strictObject({
         date: z.iso.datetime().default(Clock.now().toISOString()),
+        limit: z.number().min(1).max(50).default(6),
+        page: z.number().min(1).default(1),
       })
       .strip();
 
