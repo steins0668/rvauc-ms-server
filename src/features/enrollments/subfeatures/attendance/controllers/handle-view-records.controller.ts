@@ -137,6 +137,7 @@ export function handleViewRecords<
       }
       case "professor-student": {
         roleScopeValues = { professorId: user.id };
+        break;
       }
     }
 
