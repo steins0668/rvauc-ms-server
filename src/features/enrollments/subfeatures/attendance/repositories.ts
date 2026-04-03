@@ -90,21 +90,29 @@ export namespace Repositories {
       );
     }
 
+    /**
+     * @description
+     * ! THIS METHOD WILL ONLY COUNT THE EXISTING RECORDS. IF YOU WANT TO GET THE TRUE TOTAL OF ABSENCES, YOU MAY HAVE TO CROSS CHECK AGAINST THE TOTAL ENROLLEES IN A CLASS
+     * @param args
+     * @returns
+     */
     public async selectSummary(args: {
       where?: SQL | undefined;
       dbOrTx?: DbOrTx | undefined;
     }) {
       const { where, dbOrTx } = args;
-      const { eq } = RepositoryUtil.filters;
 
       const { present, absent, late, excused } = Data.attendanceStatus;
 
-      const query = (dbOrTx ?? this._dbContext)
+      const context = dbOrTx ?? this._dbContext;
+
+      const query = context
         .select({
           present: sql<number>`count(case when ${attendanceRecords.status} = ${present} then 1 end)`,
           absent: sql<number>`count(case when ${attendanceRecords.status} = ${absent} then 1 end)`,
           late: sql<number>`count(case when ${attendanceRecords.status} = ${late} then 1 end)`,
           excused: sql<number>`count(case when ${attendanceRecords.status} = ${excused} then 1 end)`,
+          totalRecords: sql<number>`count(*)`,
         })
         .from(attendanceRecords);
 
@@ -113,7 +121,14 @@ export namespace Repositories {
       console.log(query.toSQL());
 
       return await query.then(
-        (r) => r[0] ?? { present: 0, absent: 0, late: 0, excused: 0 },
+        (r) =>
+          r[0] ?? {
+            present: 0,
+            absent: 0,
+            late: 0,
+            excused: 0,
+            totalRecords: 0,
+          },
       );
     }
 

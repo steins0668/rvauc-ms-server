@@ -88,6 +88,8 @@ export namespace Schemas {
         absent: z.number(),
         late: z.number(),
         excused: z.number(),
+        totalRecords: z.number(),
+        missingRecords: z.number(),
       })
       .strip();
 
