@@ -115,6 +115,11 @@ Routes.get(
   }),
 );
 
+/**
+ * POST
+ * Only allows professors for now.
+ * @returns {import('./schemas').Schemas.Dto.ClassAttendance.MutationResult } for professors
+ */
 Routes.post(
   "/records/class/:classId/class-offering/:classOfferingId",
   Auth.Core.Middlewares.validateJwt("full"),

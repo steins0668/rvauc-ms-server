@@ -23,7 +23,7 @@ export namespace AttendanceRegistration {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
     }
 
-    public async updateOrNewRecords(args: {
+    public async mutateRecords(args: {
       classDto: (Awaited<
         ReturnType<Core.Services.ClassSchedule.Service["getForNow"]>
       > & { success: true })["result"];
@@ -67,7 +67,10 @@ export namespace AttendanceRegistration {
         };
       };
 
-      const organizeRecords = (existingStudentIds: Set<number>) => {
+      const organizeRecords = (
+        existingStudentIds: Set<number>,
+        datePh: string,
+      ) => {
         let updates: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
         let inserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
         let rejects: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
@@ -107,7 +110,7 @@ export namespace AttendanceRegistration {
             dbOrTx: tx,
           });
 
-          const organizedRecords = organizeRecords(existingStudentIds);
+          const organizedRecords = organizeRecords(existingStudentIds, datePh);
 
           const updated = await this.updateRecords({
             dbOrTx: tx,
@@ -147,10 +150,13 @@ export namespace AttendanceRegistration {
       try {
         const result = await txPromise;
 
-        return ResultBuilder.success({
-          ...this.toUpdateOrNewRecordDto(result.updated, result.inserted),
-          rejected: result.rejected,
-        });
+        return ResultBuilder.success(
+          this.toAttendanceRecordMutationResultDto(
+            result.updated,
+            result.inserted,
+            result.rejected,
+          ),
+        );
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -222,13 +228,14 @@ export namespace AttendanceRegistration {
         isNew: raw.recordCount === 1,
       };
 
-      return Schemas.Dto.registeredAttendance.parse(dto);
+      return Schemas.Dto.insertedAttendance.parse(dto);
     }
 
-    private toUpdateOrNewRecordDto(
+    private toAttendanceRecordMutationResultDto(
       updated: Awaited<ReturnType<typeof this.updateRecords>>,
       inserted: Awaited<ReturnType<typeof this.insertRecords>>,
-    ) {
+      rejected: Schemas.Dto.ClassAttendance.NormalizedRecords,
+    ): Schemas.Dto.ClassAttendance.MutationResult {
       const updatedDto = updated.map((r) => {
         return {
           id: r.id,
@@ -249,7 +256,7 @@ export namespace AttendanceRegistration {
         };
       });
 
-      return { updated: updatedDto, inserted: insertedDto };
+      return { updated: updatedDto, inserted: insertedDto, rejected };
     }
 
     private async insertRecords(args: {

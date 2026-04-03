@@ -65,20 +65,20 @@ export namespace Schemas {
     export const base = z
       .strictObject({
         id: z.number(),
-        status: z.enum(Data.attendanceStatus),
+        status: z.string(),
         date: z.string(),
         time: z.string(),
       })
       .strip();
     export type Base = z.infer<typeof base>;
 
-    export const registeredAttendance = z
+    export const insertedAttendance = z
       .strictObject({
         ...base.shape,
         isNew: z.boolean(),
       })
       .strip();
-    export type RegisteredAttendance = z.infer<typeof registeredAttendance>;
+    export type InsertedAttendance = z.infer<typeof insertedAttendance>;
 
     export const summary = z
       .strictObject({
@@ -128,6 +128,14 @@ export namespace Schemas {
       export const normalizedRecords = z.array(normalizedRecord);
       export type NormalizedRecords = z.infer<typeof normalizedRecords>;
 
+      export const mutationResult = z
+        .strictObject({
+          updated: z.array(base),
+          inserted: z.array(insertedAttendance),
+          rejected: normalizedRecords,
+        })
+        .strip();
+      export type MutationResult = z.infer<typeof mutationResult>;
       //#endregion
     }
 

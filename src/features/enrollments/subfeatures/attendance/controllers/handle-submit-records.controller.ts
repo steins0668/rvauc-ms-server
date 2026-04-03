@@ -80,7 +80,7 @@ export async function handleSubmitRecords(req: Request, res: Response) {
   }
 
   logger.log("debug", "Attempting to update records...");
-  const tx = await attendanceRegistrationService.updateOrNewRecords({
+  const tx = await attendanceRegistrationService.mutateRecords({
     classDto: classQuery.result,
     values: {
       classId: params.classId,
