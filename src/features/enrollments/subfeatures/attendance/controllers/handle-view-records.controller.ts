@@ -54,7 +54,7 @@ export function handleViewRecords<
     ) {
       logger.log(
         "info",
-        "Invalid payload attempted to access `enrollments/attendance/view-record`.",
+        `Invalid payload attempted to access ${req.method} ${req.originalUrl}`,
       );
 
       return res.status(403).json({
