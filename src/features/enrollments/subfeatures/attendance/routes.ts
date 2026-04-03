@@ -27,7 +27,7 @@ Routes.get(
     params: classId,
     query: attendanceRecord,
   }),
-  Controllers._handlewViewRecords({
+  Controllers.handleViewRecords({
     allowedRoles: ["student", "professor"],
     scope: "class",
     extractInput: (req) => {
@@ -48,7 +48,7 @@ Routes.post(
   "/new-record",
   Auth.Core.Middlewares.validateJwt("minimal"),
   validateRequest({ body: Schemas.RequestBody.newRecord }),
-  Controllers.handleNewRecord,
+  Controllers.handleNewRfidScan,
 );
 
 /**
@@ -69,7 +69,7 @@ Routes.get(
     params: classId,
     query: attendanceRecord,
   }),
-  Controllers._handlewViewRecords({
+  Controllers.handleViewRecords({
     allowedRoles: ["student", "professor"],
     scope: "class",
     extractInput: (req) => {
@@ -98,7 +98,7 @@ Routes.get(
     params: classId.extend(studentId.shape),
     query: Schemas.RequestQuery.attendanceRecord,
   }),
-  Controllers._handlewViewRecords({
+  Controllers.handleViewRecords({
     allowedRoles: ["professor"],
     scope: "student",
     extractInput: (req) => {
@@ -130,9 +130,14 @@ Routes.post(
   Controllers.handleSubmitRecords,
 );
 
+/**
+ * POST
+ * Only allows students for now.
+ * @returns {import('./schemas').Schemas.Dto.InsertedAttendance } for students.
+ */
 Routes.post(
-  "/new-record",
+  "/new-rfid-scan",
   Auth.Core.Middlewares.validateJwt("minimal"),
   validateRequest({ body: Schemas.RequestBody.newRecord }),
-  Controllers.handleNewRecord,
+  Controllers.handleNewRfidScan,
 );

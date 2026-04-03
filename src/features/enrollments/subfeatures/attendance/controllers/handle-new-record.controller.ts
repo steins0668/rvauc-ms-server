@@ -7,7 +7,7 @@ import { Data } from "../data";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
-export async function handleNewRecord(
+export async function handleNewRfidScan(
   req: Request<{}, {}, Schemas.RequestBody.NewRecord>,
   res: Response,
 ) {
