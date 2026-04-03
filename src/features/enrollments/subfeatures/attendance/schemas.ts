@@ -110,6 +110,25 @@ export namespace Schemas {
         })
         .strip();
       export type ProfessorView = z.infer<typeof professorView>;
+
+      //#region
+      //  ! `AttendanceRegistration` service helpers ONLY
+      export const normalizedRecord = z
+        .strictObject({
+          recordedAt: z.string(),
+          recordedMs: z.number(),
+          datePh: z.string(),
+          recordedDate: z.date(),
+          studentId: z.number(),
+          status: z.enum(Data.attendanceStatus),
+        })
+        .strip();
+      export type NormalizedRecord = z.infer<typeof normalizedRecord>;
+
+      export const normalizedRecords = z.array(normalizedRecord);
+      export type NormalizedRecords = z.infer<typeof normalizedRecords>;
+
+      //#endregion
     }
 
     export namespace StudentAttendance {

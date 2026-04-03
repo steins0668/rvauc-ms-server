@@ -1,7 +1,6 @@
 import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { Schema } from "../../../../../models";
 import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
-import { Repositories as CoreRepositories } from "../../../repositories";
 import { Core } from "../../../core";
 import { Data } from "../data";
 import { Repositories } from "../repositories";
@@ -41,15 +40,6 @@ export namespace AttendanceRegistration {
       };
       dbOrTx?: DbOrTx | undefined;
     }) {
-      type AttendanceRecords = {
-        recordedAt: string;
-        recordedMs: number;
-        datePh: string;
-        recordedDate: Date;
-        studentId: number;
-        status: "present" | "late" | "absent" | "excused";
-      }[];
-
       const { classDto, values, dbOrTx } = args;
 
       const { class: class_, sessionDate } = classDto;
@@ -78,9 +68,9 @@ export namespace AttendanceRegistration {
       };
 
       const organizeRecords = (existingStudentIds: Set<number>) => {
-        let updates: AttendanceRecords = [];
-        let inserts: AttendanceRecords = [];
-        let rejects: AttendanceRecords = [];
+        let updates: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
+        let inserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
+        let rejects: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
 
         for (const r of values.records) {
           const normalized = normalizeRecord(r);
@@ -239,7 +229,7 @@ export namespace AttendanceRegistration {
       updated: Awaited<ReturnType<typeof this.updateRecords>>,
       inserted: Awaited<ReturnType<typeof this.insertRecords>>,
     ) {
-      return [...updated, ...inserted].map((r) => {
+      const updatedDto = updated.map((r) => {
         return {
           id: r.id,
           status: r.status,
@@ -248,6 +238,18 @@ export namespace AttendanceRegistration {
           isNew: r.recordCount === 1,
         };
       });
+
+      const insertedDto = inserted.map((r) => {
+        return {
+          id: r.id,
+          status: r.status,
+          date: r.datePh,
+          time: TimeUtil.toPhTime(new Date(r.recordedAt)),
+          isNew: r.recordCount === 1,
+        };
+      });
+
+      return { updated: updatedDto, inserted: insertedDto };
     }
 
     private async insertRecords(args: {
