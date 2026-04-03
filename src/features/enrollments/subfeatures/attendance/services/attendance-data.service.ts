@@ -133,11 +133,22 @@ export namespace AttendanceData {
       }
 
       if (!classOffering)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-          message:
-            "Provided class has no existing schedule at the provided date.",
-        });
+        return ResultBuilder.fail(
+          new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
+            message:
+              "Provided class has no existing schedule at the provided date.",
+          }),
+        );
+
+      if (classOffering.class.professorId !== values.professorId)
+        return ResultBuilder.fail(
+          new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
+            message:
+              "This professor does not have a class associated with this class_id.",
+          }),
+        );
 
       let enrollmentsWithStudents;
 
@@ -578,6 +589,12 @@ export namespace AttendanceData {
     }) {
       const { classId, timeRange, studentIds } = args.values;
 
+      if (!studentIds.length)
+        return {
+          records: [],
+          summary: { present: 0, absent: 0, late: 0, excused: 0 },
+        };
+
       const records = await this._attendanceRecordRepo.queryMinimalShape({
         constraints: args.constraints,
         where: (ar, { inArray, and, eq, gte, lte }) => {
@@ -589,17 +606,19 @@ export namespace AttendanceData {
           if (timeRange) {
             const timeRangeConditions: (SQLWrapper | undefined)[] = [];
 
-            if (timeRange.startTimeMs)
+            if (timeRange.startTimeMs !== undefined)
               timeRangeConditions.push(
                 gte(ar.recordedMs, timeRange.startTimeMs),
               );
-            if (timeRange.endTimeMs)
+            if (timeRange.endTimeMs !== undefined)
               timeRangeConditions.push(lte(ar.recordedMs, timeRange.endTimeMs));
 
-            conditions.push(and(...timeRangeConditions));
+            const filtered = timeRangeConditions.filter(Boolean);
+
+            if (filtered.length) conditions.push(and(...filtered));
           }
 
-          return and(...conditions);
+          return and(...conditions.filter(Boolean));
         },
         orderBy: (ar, { desc }) => desc(ar.recordedMs),
       });
@@ -615,16 +634,18 @@ export namespace AttendanceData {
       if (timeRange) {
         const timeRangeConditions: (SQLWrapper | undefined)[] = [];
 
-        if (timeRange.startTimeMs)
+        if (timeRange.startTimeMs !== undefined)
           timeRangeConditions.push(gte(ar.recordedMs, timeRange.startTimeMs));
-        if (timeRange.endTimeMs)
+        if (timeRange.endTimeMs !== undefined)
           timeRangeConditions.push(lte(ar.recordedMs, timeRange.endTimeMs));
 
-        conditions.push(and(...timeRangeConditions));
+        const filtered = timeRangeConditions.filter(Boolean);
+
+        if (filtered.length) conditions.push(and(...filtered));
       }
 
       const summary = await this._attendanceRecordRepo.selectSummary({
-        where: and(...conditions),
+        where: and(...conditions.filter(Boolean)),
       });
 
       return { records, summary };

@@ -36,7 +36,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
       columns: { classId: false },
       with: {
         class: {
-          columns: { id: true, classNumber: true },
+          columns: { id: true, classNumber: true, professorId: true },
           with: {
             course: { columns: { code: true, name: true } },
           },
