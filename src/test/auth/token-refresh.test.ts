@@ -1,6 +1,5 @@
-import readLine from "readline";
 import request from "supertest";
-import { app } from "../../index";
+import { app } from "../../app";
 import { Json } from "../../utils";
 
 describe("POST /auth/session-management/refresh", () => {
