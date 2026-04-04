@@ -1,1 +1,1 @@
-import "./sign-in-student-number.test";
+import "./sign-in.test";
