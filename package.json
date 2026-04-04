@@ -22,6 +22,7 @@
     "watch": "tsc --watch --incremental",
     "dev": "nodemon",
     "test": "jest",
+    "test:auth": "npx jest \"sign-in-flow.test.ts\"",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate --config=./config/drizzle.config.ts",
