@@ -1,13 +1,11 @@
 import type { Request, Response } from "express";
-import { BaseResult } from "../../../../../types";
-import { ResultBuilder } from "../../../../../utils";
+import { randomUUID } from "crypto";
 import { Core } from "../../../core";
-import { ViewModels } from "../../../types";
 import { Schemas } from "../schemas";
 
 export async function handleRefresh(
   req: Request<{}, {}, Schemas.Payloads.RefreshToken.Schema>,
-  res: Response
+  res: Response,
 ) {
   const {
     requestLogger: logger,
@@ -84,7 +82,12 @@ export async function handleRefresh(
   const tknCreation = Core.Utils.createTokens({
     type: "full",
     access: createAccessPayload.result,
-    refresh: { sessionNumber, userId: user.id, isPersistentAuth },
+    refresh: {
+      sessionNumber,
+      userId: user.id,
+      isPersistentAuth,
+      jti: randomUUID(),
+    },
   });
 
   if (!tknCreation.success) {
@@ -122,7 +125,9 @@ export async function handleRefresh(
   res.cookie(
     cookieName,
     refreshToken,
-    isPersistentAuth ? persistentCookie : sessionCookie
+    isPersistentAuth ? persistentCookie : sessionCookie,
   );
-  res.status(200).json({ success: true, result: { accessToken, refreshToken } }); //  ! refresh token is for demo only
+  res
+    .status(200)
+    .json({ success: true, result: { accessToken, refreshToken } }); //  ! refresh token is for demo only
 }

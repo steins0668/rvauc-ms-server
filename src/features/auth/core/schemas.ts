@@ -120,6 +120,7 @@ export namespace Schemas {
         userId: z.number(),
         sessionNumber: z.string(),
         isPersistentAuth: z.boolean().optional(),
+        jti: z.string(),
       });
 
       export type Schema = z.infer<typeof schema>;
