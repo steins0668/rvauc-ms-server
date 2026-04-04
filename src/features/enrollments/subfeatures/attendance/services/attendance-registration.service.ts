@@ -65,6 +65,7 @@ export namespace AttendanceRegistration {
       };
 
       const normalizeRecord = (r: (typeof values.records)[number]) => {
+        //  todo: automate setting recordedAt to end of class time when status = absent
         return {
           ...r,
           recordedAt: r.recordedDate.toISOString(),
