@@ -18,7 +18,7 @@ import "./schedulers";
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 
 const whitelist = ENV.getWhiteList();
 
