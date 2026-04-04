@@ -1,20 +1,24 @@
 import request from "supertest";
-import { app } from "../../app";
-import { Json } from "../../utils";
+import { app } from "../../../app";
+import { Json } from "../../../utils";
 
-describe("POST /auth/session-management/verify-code", () => {
+describe("POST /auth/session-management/refresh", () => {
   const reqBody = {
-    email: "bea.belarmino@lu.edu.ph",
-    code: "",
+    refreshToken: "",
   };
 
   it("should return 200", async () => {
-    reqBody.code = await Json.read<{ code: string }>({
-      fileName: "codes.json",
-    }).then((v) => v.code);
+    reqBody.refreshToken = await Json.read<{
+      accessToken: string;
+      refreshToken: string;
+    }>({
+      fileName: "tokens.json",
+    }).then((r) => r.refreshToken);
+
+    console.log(JSON.stringify(reqBody));
 
     const res = await request(app)
-      .post("/auth/session-management/verify-code")
+      .post("/auth/session-management/refresh")
       .send(reqBody);
 
     expect(res.status).toBe(200);
