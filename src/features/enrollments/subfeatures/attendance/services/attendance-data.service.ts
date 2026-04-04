@@ -133,30 +133,30 @@ export namespace AttendanceData {
       }
 
       if (!classOffering)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-          message:
-            "Provided class has no existing schedule at the provided date.",
-        });
+        return ResultBuilder.fail(
+          new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
+            message:
+              "Provided class has no existing schedule at the provided date.",
+          }),
+        );
 
-      let enrollmentsWithStudents;
+      if (classOffering.class.professorId !== values.professorId)
+        return ResultBuilder.fail(
+          new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
+            message:
+              "This professor does not have a class associated with this class_id.",
+          }),
+        );
+
+      let enrollmentsQuery;
 
       try {
-        const { enrollments: e, users: u } = Schema;
-        const { eq } = RepositoryUtil.filters;
-        const { asc } = RepositoryUtil.orderOperators;
-
-        enrollmentsWithStudents =
-          await this._enrollmentRepo.selectStudentsFromEnrollments({
-            constraints: { limit, offset: (page - 1) * limit },
-            where: eq(e.classOfferingId, classOffering.id),
-            orderBy: [
-              asc(u.surname),
-              asc(u.firstName),
-              asc(u.middleName),
-              asc(u.id),
-            ],
-          });
+        enrollmentsQuery = await this.queryEnrollments({
+          values: { classOfferingId: classOffering.id },
+          constraints: { limit, offset: (page - 1) * limit },
+        });
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -167,17 +167,25 @@ export namespace AttendanceData {
         );
       }
 
+      const { enrollments } = enrollmentsQuery;
+
       let recordsAndSummary: Awaited<
         ReturnType<typeof this.queryRecordsAndSummary>
       > = {
         records: [],
-        summary: { present: 0, absent: 0, late: 0, excused: 0 },
+        summary: {
+          present: 0,
+          absent: 0,
+          late: 0,
+          excused: 0,
+          totalRecords: 0,
+        },
       };
 
-      if (enrollmentsWithStudents.length) {
+      if (enrollments.length) {
         //  * get attendance records matching the schedule of the class
         try {
-          const studentIds = enrollmentsWithStudents.map((e) => e.student.id);
+          const studentIds = enrollments.map((e) => e.student.id);
 
           const { startTime, endTime } = classOffering;
           const timeRange = TimeUtil.getPhTimeRange(
@@ -206,7 +214,7 @@ export namespace AttendanceData {
         return ResultBuilder.success(
           this.toClassAttendanceProfessorViewDto(
             classOffering,
-            enrollmentsWithStudents,
+            enrollmentsQuery,
             recordsAndSummary,
           ),
         );
@@ -369,7 +377,7 @@ export namespace AttendanceData {
 
       let summary: Awaited<
         ReturnType<Repositories.AttendanceRecord["selectSummary"]>
-      > = { present: 0, absent: 0, late: 0, excused: 0 };
+      > = { present: 0, absent: 0, late: 0, excused: 0, totalRecords: 0 };
 
       try {
         if (attendanceRecord.length) {
@@ -423,14 +431,13 @@ export namespace AttendanceData {
           ReturnType<CoreRepositories.ClassOffering["queryWithClass"]>
         >[number]
       >,
-      enrollmentsWithStudents: Awaited<
-        ReturnType<CoreRepositories.Enrollment["selectStudentsFromEnrollments"]>
-      >,
+      enrollmentsQuery: Awaited<ReturnType<typeof this.queryEnrollments>>,
       recordsAndSummary: Awaited<
         ReturnType<typeof this.queryRecordsAndSummary>
       >,
     ): Schemas.Dto.ClassAttendance.ProfessorView {
       const { course, ...class_ } = classOffering.class;
+      const { enrollments, totalEnrollments } = enrollmentsQuery;
       const { records, summary } = recordsAndSummary;
 
       const attendanceMap = new Map<number, (typeof records)[number]>();
@@ -438,7 +445,7 @@ export namespace AttendanceData {
       for (const r of records) attendanceMap.set(r.studentId, r);
 
       const dto = {
-        attendanceRecords: enrollmentsWithStudents.map((e) => {
+        attendanceRecords: enrollments.map((e) => {
           const { student } = e;
 
           const studentAttendance = attendanceMap.get(student.id);
@@ -477,7 +484,10 @@ export namespace AttendanceData {
             endTime: classOffering.endTime,
           },
         },
-        summary: summary,
+        summary: {
+          ...summary,
+          missingRecords: totalEnrollments - summary.totalRecords,
+        },
       };
 
       return Schemas.Dto.ClassAttendance.professorView.parse(dto);
@@ -561,6 +571,38 @@ export namespace AttendanceData {
       });
     }
 
+    private async queryEnrollments(args: {
+      values: { classOfferingId: number };
+      constraints?: BaseRepositoryType.QueryConstraints;
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { enrollments: e, users: u } = Schema;
+      const { eq } = RepositoryUtil.filters;
+      const { asc } = RepositoryUtil.orderOperators;
+
+      const where = eq(e.classOfferingId, args.values.classOfferingId);
+
+      const enrollments =
+        await this._enrollmentRepo.selectStudentsFromEnrollments({
+          constraints: args.constraints,
+          where,
+          orderBy: [
+            asc(u.surname),
+            asc(u.firstName),
+            asc(u.middleName),
+            asc(u.id),
+          ],
+          dbOrTx: args.dbOrTx,
+        });
+
+      const totalEnrollments = await this._enrollmentRepo.countEnrollments({
+        where,
+        dbOrTx: args.dbOrTx,
+      });
+
+      return { enrollments: [...enrollments], totalEnrollments };
+    }
+
     /**
      * @description Queries attendance records matching a class id, time range, and
      * a set of student ids
@@ -578,6 +620,18 @@ export namespace AttendanceData {
     }) {
       const { classId, timeRange, studentIds } = args.values;
 
+      if (!studentIds.length)
+        return {
+          records: [],
+          summary: {
+            present: 0,
+            absent: 0,
+            late: 0,
+            excused: 0,
+            totalRecords: 0,
+          },
+        };
+
       const records = await this._attendanceRecordRepo.queryMinimalShape({
         constraints: args.constraints,
         where: (ar, { inArray, and, eq, gte, lte }) => {
@@ -589,17 +643,19 @@ export namespace AttendanceData {
           if (timeRange) {
             const timeRangeConditions: (SQLWrapper | undefined)[] = [];
 
-            if (timeRange.startTimeMs)
+            if (timeRange.startTimeMs !== undefined)
               timeRangeConditions.push(
                 gte(ar.recordedMs, timeRange.startTimeMs),
               );
-            if (timeRange.endTimeMs)
+            if (timeRange.endTimeMs !== undefined)
               timeRangeConditions.push(lte(ar.recordedMs, timeRange.endTimeMs));
 
-            conditions.push(and(...timeRangeConditions));
+            const filtered = timeRangeConditions.filter(Boolean);
+
+            if (filtered.length) conditions.push(and(...filtered));
           }
 
-          return and(...conditions);
+          return and(...conditions.filter(Boolean));
         },
         orderBy: (ar, { desc }) => desc(ar.recordedMs),
       });
@@ -615,16 +671,18 @@ export namespace AttendanceData {
       if (timeRange) {
         const timeRangeConditions: (SQLWrapper | undefined)[] = [];
 
-        if (timeRange.startTimeMs)
+        if (timeRange.startTimeMs !== undefined)
           timeRangeConditions.push(gte(ar.recordedMs, timeRange.startTimeMs));
-        if (timeRange.endTimeMs)
+        if (timeRange.endTimeMs !== undefined)
           timeRangeConditions.push(lte(ar.recordedMs, timeRange.endTimeMs));
 
-        conditions.push(and(...timeRangeConditions));
+        const filtered = timeRangeConditions.filter(Boolean);
+
+        if (filtered.length) conditions.push(and(...filtered));
       }
 
       const summary = await this._attendanceRecordRepo.selectSummary({
-        where: and(...conditions),
+        where: and(...conditions.filter(Boolean)),
       });
 
       return { records, summary };

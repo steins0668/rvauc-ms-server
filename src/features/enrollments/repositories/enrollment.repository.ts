@@ -14,6 +14,17 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     super(context, enrollments);
   }
 
+  public async countEnrollments(args: {
+    where?: SQL | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { where, dbOrTx } = args;
+
+    const { enrollments } = Schema;
+
+    return await (dbOrTx ?? this._dbContext).$count(enrollments, where);
+  }
+
   /**
    * @description Selects a student linked to the current enrollment/s.
    */

@@ -27,7 +27,49 @@ Routes.get(
     params: classId,
     query: attendanceRecord,
   }),
-  Controllers._handlewViewRecords({
+  Controllers.handleViewRecords({
+    allowedRoles: ["student", "professor"],
+    scope: "class",
+    extractInput: (req) => {
+      const { validated } = req as StrictValidatedRequest<
+        Schemas.RequestParams.ClassId,
+        {},
+        {},
+        {}
+      >;
+      const { params } = validated;
+
+      return { classId: params.classId };
+    },
+  }),
+);
+
+Routes.post(
+  "/new-record",
+  Auth.Core.Middlewares.validateJwt("minimal"),
+  validateRequest({ body: Schemas.RequestBody.newRecord }),
+  Controllers.handleNewRfidScan,
+);
+
+/**
+ * ! past this point are new endpoints. some does exactly the same as the endpoints above but have been renamed for clarity.
+ * todo: remove the endpoints above once the client has implemented the new endpoints
+ */
+
+/**
+ * GET
+ *
+ * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
+ * @returns {import("./schemas").Schemas.Dto.ClassAttendance.StudentView} for students
+ */
+Routes.get(
+  "/records/class/:classId",
+  Auth.Core.Middlewares.validateJwt("full"),
+  validateRequest({
+    params: classId,
+    query: attendanceRecord,
+  }),
+  Controllers.handleViewRecords({
     allowedRoles: ["student", "professor"],
     scope: "class",
     extractInput: (req) => {
@@ -45,18 +87,18 @@ Routes.get(
 );
 
 /**
- * GET /view-records/class/:classId/student/:studentId
+ * GET
  *
  * @returns {import('./schemas').Schemas.Dto.StudentAttendance.ProfessorView} for professors
  */
 Routes.get(
-  "/view-records/class/:classId/student/:studentId",
+  "/records/class/:classId/student/:studentId",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
     params: classId.extend(studentId.shape),
     query: Schemas.RequestQuery.attendanceRecord,
   }),
-  Controllers._handlewViewRecords({
+  Controllers.handleViewRecords({
     allowedRoles: ["professor"],
     scope: "student",
     extractInput: (req) => {
@@ -73,13 +115,11 @@ Routes.get(
   }),
 );
 
-Routes.post(
-  "/new-record",
-  Auth.Core.Middlewares.validateJwt("minimal"),
-  validateRequest({ body: Schemas.RequestBody.newRecord }),
-  Controllers.handleNewRecord,
-);
-
+/**
+ * POST
+ * Only allows professors for now.
+ * @returns {import('./schemas').Schemas.Dto.ClassAttendance.MutationResult } for professors
+ */
 Routes.post(
   "/records/class/:classId/class-offering/:classOfferingId",
   Auth.Core.Middlewares.validateJwt("full"),
@@ -88,4 +128,16 @@ Routes.post(
     body: Schemas.RequestBody.recordSubmission,
   }),
   Controllers.handleSubmitRecords,
+);
+
+/**
+ * POST
+ * Only allows students for now.
+ * @returns {import('./schemas').Schemas.Dto.InsertedAttendance } for students.
+ */
+Routes.post(
+  "/new-rfid-scan",
+  Auth.Core.Middlewares.validateJwt("minimal"),
+  validateRequest({ body: Schemas.RequestBody.newRecord }),
+  Controllers.handleNewRfidScan,
 );

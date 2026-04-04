@@ -7,7 +7,7 @@ import { Data } from "../data";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
-export async function handleNewRecord(
+export async function handleNewRfidScan(
   req: Request<{}, {}, Schemas.RequestBody.NewRecord>,
   res: Response,
 ) {
@@ -30,7 +30,7 @@ export async function handleNewRecord(
   if (!isAllowedPayload || auth.payload.role !== "student") {
     logger.log(
       "info",
-      "Invalid payload attempted to access `enrollments/attendance/new-record`.",
+      `Invalid payload attempted to access ${req.method} ${req.originalUrl}`,
     );
 
     return res.status(403).json({

@@ -29,7 +29,7 @@ export async function handleSubmitRecords(req: Request, res: Response) {
   if (!isAllowedPayload || auth.payload.role !== "professor") {
     logger.log(
       "info",
-      "Invalid payload attempted to access UPDATE `enrollments/attendance/record`.",
+      `Invalid payload attempted to access ${req.method} ${req.originalUrl}`,
     );
 
     return res.status(403).json({
@@ -80,7 +80,7 @@ export async function handleSubmitRecords(req: Request, res: Response) {
   }
 
   logger.log("debug", "Attempting to update records...");
-  const tx = await attendanceRegistrationService.updateOrNewRecords({
+  const tx = await attendanceRegistrationService.mutateRecords({
     classDto: classQuery.result,
     values: {
       classId: params.classId,

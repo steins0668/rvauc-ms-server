@@ -1,7 +1,6 @@
 import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { Schema } from "../../../../../models";
 import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
-import { Repositories as CoreRepositories } from "../../../repositories";
 import { Core } from "../../../core";
 import { Data } from "../data";
 import { Repositories } from "../repositories";
@@ -24,7 +23,7 @@ export namespace AttendanceRegistration {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
     }
 
-    public async updateOrNewRecords(args: {
+    public async mutateRecords(args: {
       classDto: (Awaited<
         ReturnType<Core.Services.ClassSchedule.Service["getForNow"]>
       > & { success: true })["result"];
@@ -41,18 +40,15 @@ export namespace AttendanceRegistration {
       };
       dbOrTx?: DbOrTx | undefined;
     }) {
-      type AttendanceRecords = {
-        recordedAt: string;
-        recordedMs: number;
-        datePh: string;
-        recordedDate: Date;
-        studentId: number;
-        status: "present" | "late" | "absent" | "excused";
-      }[];
-
       const { classDto, values, dbOrTx } = args;
 
       const { class: class_, sessionDate } = classDto;
+
+      const uniqueRecords = new Map<number, (typeof values.records)[number]>();
+
+      for (const r of values.records) uniqueRecords.set(r.studentId, r);
+
+      values.records = Array.from(uniqueRecords.values());
 
       const isWithinSchedule = (recordedDate: Date) => {
         //  add start time and end time to midnight to get schedule
@@ -69,6 +65,7 @@ export namespace AttendanceRegistration {
       };
 
       const normalizeRecord = (r: (typeof values.records)[number]) => {
+        //  todo: automate setting recordedAt to end of class time when status = absent
         return {
           ...r,
           recordedAt: r.recordedDate.toISOString(),
@@ -77,19 +74,22 @@ export namespace AttendanceRegistration {
         };
       };
 
-      const organizeRecords = (existingStudentIds: Set<number>) => {
-        let updates: AttendanceRecords = [];
-        let inserts: AttendanceRecords = [];
-        let rejects: AttendanceRecords = [];
+      const organizeRecords = (
+        existingStudentIds: Set<number>,
+        datePh: string,
+      ) => {
+        let updates: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
+        let inserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
+        let rejects: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
 
         for (const r of values.records) {
           const normalized = normalizeRecord(r);
 
-          const exists = existingStudentIds.has(r.studentId);
+          const exists = existingStudentIds.has(normalized.studentId);
 
-          const isSameDate = TimeUtil.toPhDate(r.recordedDate) === datePh;
+          const isSameDate = normalized.datePh === datePh;
 
-          if (!isSameDate || !isWithinSchedule(r.recordedDate)) {
+          if (!isSameDate || !isWithinSchedule(normalized.recordedDate)) {
             rejects.push(normalized);
             continue;
           }
@@ -117,7 +117,7 @@ export namespace AttendanceRegistration {
             dbOrTx: tx,
           });
 
-          const organizedRecords = organizeRecords(existingStudentIds);
+          const organizedRecords = organizeRecords(existingStudentIds, datePh);
 
           const updated = await this.updateRecords({
             dbOrTx: tx,
@@ -157,10 +157,13 @@ export namespace AttendanceRegistration {
       try {
         const result = await txPromise;
 
-        return ResultBuilder.success({
-          ...this.toUpdateOrNewRecordDto(result.updated, result.inserted),
-          rejected: result.rejected,
-        });
+        return ResultBuilder.success(
+          this.toAttendanceRecordMutationResultDto(
+            result.updated,
+            result.inserted,
+            result.rejected,
+          ),
+        );
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -232,14 +235,15 @@ export namespace AttendanceRegistration {
         isNew: raw.recordCount === 1,
       };
 
-      return Schemas.Dto.registeredAttendance.parse(dto);
+      return Schemas.Dto.insertedAttendance.parse(dto);
     }
 
-    private toUpdateOrNewRecordDto(
+    private toAttendanceRecordMutationResultDto(
       updated: Awaited<ReturnType<typeof this.updateRecords>>,
       inserted: Awaited<ReturnType<typeof this.insertRecords>>,
-    ) {
-      return [...updated, ...inserted].map((r) => {
+      rejected: Schemas.Dto.ClassAttendance.NormalizedRecords,
+    ): Schemas.Dto.ClassAttendance.MutationResult {
+      const updatedDto = updated.map((r) => {
         return {
           id: r.id,
           status: r.status,
@@ -248,6 +252,18 @@ export namespace AttendanceRegistration {
           isNew: r.recordCount === 1,
         };
       });
+
+      const insertedDto = inserted.map((r) => {
+        return {
+          id: r.id,
+          status: r.status,
+          date: r.datePh,
+          time: TimeUtil.toPhTime(new Date(r.recordedAt)),
+          isNew: r.recordCount === 1,
+        };
+      });
+
+      return { updated: updatedDto, inserted: insertedDto, rejected };
     }
 
     private async insertRecords(args: {

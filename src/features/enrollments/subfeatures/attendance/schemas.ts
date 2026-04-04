@@ -37,6 +37,8 @@ export namespace Schemas {
     export const attendanceRecord = z
       .strictObject({
         date: z.iso.datetime().default(Clock.now().toISOString()),
+        limit: z.number().min(1).max(50).default(6),
+        page: z.number().min(1).default(1),
       })
       .strip();
 
@@ -65,20 +67,20 @@ export namespace Schemas {
     export const base = z
       .strictObject({
         id: z.number(),
-        status: z.enum(Data.attendanceStatus),
+        status: z.string(),
         date: z.string(),
         time: z.string(),
       })
       .strip();
     export type Base = z.infer<typeof base>;
 
-    export const registeredAttendance = z
+    export const insertedAttendance = z
       .strictObject({
         ...base.shape,
         isNew: z.boolean(),
       })
       .strip();
-    export type RegisteredAttendance = z.infer<typeof registeredAttendance>;
+    export type InsertedAttendance = z.infer<typeof insertedAttendance>;
 
     export const summary = z
       .strictObject({
@@ -86,6 +88,8 @@ export namespace Schemas {
         absent: z.number(),
         late: z.number(),
         excused: z.number(),
+        totalRecords: z.number(),
+        missingRecords: z.number(),
       })
       .strip();
 
@@ -110,6 +114,33 @@ export namespace Schemas {
         })
         .strip();
       export type ProfessorView = z.infer<typeof professorView>;
+
+      //#region
+      //  ! `AttendanceRegistration` service helpers ONLY
+      export const normalizedRecord = z
+        .strictObject({
+          recordedAt: z.string(),
+          recordedMs: z.number(),
+          datePh: z.string(),
+          recordedDate: z.date(),
+          studentId: z.number(),
+          status: z.enum(Data.attendanceStatus),
+        })
+        .strip();
+      export type NormalizedRecord = z.infer<typeof normalizedRecord>;
+
+      export const normalizedRecords = z.array(normalizedRecord);
+      export type NormalizedRecords = z.infer<typeof normalizedRecords>;
+
+      export const mutationResult = z
+        .strictObject({
+          updated: z.array(base),
+          inserted: z.array(insertedAttendance),
+          rejected: normalizedRecords,
+        })
+        .strip();
+      export type MutationResult = z.infer<typeof mutationResult>;
+      //#endregion
     }
 
     export namespace StudentAttendance {
