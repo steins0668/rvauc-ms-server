@@ -97,7 +97,7 @@ export function handleViewRecords<
 
     if (isInvalidTime) {
       logger.log(
-        "info",
+        "debug",
         "Server-client time drift has exceeded maximum threshold. Falling back to server time...",
       );
     }
@@ -105,24 +105,24 @@ export function handleViewRecords<
     const finalDate = isInvalidTime ? serverDate : clientDate;
     const { payload: user } = auth;
 
-    let roleScope: Schemas.MethodArgs.AttendanceQuery.RoleScopes;
+    const { roleScopes } = Schemas.MethodArgs.AttendanceQuery;
 
     logger.log("debug", "Resolving user role and query scope...");
-    try {
-      const { roleScopes } = Schemas.MethodArgs.AttendanceQuery;
-      roleScope = roleScopes.parse(`${user.role}-${scope}`);
-    } catch (error) {
+    const parsedRoleScope = roleScopes.safeParse(`${user.role}-${scope}`);
+
+    if (!parsedRoleScope.success) {
       logger.log(
         "info",
         `User attempted to access invalid role-scope: ${user.role}-${scope}`,
       );
+
       return res.status(403).json({
         success: false,
         message: "Unable to access this resource. Please check your scope.",
       });
     }
 
-    let queryContext: Schemas.MethodArgs.AttendanceQuery.All;
+    const roleScope = parsedRoleScope.data;
 
     let roleScopeValues: { [key: string]: any } = {};
 
@@ -142,8 +142,9 @@ export function handleViewRecords<
     }
 
     logger.log("debug", "Resolving query context...");
-    try {
-      queryContext = Schemas.MethodArgs.AttendanceQuery.all.parse({
+
+    const parsedQueryContext = Schemas.MethodArgs.AttendanceQuery.all.safeParse(
+      {
         roleScope,
         role: user.role,
         scope,
@@ -153,8 +154,11 @@ export function handleViewRecords<
           termId: term.id,
           date: finalDate,
         },
-      });
-    } catch (error) {
+      },
+    );
+
+    if (!parsedQueryContext.success) {
+      const { error } = parsedQueryContext;
       logger.log("error", "Failed to resolve query context.", error);
 
       return res.status(500).json({
@@ -162,6 +166,8 @@ export function handleViewRecords<
         message: "Something went wrong. Please try again later.",
       });
     }
+
+    const queryContext = parsedQueryContext.data;
 
     logger.log("debug", "Attempting to get attendance records...");
     const queried = await attendanceDataService.getAttendance({
