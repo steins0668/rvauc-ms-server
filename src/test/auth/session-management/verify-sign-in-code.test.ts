@@ -27,6 +27,6 @@ describe("POST /auth/session-management/verify-code", () => {
     const data = success
       ? { accessToken: result.accessToken, refreshToken: result.refreshToken }
       : { accessToken: "", refreshToken: "" };
-    await Json.write({ fileName: "tokens.json", data });
+    await Json.write({ fileName: "session-tokens.json", data });
   });
 });
