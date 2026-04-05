@@ -1,4 +1,5 @@
 import { promises as fs } from "fs";
+import path from "path";
 
 export namespace Json {
   export async function write<T>(args: {
@@ -6,8 +7,11 @@ export namespace Json {
     fileName: string;
     data: T;
   }) {
-    const path = args.path ?? "src/test/artifacts/";
-    const fullPath = path + args.fileName;
+    const folderPath = args.path ?? "src/test/artifacts/";
+
+    await fs.mkdir(folderPath, { recursive: true });
+
+    const fullPath = path.join(folderPath, args.fileName);
 
     await fs.writeFile(fullPath, JSON.stringify(args.data, null, 2));
   }
