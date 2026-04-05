@@ -12,7 +12,7 @@ describe("POST /auth/session-management/refresh", () => {
       accessToken: string;
       refreshToken: string;
     }>({
-      fileName: "session-tokens.json",
+      fileName: "session-management-tokens.json",
     }).then((r) => r.refreshToken);
 
     console.log(JSON.stringify(reqBody));
@@ -31,6 +31,6 @@ describe("POST /auth/session-management/refresh", () => {
     const data = success
       ? { accessToken: result.accessToken, refreshToken: result.refreshToken }
       : { accessToken: "", refreshToken: "" };
-    await Json.write({ fileName: "session-tokens.json", data });
+    await Json.write({ fileName: "session-management-tokens.json", data });
   });
 });
