@@ -567,7 +567,7 @@ export namespace AttendanceData {
             },
           };
         }),
-        summary: summary,
+        summary: { ...summary, missingRecords: 0 }, //  todo: update this to have logic for trackign misssing records
       });
     }
 
