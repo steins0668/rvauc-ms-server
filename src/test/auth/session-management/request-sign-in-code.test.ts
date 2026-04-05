@@ -1,7 +1,7 @@
 import request from "supertest";
 import { app } from "../../../app";
 
-describe("POST /auth/session-management/sign-in", () => {
+describe("Request sign-in code", () => {
   const creds = {
     identifier: "bea.belarmino@lu.edu.ph",
     deviceToken:
@@ -15,6 +15,12 @@ describe("POST /auth/session-management/sign-in", () => {
       .send(creds);
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("result");
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        success: true,
+        result: { email: expect.any(String) },
+        message: expect.any(String),
+      }),
+    );
   });
 });
