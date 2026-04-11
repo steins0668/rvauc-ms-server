@@ -509,7 +509,10 @@ export namespace AttendanceData {
             time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
           };
         }),
-        summary,
+        summary: {
+          ...summary,
+          missingRecords: 0, // ! temporary until class session tracking is implemented
+        },
       };
 
       return Schemas.Dto.ClassAttendance.studentView.parse(dto);
