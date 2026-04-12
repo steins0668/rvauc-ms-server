@@ -7,68 +7,91 @@ import { UserData } from "../../../features/auth/core/services/user-data.service
 import { SessionManager } from "../../../features/auth/sub-features/session-management/services/session-manager";
 import { createTokens } from "../../../features/auth/core/utils/create-tokens.util";
 import { Schemas } from "../../../features/enrollments/subfeatures/attendance/schemas";
+import { Schemas as CoreSchemas } from "../../../features/enrollments/core/schemas";
 
 const classId = 6;
 const classOfferingId = 7;
 const studentId = 7;
 
 describe("Attendance Test Suite", () => {
-  let accessToken: string;
+  const tokens = {
+    student: "",
+    professor: "",
+  };
+
+  const minimalTokens = {
+    student: "",
+  };
 
   beforeAll(async () => {
-    const authentication = await Authentication.createService().then(
-      async (s) =>
-        s.authenticate({
-          type: "session",
-          identifier: "bea.belarmino@lu.edu.ph",
-        }),
-    );
+    const credentials = [
+      { identifier: "bea.belarmino@lu.edu.ph", role: "professor" },
+      { identifier: "101-0001", role: "student" },
+    ] as const;
 
-    expect(authentication.success).toBe(true);
+    const getToken = async (
+      person: (typeof credentials)[number],
+      type: "full" | "minimal",
+    ) => {
+      const authentication = await Authentication.createService().then(
+        async (s) =>
+          s.authenticate({
+            type: "session",
+            identifier: person.identifier,
+          }),
+      );
 
-    if (!authentication.success)
-      throw new Error("Expected authentication success.");
+      expect(authentication.success).toBe(true);
 
-    const { result: user } = authentication;
+      if (!authentication.success)
+        throw new Error("Expected authentication success.");
 
-    const createAccessPayload = await payloadResolver["professor"]({
-      type: "full",
-      dataService: await UserData.createService(),
-      user,
-    });
+      const { result: user } = authentication;
 
-    expect(createAccessPayload.success).toBe(true);
+      const createAccessPayload = await payloadResolver[person.role]({
+        type: type as any,
+        dataService: await UserData.createService(),
+        user,
+      });
 
-    if (!createAccessPayload.success)
-      throw new Error("Expected payload creation success.");
+      expect(createAccessPayload.success).toBe(true);
 
-    const sessionManager = await SessionManager.createService();
+      if (!createAccessPayload.success)
+        throw new Error("Expected payload creation success.");
 
-    const sessionNumber = sessionManager.generateSessionNumber(user.id);
+      const sessionManager = await SessionManager.createService();
 
-    const tknCreation = createTokens({
-      type: "full",
-      access: createAccessPayload.result,
-      refresh: {
-        sessionNumber,
-        userId: user.id,
-        jti: randomUUID(),
-      },
-    });
+      const sessionNumber = sessionManager.generateSessionNumber(user.id);
 
-    expect(tknCreation.success).toBe(true);
+      const tknCreation = createTokens({
+        type: type as any,
+        access: createAccessPayload.result,
+        refresh: {
+          sessionNumber,
+          userId: user.id,
+          jti: randomUUID(),
+        },
+      });
 
-    if (!tknCreation.success)
-      throw new Error("Expected token creation success.");
+      expect(tknCreation.success).toBe(true);
 
-    const { result } = tknCreation;
-    accessToken = result.accessToken;
+      if (!tknCreation.success)
+        throw new Error("Expected token creation success.");
+
+      const { result } = tknCreation;
+
+      return result.accessToken;
+    };
+
+    for (const c of credentials) tokens[c.role] = await getToken(c, "full");
+
+    minimalTokens.student = await getToken(credentials[1], "minimal");
   });
 
   it(`GET records/class/${classId}`, async () => {
     const res = await request(app)
       .get(`/enrollments/attendance/records/class/${classId}`)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer ${tokens.professor}`);
 
     console.debug(JSON.stringify(res.body));
 
@@ -83,7 +106,7 @@ describe("Attendance Test Suite", () => {
     const url = `/enrollments/attendance/records/class/${classId}/student/${studentId}`;
     const res = await request(app)
       .get(url)
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", `Bearer ${tokens.professor}`);
 
     console.debug(JSON.stringify(res.body));
 
@@ -99,7 +122,7 @@ describe("Attendance Test Suite", () => {
     const url = `/enrollments/attendance/records/class/${classId}/class-offering/${classOfferingId}`;
     const res = await request(app)
       .post(url)
-      .set("Authorization", `Bearer ${accessToken}`)
+      .set("Authorization", `Bearer ${tokens.professor}`)
       .send({
         date: "2026-04-08T07:00:00+08:00",
         records: [
@@ -133,5 +156,40 @@ describe("Attendance Test Suite", () => {
     );
 
     Schemas.Dto.ClassAttendance.mutationResult.parse(res.body.result.records);
+  });
+
+  it(`GET records/class/${classId}`, async () => {
+    const res = await request(app)
+      .get(`/enrollments/attendance/records/class/${classId}`)
+      .set("Authorization", `Bearer ${tokens.student}`);
+
+    console.debug(JSON.stringify(res.body));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(true);
+
+    Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
+  });
+
+  it(`POST new-rfid-scan`, async () => {
+    const res = await request(app)
+      .post("/enrollments/attendance/new-rfid-scan")
+      .set("Authorization", `Bearer ${minimalTokens.student}`)
+      .send({
+        date: "2025-12-01T09:00:00+08:00",
+        room: "309",
+      });
+
+    console.debug(JSON.stringify(res.body));
+
+    expect([200, 201]).toContain(res.status);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(true);
+
+    const { result } = res.body;
+
+    CoreSchemas.Dto.class_.parse(result.enrollment);
+    Schemas.Dto.insertedAttendance.parse(result.attendance);
   });
 });
