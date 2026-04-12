@@ -100,6 +100,19 @@ export async function handleNewRfidScan(
 
   const { class: class_ } = classQuery.result;
 
+  if (class_.offering.room === null) {
+    logger.log(
+      `debug`,
+      "Student attempted to take attendance for an online class.",
+    );
+
+    return res.status(403).json({
+      success: false,
+      message:
+        "You are not allowed to take attendance for this online class here.",
+    });
+  }
+
   if (class_.offering.room !== body.room) {
     logger.log(
       "error",
