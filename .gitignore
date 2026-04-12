@@ -9,6 +9,7 @@ node_modules/
 .env
 
 #db 
+**.db
 demo_sqlite.db
 demo_sqlite.db.**
 
