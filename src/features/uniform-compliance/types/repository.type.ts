@@ -15,12 +15,12 @@ export namespace Repository {
     type BaseDeleteArgs<
       TDeleteBuilder extends object,
       TFilterConverter extends AnyFunc,
-      TResult = ResultSet
+      TResult = ResultSet,
     > = {
       dbOrTx?: DbOrTx | undefined;
       fn: (
         deleteBase: TDeleteBuilder,
-        filterConverter: TFilterConverter
+        filterConverter: TFilterConverter,
       ) => Promise<TResult>;
     };
 
@@ -29,18 +29,24 @@ export namespace Repository {
       Repositories.ComplianceRecord["buildWhereClause"],
       T
     >;
+
+    export type UniformType<T> = BaseDeleteArgs<
+      SQLiteDeleteBase<Db.Tables.UniformType, "async", ResultSet>,
+      Repositories.UniformType["buildWhereClause"],
+      T
+    >;
   }
 
   export namespace InsertArgs {
     type BaseInsertArgs<
       TInsertBuilder extends object,
       TFilterConverter extends AnyFunc,
-      TResult = ResultSet
+      TResult = ResultSet,
     > = {
       dbOrTx?: DbOrTx | undefined;
       fn: (
         insert: TInsertBuilder,
-        filterConverter: TFilterConverter
+        filterConverter: TFilterConverter,
       ) => Promise<TResult>;
     };
 
@@ -49,18 +55,24 @@ export namespace Repository {
       Repositories.ComplianceRecord["buildWhereClause"],
       T
     >;
+
+    export type UniformType<T> = BaseInsertArgs<
+      SQLiteInsertBuilder<Db.Tables.UniformType, "async", ResultSet>,
+      Repositories.UniformType["buildWhereClause"],
+      T
+    >;
   }
 
   export namespace UpdateArgs {
     type BaseUpdateArgs<
       TUpdateBuilder extends object,
       TFilterConverter extends AnyFunc,
-      TResult = ResultSet
+      TResult = ResultSet,
     > = {
       dbOrTx?: DbOrTx | undefined;
       fn: (
         update: TUpdateBuilder,
-        filterConverter: TFilterConverter
+        filterConverter: TFilterConverter,
       ) => Promise<TResult>;
     };
 
@@ -69,24 +81,36 @@ export namespace Repository {
       Repositories.ComplianceRecord["buildWhereClause"],
       T
     >;
+
+    export type UniformType<T> = BaseUpdateArgs<
+      SQLiteUpdateBuilder<Db.Tables.UniformType, "async", ResultSet>,
+      Repositories.UniformType["buildWhereClause"],
+      T
+    >;
   }
 
   export namespace QueryArgs {
     type BaseQueryArgs<
       TRelationalQueryBuilder extends object,
       TFilterConverter extends AnyFunc,
-      TResult = ResultSet
+      TResult = ResultSet,
     > = {
       dbOrTx?: DbOrTx | undefined;
       fn: (
         query: TRelationalQueryBuilder,
-        filterConverter: TFilterConverter
+        filterConverter: TFilterConverter,
       ) => Promise<TResult>;
     };
 
     export type ComplianceRecord<T> = BaseQueryArgs<
       DbContext["query"]["complianceRecords"],
       Repositories.ComplianceRecord["buildWhereClause"],
+      T
+    >;
+
+    export type UniformType<T> = BaseQueryArgs<
+      DbContext["query"]["uniformTypes"],
+      Repositories.UniformType["buildWhereClause"],
       T
     >;
   }
@@ -102,5 +126,7 @@ export namespace Repository {
 
     export type ComplianceRecord =
       BaseQueryFilter<Db.ViewModels.ComplianceRecord>;
+
+    export type UniformType = BaseQueryFilter<Db.ViewModels.UniformType>;
   }
 }

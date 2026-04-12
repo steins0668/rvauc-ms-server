@@ -15,12 +15,12 @@ export namespace Repository {
     type BaseDeleteArgs<
       TDeleteBuilder extends object,
       TFilterConverter extends AnyFunc,
-      TResult = ResultSet
+      TResult = ResultSet,
     > = {
       dbOrTx?: DbOrTx | undefined;
       fn: (
         deleteBase: TDeleteBuilder,
-        filterConverter: TFilterConverter
+        filterConverter: TFilterConverter,
       ) => Promise<TResult>;
     };
 
@@ -29,18 +29,24 @@ export namespace Repository {
       Repositories.ViolationRecord["buildWhereClause"],
       T
     >;
+
+    export type ViolationStatus<T> = BaseDeleteArgs<
+      SQLiteDeleteBase<Db.Tables.ViolationStatus, "async", ResultSet>,
+      Repositories.ViolationStatus["buildWhereClause"],
+      T
+    >;
   }
 
   export namespace InsertArgs {
     type BaseInsertArgs<
       TInsertBuilder extends object,
       TFilterConverter extends AnyFunc,
-      TResult = ResultSet
+      TResult = ResultSet,
     > = {
       dbOrTx?: DbOrTx | undefined;
       fn: (
         insert: TInsertBuilder,
-        filterConverter: TFilterConverter
+        filterConverter: TFilterConverter,
       ) => Promise<TResult>;
     };
 
@@ -49,18 +55,24 @@ export namespace Repository {
       Repositories.ViolationRecord["buildWhereClause"],
       T
     >;
+
+    export type ViolationStatus<T> = BaseInsertArgs<
+      SQLiteInsertBuilder<Db.Tables.ViolationStatus, "async", ResultSet>,
+      Repositories.ViolationStatus["buildWhereClause"],
+      T
+    >;
   }
 
   export namespace UpdateArgs {
     type BaseUpdateArgs<
       TUpdateBuilder extends object,
       TFilterConverter extends AnyFunc,
-      TResult = ResultSet
+      TResult = ResultSet,
     > = {
       dbOrTx?: DbOrTx | undefined;
       fn: (
         update: TUpdateBuilder,
-        filterConverter: TFilterConverter
+        filterConverter: TFilterConverter,
       ) => Promise<TResult>;
     };
 
@@ -69,24 +81,35 @@ export namespace Repository {
       Repositories.ViolationRecord["buildWhereClause"],
       T
     >;
+
+    export type ViolationStatus<T> = BaseUpdateArgs<
+      SQLiteUpdateBuilder<Db.Tables.ViolationStatus, "async", ResultSet>,
+      Repositories.ViolationStatus["buildWhereClause"],
+      T
+    >;
   }
 
   export namespace QueryArgs {
     type BaseQueryArgs<
       TRelationalQueryBuilder extends object,
       TFilterConverter extends AnyFunc,
-      TResult = ResultSet
+      TResult = ResultSet,
     > = {
       dbOrTx?: DbOrTx | undefined;
       fn: (
         query: TRelationalQueryBuilder,
-        filterConverter: TFilterConverter
+        filterConverter: TFilterConverter,
       ) => Promise<TResult>;
     };
 
     export type ViolationRecord<T> = BaseQueryArgs<
       DbContext["query"]["violationRecords"],
       Repositories.ViolationRecord["buildWhereClause"],
+      T
+    >;
+    export type ViolationStatus<T> = BaseQueryArgs<
+      DbContext["query"]["violationStatuses"],
+      Repositories.ViolationStatus["buildWhereClause"],
       T
     >;
   }
@@ -102,5 +125,8 @@ export namespace Repository {
 
     export type ViolationRecord =
       BaseQueryFilter<Db.ViewModels.ViolationRecord>;
+
+    export type ViolationStatus =
+      BaseQueryFilter<Db.ViewModels.ViolationStatus>;
   }
 }
