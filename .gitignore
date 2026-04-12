@@ -15,6 +15,9 @@ demo_sqlite.db.**
 #backup configs
 nodemon.json.**
 
+#test json files and artifacts
+src/test/artifacts/
+
 #compilation
 .tsbuildinfo
 

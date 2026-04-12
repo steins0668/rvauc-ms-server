@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { randomUUID } from "crypto";
 import { HashUtil } from "../../../../../utils";
 import { Notifications } from "../../../../notifications";
 import { Core } from "../../../core";
@@ -6,7 +7,7 @@ import { Schemas } from "../schemas";
 
 export async function handleVerifyCode(
   req: Request<{}, {}, Schemas.VerifyCode>,
-  res: Response
+  res: Response,
 ) {
   const {
     body,
@@ -46,7 +47,7 @@ export async function handleVerifyCode(
   const codeHash = HashUtil.byCrypto(code);
   const codeVerification = await signInRequestService.verifyRequestCode(
     user.id,
-    codeHash
+    codeHash,
   );
 
   if (!codeVerification.success) {
@@ -102,7 +103,12 @@ export async function handleVerifyCode(
   const tknCreation = Core.Utils.createTokens({
     type: "full",
     access: createAccessPayload.result,
-    refresh: { sessionNumber, userId: user.id, isPersistentAuth },
+    refresh: {
+      sessionNumber,
+      userId: user.id,
+      isPersistentAuth,
+      jti: randomUUID(),
+    },
   });
 
   const internalErrMsg =
@@ -145,7 +151,9 @@ export async function handleVerifyCode(
   res.cookie(
     cookieName,
     refreshToken,
-    isPersistentAuth ? persistentCookie : sessionCookie
+    isPersistentAuth ? persistentCookie : sessionCookie,
   );
-  res.status(200).json({ success: true, result: { accessToken, refreshToken } });
+  res
+    .status(200)
+    .json({ success: true, result: { accessToken, refreshToken } });
 }

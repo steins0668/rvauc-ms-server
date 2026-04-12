@@ -52,7 +52,7 @@ export namespace AttendanceRegistration {
 
       const isWithinSchedule = (recordedDate: Date) => {
         //  add start time and end time to midnight to get schedule
-        const { startTimeMs, endTimeMs } = TimeUtil.getTimeRange(
+        const { startTimeMs, endTimeMs } = TimeUtil.getPhTimeRange(
           recordedDate,
           class_.offering.startTime,
           class_.offering.endTime,
@@ -119,35 +119,39 @@ export namespace AttendanceRegistration {
 
           const organizedRecords = organizeRecords(existingStudentIds, datePh);
 
-          const updated = await this.updateRecords({
-            dbOrTx: tx,
-            values: {
-              classId: values.classId,
-              classOfferingId: values.classOfferingId,
-              updatedAt: createdOrUpdatedAt,
-              updatedByUserId: values.professorId,
-              records: organizedRecords.updates,
-            },
-          });
+          const updated = organizedRecords.updates.length
+            ? await this.updateRecords({
+                dbOrTx: tx,
+                values: {
+                  classId: values.classId,
+                  classOfferingId: values.classOfferingId,
+                  updatedAt: createdOrUpdatedAt,
+                  updatedByUserId: values.professorId,
+                  records: organizedRecords.updates,
+                },
+              })
+            : [];
 
-          const inserted = await this.insertRecords({
-            dbOrTx: tx,
-            onConflict: "doNothing",
-            values: organizedRecords.inserts.map((r) => {
-              return {
-                classId: values.classId,
-                classOfferingId: values.classOfferingId,
-                studentId: r.studentId,
-                status: r.status,
-                createdAt: createdOrUpdatedAt,
-                recordedAt: r.recordedAt,
-                recordedMs: r.recordedMs,
-                updatedAt: createdOrUpdatedAt,
-                updatedByUserId: values.professorId ?? null,
-                datePh: r.datePh,
-              };
-            }),
-          });
+          const inserted = organizedRecords.inserts.length
+            ? await this.insertRecords({
+                dbOrTx: tx,
+                onConflict: "doNothing",
+                values: organizedRecords.inserts.map((r) => {
+                  return {
+                    classId: values.classId,
+                    classOfferingId: values.classOfferingId,
+                    studentId: r.studentId,
+                    status: r.status,
+                    createdAt: createdOrUpdatedAt,
+                    recordedAt: r.recordedAt,
+                    recordedMs: r.recordedMs,
+                    updatedAt: createdOrUpdatedAt,
+                    updatedByUserId: values.professorId ?? null,
+                    datePh: r.datePh,
+                  };
+                }),
+              })
+            : [];
 
           return { updated, inserted, rejected: organizedRecords.rejects };
         },

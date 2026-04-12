@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import crypto from "crypto";
-import { ResultBuilder } from "../../../../../../utils";
+import { ENV } from "../../../../../../data";
+import { Json, ResultBuilder } from "../../../../../../utils";
 import { Notifications } from "../../../../../notifications";
 import { Core } from "../../../../core";
 import { Schemas } from "../../schemas";
@@ -8,7 +9,7 @@ import { getSignInMethod } from "./get-sign-in-method";
 
 export async function handleRequestSignInCode(
   req: Request<{}, {}, Schemas.SignIn.Schema>,
-  res: Response
+  res: Response,
 ) {
   const {
     body: authDetails,
@@ -47,7 +48,7 @@ export async function handleRequestSignInCode(
   const codeHash = crypto.createHash("sha256").update(code).digest("hex");
   const codeCreation = await signInRequestService.storeNewRequest(
     user.id,
-    codeHash
+    codeHash,
   );
 
   if (!codeCreation.success) {
@@ -119,6 +120,13 @@ async function sendEmail(args: {
       subject,
       text,
     });
+
+    const env = ENV.getEnvironment();
+
+    //  todo: remove this. temporary
+    if (env === "dev" || env === "testing")
+      await Json.write({ fileName: "codes.json", data: { code: requestCode } });
+
     return ResultBuilder.success(null);
   } catch (err) {
     return ResultBuilder.fail(
@@ -126,7 +134,7 @@ async function sendEmail(args: {
         name: "AUTHENTICATION_SIGN_IN_REQUEST_EMAIL_ERROR",
         message: "Failed sending sign-in request code.",
         err,
-      })
+      }),
     );
   }
 }
