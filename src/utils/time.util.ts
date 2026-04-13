@@ -55,6 +55,15 @@ export namespace TimeUtil {
       day: "2-digit",
     }).format(date);
 
+  export const toPhDay = (date: Date) =>
+    date
+      .toLocaleTimeString("en-US", {
+        timeZone: "Asia/Manila",
+        weekday: "short",
+      })
+      .slice(0, 3)
+      .toLowerCase();
+
   /**
    * To ph timezone hh:mm 12-hour format
    * @param date

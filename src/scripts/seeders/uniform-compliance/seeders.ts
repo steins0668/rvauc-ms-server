@@ -1,0 +1,44 @@
+import { createContext, DbOrTx } from "../../../db/create-context";
+import { UniformCompliance } from "../../../features/uniform-compliance";
+import { Schema } from "../../../models";
+import { SampleData } from "./sample-data";
+
+export namespace Seeders {
+  export const seedUniformTypes = async (dbOrTx?: DbOrTx | undefined) => {
+    const uniformTypeRepo = new UniformCompliance.Repositories.UniformType(
+      await createContext(),
+    );
+
+    return await uniformTypeRepo.execInsert({
+      dbOrTx,
+      fn: async (insert) => insert.values(SampleData.uniformTypes),
+    });
+  };
+
+  export const seedRecords = async (args: {
+    dbOrTx?: DbOrTx | undefined;
+    startDate: string;
+    endDate: string;
+  }) => {
+    const context = args.dbOrTx ?? (await createContext());
+
+    const { complianceRecords, violationRecords } =
+      await SampleData.generateComplianceAndViolationRecords(args);
+
+    await context.transaction(async (tx) => {
+      const chunkSize = 30;
+
+      for (let i = 0; i < complianceRecords.length; i += chunkSize) {
+        const chunk = complianceRecords.slice(i, i + chunkSize);
+
+        await tx.insert(Schema.complianceRecords).values(chunk);
+      }
+
+      for (let i = 0; i < violationRecords.length; i += chunkSize) {
+        const chunk = violationRecords.slice(i, i + chunkSize);
+
+        await tx.insert(Schema.violationRecords).values(chunk);
+      }
+    });
+  };
+}
