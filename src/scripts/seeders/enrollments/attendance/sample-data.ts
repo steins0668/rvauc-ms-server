@@ -59,7 +59,6 @@ export namespace SampleData {
     // classOfferings: any[];
     // enrollments: any[];
     // classes: any[];
-    dbOrTx?: DbOrTx | undefined;
   }) => {
     const results = [];
     let id = 1;
@@ -72,7 +71,7 @@ export namespace SampleData {
       const weekDay = TimeUtil.toPhDay(current);
 
       const offeringsToday = Enrollments.classOfferings.filter(
-        (e) => e.weekDay === weekDay,
+        (e) => e.weekDay === weekDay && e.roomId !== undefined,
       );
 
       for (const o of offeringsToday) {
