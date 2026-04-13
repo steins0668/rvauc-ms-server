@@ -28,8 +28,8 @@ export const seedDatabase = async () => {
     await Enrollments.seedEnrollments(tx); //  * dependent on auth-students
 
     const dateRange = {
-      startDate: "2025-10-23",
-      endDate: "2025-12-23",
+      startDate: "2025-09-30",
+      endDate: "2025-11-30",
     };
 
     await AttendanceRecords.seedAttendanceRecords({
