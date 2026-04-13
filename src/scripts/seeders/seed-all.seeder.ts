@@ -27,7 +27,17 @@ export const seedDatabase = async () => {
     await Enrollments.seedClassOfferings(tx);
     await Enrollments.seedEnrollments(tx); //  * dependent on auth-students
 
-    await AttendanceRecords.seedAttendanceRecords(tx);
+    const dateRange = {
+      startDate: "2025-10-23",
+      endDate: "2025-12-23",
+    };
+
+    await AttendanceRecords.seedAttendanceRecords({
+      ...dateRange,
+      dbOrTx: tx,
+    });
+
+    await UniformCompliance.seedRecords({ ...dateRange, dbOrTx: tx });
   });
 };
 
