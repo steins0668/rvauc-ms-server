@@ -1,4 +1,5 @@
 import { execTransaction } from "../../db/create-context";
+import { Seeders as AttendanceRecords } from "./enrollments/attendance/seeders";
 import { Seeders as Auth } from "./auth/seeders";
 import { Seeders as Enrollments } from "./enrollments/seeders";
 import { Seeders as UniformCompliance } from "./uniform-compliance/seeders";
@@ -25,6 +26,8 @@ export const seedDatabase = async () => {
     await Enrollments.seedClasses(tx); //  * dependent on auth-professors
     await Enrollments.seedClassOfferings(tx);
     await Enrollments.seedEnrollments(tx); //  * dependent on auth-students
+
+    await AttendanceRecords.seedAttendanceRecords(tx);
   });
 };
 
