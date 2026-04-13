@@ -88,8 +88,10 @@ export async function handleNewRecord(
         value: {
           studentId: student.id,
           ...body,
+          createdAt: now.toISOString(),
           recordedAt: now.toISOString(),
           recordedMs: now.getTime(),
+          updatedAt: now.toISOString(),
           datePh: TimeUtil.toPhDate(now),
           termId: term.id,
         },

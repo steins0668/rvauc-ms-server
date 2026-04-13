@@ -159,9 +159,11 @@ export namespace SampleData {
             studentId: e.studentId,
             uniformTypeId: uniformType.id,
             termId: 1,
+            createdAt: iso,
             recordCount: 1,
             recordedAt: iso,
             recordedMs,
+            updatedAt: iso,
             datePh,
             ...complianceFlags.elements,
           });

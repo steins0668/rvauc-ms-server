@@ -8,6 +8,7 @@ import {
 import { students } from "./students";
 import { terms } from "./terms";
 import { uniformTypes } from "./uniform-types";
+import { users } from "./users";
 
 export const complianceRecords = sqliteTable(
   "compliance_records",
@@ -35,16 +36,22 @@ export const complianceRecords = sqliteTable(
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
+    createdAt: text("created_at").notNull(),
     recordCount: integer("record_count").notNull().default(1),
     recordedAt: text("recorded_at").notNull(),
     recordedMs: integer("recorded_ms").notNull(), //  ! epoch ms
+    updatedAt: text("updated_at").notNull(),
+    updatedByUserId: integer("updated_by_user_id").references(() => users.id, {
+      onDelete: "restrict",
+      onUpdate: "cascade",
+    }),
     datePh: text("date_ph").notNull(), //  ! Ph date (yyyy-mm-dd)
   },
   (t) => [
     uniqueIndex(
-      "uidx_compliance_records_student_id_uniform_type_id_date_ph"
+      "uidx_compliance_records_student_id_uniform_type_id_date_ph",
     ).on(t.studentId, t.uniformTypeId, t.datePh),
-  ]
+  ],
 );
 
 export const complianceRecordsRelations = relations(
@@ -62,5 +69,9 @@ export const complianceRecordsRelations = relations(
       fields: [complianceRecords.uniformTypeId],
       references: [uniformTypes.id],
     }),
-  })
+    updatedByUser: one(users, {
+      fields: [complianceRecords.updatedByUserId],
+      references: [users.id],
+    }),
+  }),
 );
