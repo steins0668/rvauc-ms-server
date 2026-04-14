@@ -23,6 +23,12 @@ export namespace Repository {
       T
     >;
 
+    export type ClassSession<T> = BaseRepositoryType.DeleteArgs<
+      SQLiteDeleteBase<Tables.ClassSession, "async", ResultSet>,
+      BaseRepositoryType.BuildWhereClause<Tables.ClassSession>,
+      T
+    >;
+
     export type College<T> = BaseRepositoryType.DeleteArgs<
       SQLiteDeleteBase<Tables.College, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.College>,
@@ -72,6 +78,13 @@ export namespace Repository {
       Tables.ClassOffering,
       SQLiteInsertBuilder<Tables.ClassOffering, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.ClassOffering>,
+      T
+    >;
+
+    export type ClassSession<T> = BaseRepositoryType.InsertArgs<
+      Tables.ClassSession,
+      SQLiteInsertBuilder<Tables.ClassSession, "async", ResultSet>,
+      BaseRepositoryType.BuildWhereClause<Tables.ClassSession>,
       T
     >;
 
@@ -131,6 +144,12 @@ export namespace Repository {
       T
     >;
 
+    export type ClassSession<T> = BaseRepositoryType.UpdateArgs<
+      SQLiteUpdateBuilder<Tables.ClassSession, "async", ResultSet>,
+      BaseRepositoryType.BuildWhereClause<Tables.ClassSession>,
+      T
+    >;
+
     export type College<T> = BaseRepositoryType.UpdateArgs<
       SQLiteUpdateBuilder<Tables.College, "async", ResultSet>,
       BaseRepositoryType.BuildWhereClause<Tables.College>,
@@ -183,6 +202,13 @@ export namespace Repository {
       T
     >;
 
+    export type ClassSession<T> = BaseRepositoryType.ContextArgs<
+      Tables.ClassSession,
+      BaseRepositoryType.BuildWhereClause<Tables.ClassSession>,
+      BaseRepositoryType.BuildOrder<Tables.ClassSession>,
+      T
+    >;
+
     export type Enrollment<T> = BaseRepositoryType.ContextArgs<
       Tables.Enrollment,
       BaseRepositoryType.BuildWhereClause<Tables.Enrollment>,
@@ -209,6 +235,19 @@ export namespace Repository {
       >,
       BaseRepositoryType.BuildWhereClause<Tables.ClassOffering>,
       BaseRepositoryType.BuildOrder<Tables.ClassOffering>,
+      T
+    >;
+
+    export type ClassSession<T> = BaseRepositoryType.SubQueryArgs<
+      Tables.ClassSession,
+      SQLiteSelectBase<
+        "class_sessions",
+        "async",
+        ResultSet,
+        Tables.ClassSession["_"]["columns"]
+      >,
+      BaseRepositoryType.BuildWhereClause<Tables.ClassSession>,
+      BaseRepositoryType.BuildOrder<Tables.ClassSession>,
       T
     >;
 
@@ -249,6 +288,12 @@ export namespace Repository {
     export type ClassOffering<T> = BaseRepositoryType.QueryArgs<
       DbContext["query"]["classOfferings"],
       BaseRepositoryType.BuildWhereClause<Tables.ClassOffering>,
+      T
+    >;
+
+    export type ClassSession<T> = BaseRepositoryType.QueryArgs<
+      DbContext["query"]["classSessions"],
+      BaseRepositoryType.BuildWhereClause<Tables.ClassSession>,
       T
     >;
 
@@ -296,6 +341,10 @@ export namespace Repository {
       Parameters<DbContext["query"]["classOfferings"]["findFirst"]>[0]
     >["where"];
 
+    export type ClassSession = NonNullable<
+      Parameters<DbContext["query"]["classSessions"]["findFirst"]>[0]
+    >["where"];
+
     export type College = BaseRepositoryType.WhereBuilder<Tables.College>;
 
     export type Course = BaseRepositoryType.WhereBuilder<Tables.Course>;
@@ -315,6 +364,9 @@ export namespace Repository {
     export type ClassOffering =
       BaseRepositoryType.OrderBuilder<Tables.ClassOffering>;
 
+    export type ClassSession =
+      BaseRepositoryType.OrderBuilder<Tables.ClassSession>;
+
     export type College = BaseRepositoryType.OrderBuilder<Tables.College>;
 
     export type Course = BaseRepositoryType.OrderBuilder<Tables.Course>;
@@ -333,6 +385,9 @@ export namespace Repository {
 
     export type ClassOffering =
       BaseRepositoryType.QueryFilter<Tables.ClassOffering>;
+
+    export type ClassSession =
+      BaseRepositoryType.QueryFilter<Tables.ClassSession>;
 
     export type College = BaseRepositoryType.QueryFilter<Tables.College>;
 
