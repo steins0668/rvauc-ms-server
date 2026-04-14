@@ -1,6 +1,7 @@
 export * from "./attendance-records";
 export * from "./class-offerings";
 export * from "./classes";
+export * from "./class-sessions";
 export * from "./colleges";
 export * from "./compliance-records";
 export * from "./courses";
