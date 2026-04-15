@@ -1,4 +1,5 @@
 export * from "./class-offering.repository";
+export * from "./class-session.repository";
 export * from "./class.repository";
 export * from "./college.repository";
 export * from "./courses.repository";

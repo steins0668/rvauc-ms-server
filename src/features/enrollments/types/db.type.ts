@@ -3,6 +3,7 @@ import { Schema } from "../../../models";
 export namespace InsertModels {
   export type Class = typeof Schema.classes.$inferInsert;
   export type ClassOffering = typeof Schema.classOfferings.$inferInsert;
+  export type ClassSession = typeof Schema.classSessions.$inferInsert;
   export type College = typeof Schema.colleges.$inferInsert;
   export type Course = typeof Schema.courses.$inferInsert;
   export type Department = typeof Schema.departments.$inferInsert;
@@ -14,6 +15,7 @@ export namespace InsertModels {
 export namespace Tables {
   export type Class = typeof Schema.classes;
   export type ClassOffering = typeof Schema.classOfferings;
+  export type ClassSession = typeof Schema.classSessions;
   export type College = typeof Schema.colleges;
   export type Course = typeof Schema.courses;
   export type Department = typeof Schema.departments;
@@ -25,6 +27,7 @@ export namespace Tables {
 export namespace ViewModels {
   export type Class = typeof Schema.classes.$inferSelect;
   export type ClassOffering = typeof Schema.classOfferings.$inferSelect;
+  export type ClassSession = typeof Schema.classSessions.$inferSelect;
   export type College = typeof Schema.colleges.$inferSelect;
   export type Course = typeof Schema.courses.$inferSelect;
   export type Department = typeof Schema.departments.$inferSelect;

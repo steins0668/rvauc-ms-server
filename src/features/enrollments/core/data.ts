@@ -12,6 +12,8 @@ export namespace Data {
         yearStart: process.env.ACADEMIC_YEAR_START,
         yearEnd: process.env.ACADEMIC_YEAR_END,
         semester: process.env.ACADEMIC_YEAR_SEMESTER,
+        semesterStart: process.env.ACADEMIC_YEAR_SEMESTER_START_DATE,
+        semesterEnd: process.env.ACADEMIC_YEAR_SEMESTER_END_DATE,
       };
 
       const schema = z
@@ -19,6 +21,8 @@ export namespace Data {
           yearStart: z.coerce.number(),
           yearEnd: z.coerce.number(),
           semester: z.coerce.number(),
+          semesterStart: z.coerce.date(),
+          semesterEnd: z.coerce.date(),
         })
         .strip();
 

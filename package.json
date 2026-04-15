@@ -32,7 +32,7 @@
     "test:attendance": "jest \"attendance.test.ts\"",
     "build": "tsc",
     "start": "node dist/index.js",
-    "db:generate": "drizzle-kit generate --config=./config/drizzle.config.ts",
+    "db:generate": "tsc && drizzle-kit generate --config=./config/drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=./config/drizzle.config.ts",
     "db:studio": "drizzle-kit studio --config=./config/drizzle.config.ts",
     "db:push": "drizzle-kit push --config=./config/drizzle.config.ts",
