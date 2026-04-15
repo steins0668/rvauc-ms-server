@@ -9,13 +9,21 @@ import { Repositories } from "../../repositories";
 import { Types } from "../../types";
 import { Data } from "../data";
 import { Errors } from "../errors";
+import { ClassSession } from "./class-session.service";
 
 export namespace ClassSessionScheduler {
   export async function create() {
     const context = await createContext();
     const classOfferingRepo = new Repositories.ClassOffering(context);
     const classSessionRepo = new Repositories.ClassSession(context);
-    return new Service({ classOfferingRepo, classSessionRepo });
+    const classSessionService = new ClassSession.Service({
+      classOfferingRepo,
+      classSessionRepo,
+    });
+    return new Service({
+      classSessionRepo,
+      classSessionService,
+    });
   }
 
   type Generated = {
@@ -25,15 +33,15 @@ export namespace ClassSessionScheduler {
   };
 
   export class Service {
-    private readonly _classOfferingRepo: Repositories.ClassOffering;
     private readonly _classSessionRepo: Repositories.ClassSession;
+    private readonly _classSessionService: ClassSession.Service;
 
     constructor(args: {
-      classOfferingRepo: Repositories.ClassOffering;
       classSessionRepo: Repositories.ClassSession;
+      classSessionService: ClassSession.Service;
     }) {
-      this._classOfferingRepo = args.classOfferingRepo;
       this._classSessionRepo = args.classSessionRepo;
+      this._classSessionService = args.classSessionService;
     }
 
     async recordMissingSessions(args: {
@@ -91,7 +99,7 @@ export namespace ClassSessionScheduler {
       };
 
       const txPromise = execTransaction(async (tx) => {
-        const generated: Generated = {
+        const total: Generated = {
           attempted: [],
           inserted: [],
           skipped: 0,
@@ -100,36 +108,21 @@ export namespace ClassSessionScheduler {
         while (timeRange.startTime <= timeRange.endTime) {
           const current = new Date(timeRange.startTime);
 
-          const sessions = await this.generateSessionsForDate({
-            date: current,
-            tx,
-          });
+          const generated =
+            await this._classSessionService.ensureSessionsForDate({
+              date: current,
+              tx,
+            });
 
-          if (sessions.length) {
-            generated.attempted.push(...sessions);
-
-            let dayInsertedCount = 0;
-            const chunkSize = 30;
-
-            //    record sessions for each
-            for (let i = 0; i < sessions.length; i += chunkSize) {
-              const inserted = await this.insertSessions({
-                values: { sessions: sessions.slice(i, i + chunkSize) },
-                tx,
-              });
-
-              generated.inserted.push(...inserted);
-              dayInsertedCount += inserted.length;
-            }
-
-            generated.skipped += sessions.length - dayInsertedCount;
-          }
+          total.attempted.push(...generated.attempted);
+          total.inserted.push(...generated.inserted);
+          total.skipped += generated.skipped;
 
           current.setDate(current.getDate() + 1);
           timeRange.startTime = current.getTime();
         }
 
-        return generated;
+        return total;
       }, tx);
 
       try {
@@ -153,43 +146,10 @@ export namespace ClassSessionScheduler {
     }
 
     async recordAllForDay(args: { date: Date; tx?: TxContext | undefined }) {
-      const txPromise = execTransaction(async (tx) => {
-        const sessions = await this.generateSessionsForDate({
-          date: args.date,
-          tx,
-        });
-
-        const generated: Generated = {
-          attempted: sessions,
-          inserted: [],
-          skipped: sessions.length,
-        };
-
-        if (!sessions.length) return generated;
-
-        let dayInsertedCount = 0;
-        const chunkSize = 30;
-
-        //    record sessions for each
-        for (let i = 0; i < sessions.length; i += chunkSize) {
-          const inserted = await this.insertSessions({
-            values: { sessions: sessions.slice(i, i + chunkSize) },
-            tx,
-          });
-
-          dayInsertedCount += inserted.length;
-
-          generated.inserted.push(...inserted);
-        }
-
-        generated.skipped = sessions.length - dayInsertedCount;
-
-        return generated;
-      }, args.tx);
-
       try {
         this.ensureValidDateRange({ startDate: args.date, endDate: args.date });
-        const generated = await txPromise;
+        const generated =
+          await this._classSessionService.ensureSessionsForDate(args);
 
         return ResultBuilder.success({ generated });
       } catch (err) {
@@ -200,97 +160,6 @@ export namespace ClassSessionScheduler {
             err,
           }),
         );
-      }
-    }
-
-    private async generateSessionsForDate(args: {
-      date: Date;
-      tx?: TxContext | undefined;
-    }) {
-      const { date, tx } = args;
-
-      const sessions: Types.InsertModels.ClassSession[] = [];
-
-      const weekDay = TimeUtil.toPhDay(date);
-      const datePh = TimeUtil.toPhDate(date);
-      const nowISO = Clock.now().toISOString();
-      //    get all offerings in current day
-      const offerings = await this.getOfferings({
-        values: { weekDay },
-        tx,
-      });
-
-      for (const o of offerings) {
-        const { startTimeMs, endTimeMs } = TimeUtil.getPhTimeRange(
-          date,
-          o.startTime,
-          o.endTime,
-        );
-
-        sessions.push({
-          classId: o.classId,
-          classOfferingId: o.id,
-          datePh,
-          startTimeMs,
-          endTimeMs,
-          createdAt: nowISO,
-          updatedAt: nowISO,
-        });
-      }
-
-      return sessions;
-    }
-
-    private async getOfferings(args: {
-      values: { weekDay: string };
-      tx?: TxContext | undefined;
-    }) {
-      const { values, tx } = args;
-
-      try {
-        return await this._classOfferingRepo.execQuery({
-          dbOrTx: tx,
-          fn: async (query) =>
-            query.findMany({
-              where: (co, { eq }) => eq(co.weekDay, values.weekDay),
-              columns: {
-                id: true,
-                classId: true,
-                startTime: true,
-                endTime: true,
-              },
-            }),
-        });
-      } catch (err) {
-        throw DbAccess.normalizeError({
-          name: "DB_ACCESS_QUERY_ERROR",
-          message: "Failed querying class_offerings table.",
-          err,
-        });
-      }
-    }
-
-    private async insertSessions(args: {
-      values: { sessions: Types.InsertModels.ClassSession[] };
-      tx?: TxContext | undefined;
-    }) {
-      const { values, tx } = args;
-
-      try {
-        return await this._classSessionRepo.execInsert({
-          dbOrTx: tx,
-          fn: async ({ insert }) =>
-            await insert
-              .values(values.sessions)
-              .onConflictDoNothing()
-              .returning(),
-        });
-      } catch (err) {
-        throw DbAccess.normalizeError({
-          name: "DB_ACCESS_INSERT_ERROR",
-          message: "Failed inserting into class_sessions table.",
-          err,
-        });
       }
     }
 
