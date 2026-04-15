@@ -2,7 +2,7 @@ import { SQLWrapper } from "drizzle-orm";
 import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { Enums } from "../../../../data";
 import { createContext, DbOrTx } from "../../../../db/create-context";
-import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../utils";
+import { ResultBuilder, TimeUtil } from "../../../../utils";
 import { Auth } from "../../../auth";
 import { Repositories } from "../../repositories";
 import { Types } from "../../types";
@@ -256,14 +256,18 @@ export namespace ClassSchedule {
         });
 
       const subqueryC = (classId: SQLiteColumn) =>
-        this.classSubquery({
+        this._classRepo.existsForContext({
           dbOrTx,
           classId,
           termId,
           professorId: role === "professor" ? userId : undefined,
         });
       const subqueryE = (classOfferingId: SQLiteColumn) =>
-        this.enrollmentSubquery({ dbOrTx, classOfferingId, studentId: userId });
+        this._enrollmentRepo.existsForStudentAndOffering({
+          dbOrTx,
+          classOfferingId,
+          studentId: userId,
+        });
 
       return (co, { eq, and, or, lte, gt, exists }) => {
         const conditions: (SQLWrapper | undefined)[] = [];
@@ -311,56 +315,6 @@ export namespace ClassSchedule {
 
         return conditions.length ? and(...conditions) : undefined;
       };
-    }
-
-    private classSubquery(args: {
-      dbOrTx?: DbOrTx | undefined;
-      classId: SQLiteColumn;
-      termId: number;
-      professorId?: number | undefined;
-    }) {
-      const { dbOrTx, classId, termId, professorId } = args;
-      return this._classRepo.getContext({
-        dbOrTx,
-        fn: ({ table: c, context }) => {
-          const { eq, and } = RepositoryUtil.filters;
-
-          const conditions = [eq(c.id, classId), eq(c.termId, termId)];
-          //  ! used when querying class offerings for professors
-          if (professorId !== undefined)
-            conditions.push(eq(c.professorId, professorId));
-
-          return context
-            .select({ id: c.id })
-            .from(c)
-            .where(and(...conditions));
-        },
-      });
-    }
-
-    private enrollmentSubquery(args: {
-      dbOrTx?: DbOrTx | undefined;
-      classOfferingId: SQLiteColumn;
-      studentId: number;
-    }) {
-      const { dbOrTx, classOfferingId, studentId } = args;
-      return this._enrollmentRepo.getContext({
-        dbOrTx,
-        fn: ({ table: e, context, converter }) =>
-          context
-            .select({ id: e.id })
-            .from(e)
-            .where(
-              converter({
-                custom: (e, { eq, and }) => [
-                  and(
-                    eq(e.classOfferingId, classOfferingId),
-                    eq(e.studentId, studentId),
-                  ),
-                ],
-              }),
-            ),
-      });
     }
 
     private toDto(

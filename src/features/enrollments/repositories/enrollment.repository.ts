@@ -1,4 +1,6 @@
+import { ResultSet } from "@libsql/client/.";
 import { and, eq, or, sql, SQL } from "drizzle-orm";
+import { SQLiteColumn, SQLiteSelectBase } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx } from "../../../db/create-context";
 import { Schema } from "../../../models";
 import { enrollments } from "../../../models";
@@ -6,8 +8,6 @@ import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
 import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
-import { ResultSet } from "@libsql/client/.";
-import { SQLiteSelectBase } from "drizzle-orm/sqlite-core";
 
 export class Enrollment extends Repository<Types.Tables.Enrollment> {
   public constructor(context: DbContext) {
@@ -23,6 +23,31 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     const { enrollments } = Schema;
 
     return await (dbOrTx ?? this._dbContext).$count(enrollments, where);
+  }
+
+  public existsForStudentAndOffering(args: {
+    dbOrTx?: DbOrTx | undefined;
+    classOfferingId: SQLiteColumn;
+    studentId: number;
+  }) {
+    const { dbOrTx, classOfferingId, studentId } = args;
+    return this.getContext({
+      dbOrTx,
+      fn: ({ table: e, context, converter }) =>
+        context
+          .select({ id: e.id })
+          .from(e)
+          .where(
+            converter({
+              custom: (e, { eq, and }) => [
+                and(
+                  eq(e.classOfferingId, classOfferingId),
+                  eq(e.studentId, studentId),
+                ),
+              ],
+            }),
+          ),
+    });
   }
 
   /**
