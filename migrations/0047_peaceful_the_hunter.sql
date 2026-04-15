@@ -1,0 +1,1 @@
+CREATE INDEX `idx_class_sessions_date_ph` ON `class_sessions` (`date_ph`);

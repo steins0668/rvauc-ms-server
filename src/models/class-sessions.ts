@@ -1,6 +1,7 @@
 import { relations } from "drizzle-orm";
 import {
   sqliteTable,
+  index,
   integer,
   text,
   uniqueIndex,
@@ -31,6 +32,7 @@ export const classSessions = sqliteTable(
     updatedAt: text("updated_at").notNull(), //  * UTC ISO Date (when the record was updated)
   },
   (t) => [
+    index("idx_class_sessions_date_ph").on(t.datePh),
     uniqueIndex("uidx_class_sessions_class_offering_id_date_ph").on(
       t.classOfferingId,
       t.datePh,
