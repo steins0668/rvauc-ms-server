@@ -10,7 +10,7 @@ export namespace Jobs {
     const scheduler = await Core.Services.ClassSessionScheduler.create();
 
     //  * automatically sets hh:mm:ss to last possible ms of the day to record all possible sessions for the day
-    await scheduler.recordAllToday();
+    return await scheduler.recordAllToday();
   }
 
   /**
@@ -21,7 +21,7 @@ export namespace Jobs {
   export async function fillClassSessionsUntilToday() {
     const scheduler = await Core.Services.ClassSessionScheduler.create();
 
-    await scheduler.recordMissingSessions({
+    return await scheduler.recordMissingSessions({
       dateRange: { endDate: Clock.now() },
     });
   }
