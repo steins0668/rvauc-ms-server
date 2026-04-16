@@ -54,7 +54,7 @@ export async function handleGetSchedule(req: Request, res: Response) {
     });
   }
 
-  const date = new Date(query.date);
+  const date = new Date(query.timeMs);
   const { payload: user } = auth;
 
   const queried = await classSchedService.getForToday({

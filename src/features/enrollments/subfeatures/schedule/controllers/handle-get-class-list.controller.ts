@@ -54,7 +54,7 @@ export async function handleGetClassList(req: Request, res: Response) {
     });
   }
 
-  const date = new Date(query.date);
+  const date = new Date(query.timeMs);
   const { payload: user } = auth;
 
   const queried = await classSchedService.getForTerm({
