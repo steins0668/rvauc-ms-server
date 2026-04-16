@@ -8,7 +8,7 @@ export namespace Schemas {
   export namespace RequestBody {
     export const newRecord = z
       .strictObject({
-        date: z.coerce.date(),
+        date: z.coerce.date().default(Clock.now()),
         room: z.string(),
       })
       .strip();
