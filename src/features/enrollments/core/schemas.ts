@@ -1,4 +1,5 @@
 import z from "zod";
+import { Data } from "./data";
 
 export namespace Schemas {
   export namespace Dto {
@@ -49,6 +50,16 @@ export namespace Schemas {
       })
       .strip();
 
+    export const classSession = z
+      .strictObject({
+        id: z.number(),
+        status: z.enum(Data.classSessionStatus),
+        date: z.string(),
+        startTimeMs: z.number(),
+        endTimeMs: z.number(),
+      })
+      .strip();
+
     export const course = z
       .strictObject({
         code: z.coerce.string(), //  ! coerced incase column type changes
@@ -66,6 +77,7 @@ export namespace Schemas {
 
     export type Class_ = z.infer<typeof class_>;
     export type ClassOffering = z.infer<typeof classOffering>;
+    export type ClassSession = z.infer<typeof classSession>;
     export type Course = z.infer<typeof course>;
     export type EnrollmentMinimal = z.infer<typeof enrollmentMinimal>;
     export type Professor = z.infer<typeof professor>;
