@@ -2,7 +2,6 @@ import { Router } from "express";
 import { StrictValidatedRequest } from "../../../../interfaces";
 import { validateRequest } from "../../../../middlewares";
 import { Auth } from "../../../auth";
-import { Core } from "../../core";
 import { Schemas } from "./schemas";
 import { Controllers } from "./controllers";
 import { Middlewares } from "./middlewares";
@@ -12,7 +11,6 @@ const { attendanceRecord } = Schemas.RequestQuery;
 
 export const Routes = Router();
 
-Routes.use(Core.Middlewares.attachClassSessionRuntimeService);
 Routes.use(Middlewares.attachAttendanceDataService);
 Routes.use(Middlewares.attachAttendanceRegistrationService);
 

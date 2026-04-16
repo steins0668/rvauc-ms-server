@@ -2,7 +2,7 @@ import { SQLWrapper } from "drizzle-orm";
 import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { Enums } from "../../../../data";
 import { createContext, DbOrTx } from "../../../../db/create-context";
-import { ResultBuilder, TimeUtil } from "../../../../utils";
+import { ResultBuilder } from "../../../../utils";
 import { Auth } from "../../../auth";
 import { Repositories } from "../../repositories";
 import { Types } from "../../types";
@@ -37,17 +37,23 @@ export namespace ClassSchedule {
     }
 
     public async getForNow(args: {
-      dbOrTx?: DbOrTx | undefined;
-      date: Date;
-      termId: number;
-      userId: number;
+      values: {
+        date: Date;
+        termId: number;
+        userId: number;
+      };
       role: keyof typeof roles;
+      dbOrTx?: DbOrTx | undefined;
     }) {
       let result;
       try {
         result = await this._classOfferingRepo
           .queryWithClassAndProfessor({
-            where: this.whereClassOffering({ ...args, mode: "now" }),
+            where: this.whereClassOffering({
+              ...args,
+              scope: "today",
+              mode: "now",
+            }),
             orderBy: (co, { asc }) => asc(co.startTime),
             constraints: { limit: 1 },
             dbOrTx: args.dbOrTx,
@@ -73,7 +79,10 @@ export namespace ClassSchedule {
 
       try {
         const parsed = this.toDto(result);
-        return ResultBuilder.success({ ...parsed, sessionDate: args.date });
+        return ResultBuilder.success({
+          ...parsed,
+          sessionDate: args.values.date,
+        });
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
@@ -86,17 +95,23 @@ export namespace ClassSchedule {
     }
 
     public async getForNowOrNext(args: {
-      dbOrTx?: DbOrTx | undefined;
-      date: Date;
-      termId: number;
-      userId: number;
+      values: {
+        date: Date;
+        termId: number;
+        userId: number;
+      };
       role: keyof typeof roles;
+      dbOrTx?: DbOrTx | undefined;
     }) {
       let result;
       try {
         result = await this._classOfferingRepo
           .queryWithClassAndProfessor({
-            where: this.whereClassOffering({ ...args, mode: "now-or-next" }),
+            where: this.whereClassOffering({
+              ...args,
+              scope: "today",
+              mode: "now-or-next",
+            }),
             orderBy: (co, { asc }) => asc(co.startTime),
             constraints: { limit: 1 },
             dbOrTx: args.dbOrTx,
@@ -136,15 +151,17 @@ export namespace ClassSchedule {
 
     public async getForToday(args: {
       dbOrTx?: DbOrTx | undefined;
-      date: Date;
-      termId: number;
-      userId: number;
+      values: {
+        date: Date;
+        termId: number;
+        userId: number;
+      };
       role: keyof typeof roles;
     }) {
       let result;
       try {
         result = await this._classOfferingRepo.queryWithClassAndProfessor({
-          where: this.whereClassOffering({ ...args, mode: "today" }),
+          where: this.whereClassOffering({ ...args, scope: "today" }),
           orderBy: (co, { asc }) => asc(co.startTime),
           constraints: { limit: 50 },
           dbOrTx: args.dbOrTx,
@@ -182,16 +199,18 @@ export namespace ClassSchedule {
     }
 
     public async getForTerm(args: {
-      dbOrTx?: DbOrTx | undefined;
-      date: Date;
-      termId: number;
-      userId: number;
+      values: {
+        date: Date;
+        termId: number;
+        userId: number;
+      };
       role: keyof typeof roles;
+      dbOrTx?: DbOrTx | undefined;
     }) {
       let result;
       try {
         result = await this._classOfferingRepo.queryWithClassAndProfessor({
-          where: this.whereClassOffering({ ...args, mode: "term" }),
+          where: this.whereClassOffering({ ...args, scope: "term" }),
           orderBy: (co, { asc }) => asc(co.startTime),
           constraints: { limit: 50 },
           dbOrTx: args.dbOrTx,
@@ -238,14 +257,18 @@ export namespace ClassSchedule {
      * @returns
      */
     private whereClassOffering(args: {
-      dbOrTx?: DbOrTx | undefined;
-      date: Date;
-      termId: number;
-      userId: number;
+      values: {
+        date: Date;
+        termId: number;
+        userId: number;
+      };
       role: keyof typeof roles;
-      mode: "term" | "today" | "now" | "now-or-next";
+      scope: "term" | "today";
+      mode?: "now" | "now-or-next" | undefined;
+      dbOrTx?: DbOrTx | undefined;
     }): Types.Repository.WhereBuilders.ClassOffering {
-      const { dbOrTx, date, userId, termId, role, mode } = args;
+      const { dbOrTx, role, scope, mode } = args;
+      const { date, userId, termId } = args.values;
 
       const allowedRoles = [roles.professor, roles.student] as const;
 
@@ -276,13 +299,13 @@ export namespace ClassSchedule {
 
         if (role === "student") conditions.push(exists(subqueryE(co.id))); //  ! professors don't need enrollments subquery
 
-        if (mode !== "term") {
+        if (scope === "today") {
           const day = Enums.Days[date.getDay()] as string;
           const weekDay = day.substring(0, 3);
           conditions.push(eq(co.weekDay, weekDay));
         }
 
-        if (mode === "now" || mode === "now-or-next")
+        if (mode !== undefined)
           conditions.push(
             this._classOfferingRepo.getTimeFilters({
               date,

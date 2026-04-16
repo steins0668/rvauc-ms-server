@@ -10,7 +10,7 @@ export async function handleGetCurrentOrNext(req: Request, res: Response) {
   const {
     auth,
     validated: { query },
-    classSchedService,
+    classSessionRuntimeService,
     termDataService,
     requestLogger: logger,
   } = req as StrictValidatedRequest<
@@ -57,11 +57,13 @@ export async function handleGetCurrentOrNext(req: Request, res: Response) {
   const date = new Date(query.date);
   const { payload: user } = auth;
 
-  const queried = await classSchedService.getForNowOrNext({
-    userId: user.id,
+  const queried = await classSessionRuntimeService.getForNowOrNext({
+    values: {
+      userId: user.id,
+      date,
+      termId: term.id,
+    },
     role: user.role,
-    date,
-    termId: term.id,
   });
 
   if (!queried.success) {

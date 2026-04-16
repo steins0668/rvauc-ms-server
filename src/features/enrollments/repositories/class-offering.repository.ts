@@ -1,4 +1,4 @@
-import { and, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
+import { and, eq, or, sql, SQL } from "drizzle-orm";
 import { DbContext, DbOrTx } from "../../../db/create-context";
 import { classOfferings, Schema } from "../../../models";
 import { Repository } from "../../../services";
