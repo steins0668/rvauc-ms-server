@@ -441,9 +441,8 @@ export namespace ClassSessionRuntime {
           },
           session: Schemas.Dto.classSession.parse({
             id: cs.id,
-            // status: cs.status,
-            status: "scheduled",
-            date: cs.datePh,
+            status: cs.status,
+            datePh: cs.datePh,
             startTimeMs: cs.startTimeMs,
             endTimeMs: cs.endTimeMs,
           }),

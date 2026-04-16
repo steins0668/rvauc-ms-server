@@ -54,7 +54,7 @@ export namespace Schemas {
       .strictObject({
         id: z.number(),
         status: z.enum(Data.classSessionStatus),
-        date: z.string(),
+        datePh: z.string(),
         startTimeMs: z.number(),
         endTimeMs: z.number(),
       })
