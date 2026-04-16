@@ -54,7 +54,7 @@ export async function handleNewRfidScan(
     });
   }
 
-  const serverDate = Clock.now();
+  const serverDate = Clock.now(body.date);
   const clientDate = body.date;
 
   const MAX_DRIFT_MS = 30 * 1000; //  30 seconds max time drift
