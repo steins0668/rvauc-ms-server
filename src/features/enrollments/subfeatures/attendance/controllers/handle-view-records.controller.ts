@@ -152,7 +152,7 @@ export function handleViewRecords<
           ...extractInput(req),
           ...roleScopeValues,
           termId: term.id,
-          date: finalDate,
+          date: new Date(query.date),
         },
       },
     );

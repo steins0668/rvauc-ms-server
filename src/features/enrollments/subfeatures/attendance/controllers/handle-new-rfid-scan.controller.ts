@@ -14,7 +14,7 @@ export async function handleNewRfidScan(
   const {
     body,
     auth,
-    classSchedService,
+    classSessionRuntimeService,
     attendanceRegistrationService: registrationService,
     termDataService,
     requestLogger: logger,
@@ -75,11 +75,13 @@ export async function handleNewRfidScan(
   const { payload: student } = auth;
 
   logger.log("debug", "Attempting to get student's ongoing classs...");
-  const classQuery = await classSchedService.getForNow({
-    userId: student.id,
+  const classQuery = await classSessionRuntimeService.getForNow({
+    values: {
+      userId: student.id,
+      date: finalDate,
+      termId: term.id,
+    },
     role: student.role,
-    date: finalDate,
-    termId: term.id,
   });
 
   if (!classQuery.success) {
@@ -123,6 +125,18 @@ export async function handleNewRfidScan(
       success: false,
       message:
         "The student does not have any ongoing classes in this room at the moment.",
+    });
+  }
+
+  if (class_.session.status === "cancelled") {
+    logger.log(
+      "error",
+      "Student attempted to take attendance for cancelled class.",
+    );
+
+    return res.status(403).json({
+      success: false,
+      message: "The current or upcoming class is cancelled.",
     });
   }
 
