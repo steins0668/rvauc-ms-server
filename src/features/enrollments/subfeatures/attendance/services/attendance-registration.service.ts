@@ -25,7 +25,7 @@ export namespace AttendanceRegistration {
 
     public async mutateRecords(args: {
       classDto: (Awaited<
-        ReturnType<Core.Services.ClassSchedule.Service["getForNow"]>
+        ReturnType<Core.Services.ClassSessionRuntime.Service["getForNow"]>
       > & { success: true })["result"];
       values: {
         classId: number;
@@ -42,7 +42,7 @@ export namespace AttendanceRegistration {
     }) {
       const { classDto, values, dbOrTx } = args;
 
-      const { class: class_, sessionDate } = classDto;
+      const { class: class_ } = classDto;
 
       const uniqueRecords = new Map<number, (typeof values.records)[number]>();
 
@@ -101,7 +101,7 @@ export namespace AttendanceRegistration {
       };
 
       const createdOrUpdatedAt = values.currentDate.toISOString();
-      const datePh = TimeUtil.toPhDate(sessionDate);
+      const datePh = class_.session.datePh;
 
       const txPromise = this._attendanceRecordRepo.execTransaction(
         async (tx) => {

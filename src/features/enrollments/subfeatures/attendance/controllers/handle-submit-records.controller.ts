@@ -11,7 +11,7 @@ export async function handleSubmitRecords(req: Request, res: Response) {
   const {
     auth,
     validated: { params, body },
-    classSchedService,
+    classSessionRuntimeService,
     attendanceRegistrationService,
     termDataService,
     requestLogger: logger,
@@ -56,11 +56,13 @@ export async function handleSubmitRecords(req: Request, res: Response) {
     });
   }
 
-  const classQuery = await classSchedService.getForNow({
-    date: body.date,
+  const classQuery = await classSessionRuntimeService.getForNow({
+    values: {
+      date: body.date,
+      termId: term.id,
+      userId: auth.payload.id,
+    },
     role: auth.payload.role,
-    termId: term.id,
-    userId: auth.payload.id,
   });
 
   if (!classQuery.success) {
