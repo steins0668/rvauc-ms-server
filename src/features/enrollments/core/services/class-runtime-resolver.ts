@@ -86,9 +86,7 @@ export namespace ClassRuntimeResolver {
       }
     }
 
-    private async ensureOffering(
-      args: Parameters<typeof this.whereClassOffering>[0],
-    ) {
+    async ensureOffering(args: Parameters<typeof this.whereClassOffering>[0]) {
       let offering;
 
       try {
@@ -120,7 +118,7 @@ export namespace ClassRuntimeResolver {
       return offering;
     }
 
-    private async ensureSession(args: {
+    async ensureSession(args: {
       values: {
         date: Date;
         classOfferingId: number;

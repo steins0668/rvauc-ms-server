@@ -1,4 +1,5 @@
 export * from "./class-end-detection.service";
+export * from "./class-runtime-resolver";
 export * from "./class-schedule.service";
 export * from "./class-session-runtime.service";
 export * from "./class-session-scheduler.service";
