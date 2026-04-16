@@ -194,7 +194,7 @@ describe("Attendance Test Suite", () => {
 
     const { result } = res.body;
 
-    CoreSchemas.Dto.class_.parse(result.enrollment);
+    CoreSchemas.Dto.class_.parse(result.class);
     Schemas.Dto.insertedAttendance.parse(result.attendance);
   });
 });
