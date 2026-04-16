@@ -1,14 +1,38 @@
 import { and, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
 import { DbContext, DbOrTx } from "../../../db/create-context";
-import { classOfferings } from "../../../models";
+import { classOfferings, Schema } from "../../../models";
 import { Repository } from "../../../services";
-import { RepositoryUtil } from "../../../utils";
+import { RepositoryUtil, TimeUtil } from "../../../utils";
 import { Types } from "../types";
 import { BaseRepositoryType } from "../../../types";
 
 export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
   public constructor(context: DbContext) {
     super(context, classOfferings);
+  }
+
+  getTimeFilters(args: { date: Date; mode: "now" | "now-or-next" }) {
+    const { date, mode } = args;
+
+    const { classOfferings: co } = Schema;
+    const { or, and, lte, gt } = RepositoryUtil.filters;
+
+    const seconds = TimeUtil.secondsSinceMidnightPh(date);
+
+    switch (mode) {
+      case "now":
+        //  ! class currently in session
+        return and(lte(co.startTime, seconds), gt(co.endTime, seconds));
+      case "now-or-next":
+        return or(
+          //  ! class currently in sesion
+          and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
+          //  ! next class
+          gt(co.startTime, seconds),
+        );
+      default:
+        return undefined;
+    }
   }
 
   public async queryWithClass(args: {

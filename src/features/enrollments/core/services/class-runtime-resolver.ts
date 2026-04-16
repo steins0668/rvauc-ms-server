@@ -224,7 +224,7 @@ export namespace ClassRuntimeResolver {
           studentId: userId,
         });
 
-      return (co, { and, eq, or, lte, gt, exists }) => {
+      return (co, { and, eq, exists }) => {
         const day = Enums.Days[date.getDay()] as string;
         const weekDay = day.substring(0, 3);
 
@@ -235,36 +235,12 @@ export namespace ClassRuntimeResolver {
 
         if (role === "student") conditions.push(exists(subqueryE(co.id))); //  ! professors don't need enrollments subquery
 
-        if (mode === "now") {
-          const seconds = TimeUtil.secondsSinceMidnightPh(date);
+        const timeFilters = this._classOfferingRepo.getTimeFilters({
+          date,
+          mode,
+        });
 
-          //  ! for allowing attendance 30 minutes before class
-          const offsetDate = new Date(date);
-          offsetDate.setMinutes(offsetDate.getMinutes() + 30);
-          const offsetSeconds = TimeUtil.secondsSinceMidnightPh(offsetDate);
-
-          conditions.push(
-            or(
-              //  ! class currently in session
-              and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
-              //  ! class starts in 30 minutes
-              and(gt(co.startTime, seconds), lte(co.startTime, offsetSeconds)),
-            ),
-          );
-        }
-
-        if (mode === "now-or-next") {
-          const seconds = TimeUtil.secondsSinceMidnightPh(date);
-
-          conditions.push(
-            or(
-              //  ! class currently in sesion
-              and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
-              //  ! next class
-              gt(co.startTime, seconds),
-            ),
-          );
-        }
+        conditions.push(timeFilters);
 
         return conditions.length ? and(...conditions) : undefined;
       };

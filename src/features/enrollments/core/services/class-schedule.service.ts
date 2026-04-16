@@ -269,7 +269,7 @@ export namespace ClassSchedule {
           studentId: userId,
         });
 
-      return (co, { eq, and, or, lte, gt, exists }) => {
+      return (co, { eq, and, exists }) => {
         const conditions: (SQLWrapper | undefined)[] = [];
 
         conditions.push(exists(subqueryC(co.classId)));
@@ -282,36 +282,13 @@ export namespace ClassSchedule {
           conditions.push(eq(co.weekDay, weekDay));
         }
 
-        if (mode === "now") {
-          const seconds = TimeUtil.secondsSinceMidnightPh(date);
-
-          //  ! for allowing attendance 30 minutes before class
-          const offsetDate = new Date(date);
-          offsetDate.setMinutes(offsetDate.getMinutes() + 30);
-          const offsetSeconds = TimeUtil.secondsSinceMidnightPh(offsetDate);
-
+        if (mode === "now" || mode === "now-or-next")
           conditions.push(
-            or(
-              //  ! class currently in session
-              and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
-              //  ! class starts in 30 minutes
-              and(gt(co.startTime, seconds), lte(co.startTime, offsetSeconds)),
-            ),
+            this._classOfferingRepo.getTimeFilters({
+              date,
+              mode,
+            }),
           );
-        }
-
-        if (mode === "now-or-next") {
-          const seconds = TimeUtil.secondsSinceMidnightPh(date);
-
-          conditions.push(
-            or(
-              //  ! class currently in sesion
-              and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
-              //  ! next class
-              gt(co.startTime, seconds),
-            ),
-          );
-        }
 
         return conditions.length ? and(...conditions) : undefined;
       };
