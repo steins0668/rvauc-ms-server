@@ -36,9 +36,9 @@ export namespace Schemas {
   export namespace RequestQuery {
     export const attendanceRecord = z
       .strictObject({
-        date: z.iso.datetime().default(Clock.now().toISOString()),
-        limit: z.number().min(1).max(50).default(6),
-        page: z.number().min(1).default(1),
+        date: z.coerce.number().default(Clock.now().getTime()),
+        limit: z.coerce.number().min(1).max(50).default(6),
+        page: z.coerce.number().min(1).default(1),
       })
       .strip();
 
