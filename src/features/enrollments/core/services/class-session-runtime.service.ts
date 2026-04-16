@@ -74,7 +74,7 @@ export namespace ClassSessionRuntime {
         const offering = await this.ensureOffering({ ...args, mode: "now" });
         const session = await this.ensureSession({
           ...args,
-          values: { date, offering },
+          values: { date, classOfferingId: offering.id },
           mode: "now",
         });
 
@@ -140,7 +140,7 @@ export namespace ClassSessionRuntime {
         });
         const session = await this.ensureSession({
           ...args,
-          values: { date, offering },
+          values: { date, classOfferingId: offering.id },
           mode: "now-or-next",
         });
 
@@ -220,21 +220,17 @@ export namespace ClassSessionRuntime {
     private async ensureSession(args: {
       values: {
         date: Date;
-        offering: NonNullable<
-          Awaited<
-            ReturnType<Repositories.ClassOffering["queryWithClassAndProfessor"]>
-          >[number]
-        >;
+        classOfferingId: number;
       };
       mode: "now" | "now-or-next";
       tx?: TxContext | undefined;
     }) {
-      const { date, offering } = args.values;
+      const { date, classOfferingId } = args.values;
       let session;
 
       try {
         session = await this.getSession({
-          values: { date, classOfferingId: offering.id },
+          values: { date, classOfferingId },
           mode: args.mode,
           tx: args.tx,
         });
