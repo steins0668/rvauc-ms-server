@@ -2,6 +2,7 @@ import { sql, SQL } from "drizzle-orm";
 import { DbContext, DbOrTx } from "../../../db/create-context";
 import { classSessions } from "../../../models";
 import { Repository } from "../../../services";
+import { BaseRepositoryType } from "../../../types";
 import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
 
@@ -17,6 +18,37 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
         query.findFirst({
           orderBy: (cs, { desc }) => desc(cs.startTimeMs),
         }),
+    });
+  }
+
+  public async queryMinimalShape(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classSessions"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classSessions"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { where, orderBy, dbOrTx } = args;
+    const { limit = 6, offset = undefined } = args.constraints ?? {};
+
+    return await (dbOrTx ?? this._dbContext).query.classSessions.findMany({
+      where,
+      orderBy,
+      limit,
+      offset,
+      columns: {
+        classId: false,
+        classOfferingId: false,
+        createdAt: false,
+        updatedAt: false,
+      },
     });
   }
 
