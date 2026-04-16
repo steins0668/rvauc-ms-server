@@ -51,17 +51,10 @@ export namespace AttendanceRegistration {
       values.records = Array.from(uniqueRecords.values());
 
       const isWithinSchedule = (recordedDate: Date) => {
-        //  add start time and end time to midnight to get schedule
-        const { startTimeMs, endTimeMs } = TimeUtil.getPhTimeRange(
-          recordedDate,
-          class_.offering.startTime,
-          class_.offering.endTime,
-        );
-
-        const offsetMs = startTimeMs - 30 * 60; // ! accepting attendance 30 mins before class
+        const offsetMs = class_.session.startTimeMs - 30 * 60 * 1000; // ! accepting attendance 30 mins before class
         const recordedMs = recordedDate.getTime();
 
-        return offsetMs <= recordedMs && recordedMs < endTimeMs;
+        return offsetMs <= recordedMs && recordedMs < class_.session.endTimeMs;
       };
 
       const normalizeRecord = (r: (typeof values.records)[number]) => {
@@ -76,7 +69,7 @@ export namespace AttendanceRegistration {
 
       const organizeRecords = (
         existingStudentIds: Set<number>,
-        datePh: string,
+        sessionDatePh: string,
       ) => {
         let updates: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
         let inserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
@@ -87,7 +80,7 @@ export namespace AttendanceRegistration {
 
           const exists = existingStudentIds.has(normalized.studentId);
 
-          const isSameDate = normalized.datePh === datePh;
+          const isSameDate = normalized.datePh === sessionDatePh;
 
           if (!isSameDate || !isWithinSchedule(normalized.recordedDate)) {
             rejects.push(normalized);
@@ -101,7 +94,7 @@ export namespace AttendanceRegistration {
       };
 
       const createdOrUpdatedAt = values.currentDate.toISOString();
-      const datePh = class_.session.datePh;
+      const sessionDatePh = class_.session.datePh;
 
       const txPromise = this._attendanceRecordRepo.execTransaction(
         async (tx) => {
@@ -111,13 +104,16 @@ export namespace AttendanceRegistration {
             values: {
               classId: values.classId,
               classOfferingId: values.classOfferingId,
-              datePh,
+              datePh: sessionDatePh,
               studentIds,
             },
             dbOrTx: tx,
           });
 
-          const organizedRecords = organizeRecords(existingStudentIds, datePh);
+          const organizedRecords = organizeRecords(
+            existingStudentIds,
+            sessionDatePh,
+          );
 
           const updated = organizedRecords.updates.length
             ? await this.updateRecords({
