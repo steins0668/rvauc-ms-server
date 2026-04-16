@@ -71,7 +71,7 @@ export namespace ClassSessionRuntime {
       let session;
 
       const txPromise = execTransaction(async (tx) => {
-        const offering = await this.queryOffering({ ...args, mode: "now" });
+        const offering = await this.ensureOffering({ ...args, mode: "now" });
         const session = await this.ensureSession({
           ...args,
           values: { date, offering },
@@ -134,7 +134,7 @@ export namespace ClassSessionRuntime {
       let session;
 
       const txPromise = execTransaction(async (tx) => {
-        const offering = await this.queryOffering({
+        const offering = await this.ensureOffering({
           ...args,
           mode: "now-or-next",
         });
@@ -183,7 +183,7 @@ export namespace ClassSessionRuntime {
       }
     }
 
-    private async queryOffering(
+    private async ensureOffering(
       args: Parameters<typeof this.whereClassOffering>[0],
     ) {
       let offering;
