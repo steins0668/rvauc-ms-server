@@ -3,7 +3,6 @@ import { StrictValidatedRequest } from "../../../../../interfaces";
 import { Clock } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Schemas } from "../schemas";
-import { Core } from "../../../core";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
@@ -11,7 +10,6 @@ export async function handleSubmitRecords(req: Request, res: Response) {
   const {
     auth,
     validated: { params, body },
-    classSessionRuntimeService,
     attendanceRegistrationService,
     termDataService,
     requestLogger: logger,
@@ -56,34 +54,8 @@ export async function handleSubmitRecords(req: Request, res: Response) {
     });
   }
 
-  const classQuery = await classSessionRuntimeService.getForNow({
-    values: {
-      date: body.date,
-      termId: term.id,
-      userId: auth.payload.id,
-    },
-    role: auth.payload.role,
-  });
-
-  if (!classQuery.success) {
-    const { error } = classQuery;
-
-    logger.log("error", "Failed querying classes.", error);
-
-    const message =
-      error.name === "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR"
-        ? `The ${auth.payload.role} does not have any active classes for this date.`
-        : internalErrMessage;
-
-    return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
-      success: false,
-      message,
-    });
-  }
-
   logger.log("debug", "Attempting to update records...");
   const tx = await attendanceRegistrationService.mutateRecords({
-    classDto: classQuery.result,
     values: {
       classId: params.classId,
       classOfferingId: params.classOfferingId,

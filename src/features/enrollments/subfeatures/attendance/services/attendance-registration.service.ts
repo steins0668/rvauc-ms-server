@@ -2,6 +2,7 @@ import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { Schema } from "../../../../../models";
 import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
 import { Core } from "../../../core";
+import { Repositories as CoreRepositories } from "../../../repositories";
 import { Data } from "../data";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
@@ -11,22 +12,34 @@ export namespace AttendanceRegistration {
   export async function create() {
     const context = await createContext();
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
-    return new Service({ attendanceRecordRepo });
+    const classRepo = new CoreRepositories.Class(context);
+    const classOfferingRepo = new CoreRepositories.ClassOffering(context);
+    const classSessionRepo = new CoreRepositories.ClassSession(context);
+    const enrollmentRepo = new CoreRepositories.Enrollment(context);
+    const classRuntimeResolver = new Core.Services.ClassRuntimeResolver.Service(
+      {
+        classRepo,
+        classOfferingRepo,
+        classSessionRepo,
+        enrollmentRepo,
+      },
+    );
+    return new Service({ attendanceRecordRepo, classRuntimeResolver });
   }
 
   export class Service {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
+    private readonly _classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
 
     public constructor(args: {
       attendanceRecordRepo: Repositories.AttendanceRecord;
+      classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
+      this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
     public async mutateRecords(args: {
-      classDto: (Awaited<
-        ReturnType<Core.Services.ClassSessionRuntime.Service["getForNow"]>
-      > & { success: true })["result"];
       values: {
         classId: number;
         classOfferingId: number;
@@ -40,22 +53,13 @@ export namespace AttendanceRegistration {
       };
       dbOrTx?: DbOrTx | undefined;
     }) {
-      const { classDto, values, dbOrTx } = args;
-
-      const { class: class_ } = classDto;
+      const { values, dbOrTx } = args;
 
       const uniqueRecords = new Map<number, (typeof values.records)[number]>();
 
       for (const r of values.records) uniqueRecords.set(r.studentId, r);
 
       values.records = Array.from(uniqueRecords.values());
-
-      const isWithinSchedule = (recordedDate: Date) => {
-        const offsetMs = class_.session.startTimeMs - 30 * 60 * 1000; // ! accepting attendance 30 mins before class
-        const recordedMs = recordedDate.getTime();
-
-        return offsetMs <= recordedMs && recordedMs < class_.session.endTimeMs;
-      };
 
       const normalizeRecord = (r: (typeof values.records)[number]) => {
         //  todo: automate setting recordedAt to end of class time when status = absent
@@ -69,7 +73,7 @@ export namespace AttendanceRegistration {
 
       const organizeRecords = (
         existingStudentIds: Set<number>,
-        sessionDatePh: string,
+        session: { datePh: string; startTimeMs: number; endTimeMs: number },
       ) => {
         let updates: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
         let inserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
@@ -80,9 +84,15 @@ export namespace AttendanceRegistration {
 
           const exists = existingStudentIds.has(normalized.studentId);
 
-          const isSameDate = normalized.datePh === sessionDatePh;
+          const isSameDate = normalized.datePh === session.datePh;
 
-          if (!isSameDate || !isWithinSchedule(normalized.recordedDate)) {
+          if (
+            !isSameDate ||
+            !this._classRuntimeResolver.isWithinSchedule(
+              normalized.recordedDate,
+              session,
+            )
+          ) {
             rejects.push(normalized);
             continue;
           }
@@ -94,26 +104,32 @@ export namespace AttendanceRegistration {
       };
 
       const createdOrUpdatedAt = values.currentDate.toISOString();
-      const sessionDatePh = class_.session.datePh;
 
       const txPromise = this._attendanceRecordRepo.execTransaction(
         async (tx) => {
+          const session =
+            await this._classRuntimeResolver.ensureScheduledSession({
+              values: {
+                date: values.currentDate,
+                classOfferingId: values.classOfferingId,
+              },
+              mode: "now",
+              tx,
+            });
+
           const studentIds = values.records.map((r) => r.studentId);
 
           const existingStudentIds = await this.getExistingRecords({
             values: {
               classId: values.classId,
               classOfferingId: values.classOfferingId,
-              datePh: sessionDatePh,
+              datePh: session.datePh,
               studentIds,
             },
             dbOrTx: tx,
           });
 
-          const organizedRecords = organizeRecords(
-            existingStudentIds,
-            sessionDatePh,
-          );
+          const organizedRecords = organizeRecords(existingStudentIds, session);
 
           const updated = organizedRecords.updates.length
             ? await this.updateRecords({

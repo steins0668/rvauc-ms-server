@@ -11,6 +11,7 @@ import { Repositories } from "../../repositories";
 import { Types } from "../../types";
 import { Errors } from "../errors";
 import { Enums } from "../../../../data";
+import { Data } from "../data";
 
 export namespace ClassRuntimeResolver {
   const { roles } = Auth.Core.Data.Records;
@@ -45,6 +46,16 @@ export namespace ClassRuntimeResolver {
       this._classOfferingRepo = args.classOfferingRepo;
       this._classSessionRepo = args.classSessionRepo;
       this._enrollmentRepo = args.enrollmentRepo;
+    }
+
+    isWithinSchedule(
+      recordedDate: Date,
+      session: { startTimeMs: number; endTimeMs: number },
+    ) {
+      const offsetMs = session.startTimeMs - 30 * 60 * 1000; // ! accepting attendance 30 mins before class
+      const recordedMs = recordedDate.getTime();
+
+      return offsetMs <= recordedMs && recordedMs < session.endTimeMs;
     }
 
     async resolve(args: {
@@ -116,6 +127,25 @@ export namespace ClassRuntimeResolver {
         });
 
       return offering;
+    }
+
+    async ensureScheduledSession(args: {
+      values: {
+        date: Date;
+        classOfferingId: number;
+      };
+      mode: "now" | "now-or-next";
+      tx?: TxContext | undefined;
+    }) {
+      const session = await this.ensureSession(args);
+
+      if (session.status === Data.classSessionStatus.cancelled)
+        throw new Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
+          message: "This class session was cancelled.",
+        });
+
+      return session;
     }
 
     async ensureSession(args: {
