@@ -7,6 +7,7 @@ import { Data } from "../data";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
 import { Types } from "../types";
+import { Utils } from "../utils";
 
 export namespace AttendanceRegistration {
   export async function create() {
@@ -88,7 +89,7 @@ export namespace AttendanceRegistration {
 
           if (
             !isSameDate ||
-            !this._classRuntimeResolver.isWithinSchedule(
+            !Utils.AttendancePolicy.isWithinSchedule(
               normalized.recordedDate,
               session,
             )
