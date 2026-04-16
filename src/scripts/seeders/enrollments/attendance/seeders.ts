@@ -1,12 +1,17 @@
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { Schema } from "../../../../models";
+import { Enrollments as EnrollmentsFeature } from "../../../../features/enrollments";
 import { SampleData } from "./sample-data";
 
 export namespace Seeders {
   export const seedAttendanceRecords = async (args: {
-    dbOrTx?: DbOrTx | undefined;
     startDate: string;
     endDate: string;
+    classes: EnrollmentsFeature.Types.ViewModels.Class[];
+    classSessions: EnrollmentsFeature.Types.ViewModels.ClassSession[];
+    classOfferings: EnrollmentsFeature.Types.ViewModels.ClassOffering[];
+    enrollments: EnrollmentsFeature.Types.ViewModels.Enrollment[];
+    dbOrTx?: DbOrTx | undefined;
   }) => {
     const records = SampleData.generateAttendanceRecords(args);
 

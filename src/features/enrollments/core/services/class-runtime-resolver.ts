@@ -56,6 +56,7 @@ export namespace ClassRuntimeResolver {
       };
       role: keyof typeof roles;
       mode: "now" | "now-or-next";
+      sessionPolicy?: "strict-scheduled" | "default";
       tx?: TxContext | undefined;
     }) {
       const { date, termId, userId } = args.values;
@@ -67,11 +68,18 @@ export namespace ClassRuntimeResolver {
           mode: args.mode,
           tx,
         });
-        const session = await this.ensureSession({
-          values: { date, classOfferingId: offering.id },
-          mode: args.mode,
-          tx,
-        });
+        const session =
+          args.sessionPolicy === "strict-scheduled"
+            ? await this.ensureScheduledSession({
+                values: { date, classOfferingId: offering.id },
+                mode: args.mode,
+                tx,
+              })
+            : await this.ensureSession({
+                values: { date, classOfferingId: offering.id },
+                mode: args.mode,
+                tx,
+              });
 
         return { offering, session };
       }, args.tx);

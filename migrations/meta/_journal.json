@@ -344,6 +344,13 @@
       "when": 1776304861437,
       "tag": "0048_melted_nighthawk",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "6",
+      "when": 1776343779840,
+      "tag": "0049_reflective_silhouette",
+      "breakpoints": true
     }
   ]
 }

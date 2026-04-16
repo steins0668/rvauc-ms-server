@@ -6,8 +6,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { classes } from "./classes";
-import { classOfferings } from "./class-offerings";
+import { classes, classOfferings, attendanceRecords } from "./schema";
 
 export const classSessions = sqliteTable(
   "class_sessions",
@@ -41,13 +40,17 @@ export const classSessions = sqliteTable(
   ],
 );
 
-export const classSessionsRelations = relations(classSessions, ({ one }) => ({
-  class: one(classes, {
-    fields: [classSessions.classId],
-    references: [classes.id],
+export const classSessionsRelations = relations(
+  classSessions,
+  ({ one, many }) => ({
+    class: one(classes, {
+      fields: [classSessions.classId],
+      references: [classes.id],
+    }),
+    classOffering: one(classOfferings, {
+      fields: [classSessions.classOfferingId],
+      references: [classOfferings.id],
+    }),
+    attendanceRecords: many(attendanceRecords),
   }),
-  classOffering: one(classOfferings, {
-    fields: [classSessions.classOfferingId],
-    references: [classOfferings.id],
-  }),
-}));
+);

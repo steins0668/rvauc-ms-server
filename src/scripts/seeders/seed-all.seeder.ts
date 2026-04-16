@@ -23,17 +23,27 @@ export const seedDatabase = async () => {
     await Auth.seedStudents(tx); //  * dependent on enrollments-departments
 
     await Enrollments.seedCourses(tx);
-    await Enrollments.seedClasses(tx); //  * dependent on auth-professors
-    await Enrollments.seedClassOfferings(tx);
-    await Enrollments.seedEnrollments(tx); //  * dependent on auth-students
+    const classes = await Enrollments.seedClasses(tx); //  * dependent on auth-professors
+    const classOfferings = await Enrollments.seedClassOfferings(tx);
+    const enrollments = await Enrollments.seedEnrollments(tx); //  * dependent on auth-students
 
     const dateRange = {
       startDate: "2025-09-30",
       endDate: "2025-11-30",
     };
 
+    const classSessions = await Enrollments.seedClassSessions({
+      ...dateRange,
+      classOfferings,
+      dbOrTx: tx,
+    });
+
     await AttendanceRecords.seedAttendanceRecords({
       ...dateRange,
+      classes,
+      classOfferings,
+      classSessions,
+      enrollments,
       dbOrTx: tx,
     });
 

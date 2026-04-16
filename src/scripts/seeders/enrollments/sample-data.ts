@@ -1,3 +1,6 @@
+import { Enrollments } from "../../../features/enrollments";
+import { Clock, TimeUtil } from "../../../utils";
+
 export namespace SampleData {
   export const colleges = [
     { id: 1, name: "College of Arts and Science" },
@@ -273,6 +276,50 @@ export namespace SampleData {
       endTimeText: "3:00 PM",
     },
   ];
+
+  export const generateClassSessions = (args: {
+    classOfferings: Enrollments.Types.ViewModels.ClassOffering[];
+    startDate: string;
+    endDate: string;
+  }) => {
+    const { classOfferings, startDate, endDate } = args;
+    const sessions: Enrollments.Types.InsertModels.ClassSession[] = [];
+    let id = 1;
+
+    const current = new Date(startDate);
+    const end = new Date(endDate);
+
+    while (current <= end) {
+      const weekDay = TimeUtil.toPhDay(current);
+      const datePh = TimeUtil.toPhDate(current);
+      const nowISO = Clock.now().toISOString();
+      //    get all offerings in current day
+      const offerings = classOfferings.filter((co) => co.weekDay === weekDay);
+
+      for (const o of offerings) {
+        const { startTimeMs, endTimeMs } = TimeUtil.getPhTimeRange(
+          current,
+          o.startTime,
+          o.endTime,
+        );
+
+        sessions.push({
+          id: id++,
+          classId: o.classId,
+          classOfferingId: o.id,
+          datePh,
+          startTimeMs,
+          endTimeMs,
+          createdAt: nowISO,
+          updatedAt: nowISO,
+        });
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return sessions;
+  };
 
   export const enrollments = [
     // Student 7 (Lee Archelaus Agaton)

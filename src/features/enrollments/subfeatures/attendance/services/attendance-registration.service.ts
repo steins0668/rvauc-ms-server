@@ -1,4 +1,10 @@
-import { createContext, DbOrTx } from "../../../../../db/create-context";
+import {
+  createContext,
+  DbOrTx,
+  execTransaction,
+  TxContext,
+} from "../../../../../db/create-context";
+import { DbAccess } from "../../../../../error";
 import { Schema } from "../../../../../models";
 import {
   Clock,
@@ -30,7 +36,10 @@ export namespace AttendanceRegistration {
         enrollmentRepo,
       },
     );
-    return new Service({ attendanceRecordRepo, classRuntimeResolver });
+    return new Service({
+      attendanceRecordRepo,
+      classRuntimeResolver,
+    });
   }
 
   export class Service {
@@ -45,7 +54,7 @@ export namespace AttendanceRegistration {
       this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
-    public async mutateRecords(args: {
+    async mutateRecords(args: {
       values: {
         classId: number;
         classOfferingId: number;
@@ -158,6 +167,7 @@ export namespace AttendanceRegistration {
                   return {
                     classId: values.classId,
                     classOfferingId: values.classOfferingId,
+                    classSessionId: session.id,
                     studentId: r.studentId,
                     status: r.status,
                     createdAt: createdOrUpdatedAt,
@@ -198,7 +208,126 @@ export namespace AttendanceRegistration {
       }
     }
 
-    public async newRecord(args: {
+    async recordAttendanceForSession(args: {
+      values: { termId: number; studentId: number; recordedDate: Date };
+      tx?: TxContext | undefined;
+    }) {
+      const { termId, studentId, recordedDate } = args.values;
+      const txPromise = execTransaction(async (tx) => {
+        const clsRuntime = await this._classRuntimeResolver.resolve({
+          values: { termId, userId: studentId, date: recordedDate },
+          role: "student",
+          mode: "now",
+          sessionPolicy: "strict-scheduled",
+          tx,
+        });
+
+        const status = Utils.AttendancePolicy.getAttendanceStatus({
+          attendanceDate: recordedDate,
+          schedStartTime: clsRuntime.offering.startTime,
+          schedEndTime: clsRuntime.offering.endTime,
+        });
+
+        const inserted = await this.persistRecord({
+          values: { clsRuntime, studentId, status, recordedDate },
+          tx,
+        });
+
+        return { clsRuntime, inserted };
+      }, args.tx);
+
+      let txResult;
+
+      try {
+        txResult = await txPromise;
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_TRANSACTION_ERROR",
+            message: "Failed storing attendance record from scan.",
+            err,
+          }),
+        );
+      }
+
+      try {
+        const dto = this.toRegisterScanDto(
+          txResult.clsRuntime,
+          txResult.inserted,
+        );
+
+        return ResultBuilder.success(dto);
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+            message:
+              "Failed to convert scan attendance registration result to dto",
+            err,
+          }),
+        );
+      }
+    }
+
+    async persistRecord(args: {
+      values: {
+        clsRuntime: Awaited<
+          ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
+        >;
+        studentId: number;
+        status: string;
+        recordedDate: Date;
+      };
+      tx?: TxContext | undefined;
+    }) {
+      const { tx } = args;
+      const { clsRuntime, studentId, status, recordedDate } = args.values;
+
+      const { offering, session } = clsRuntime;
+      const { class: cls } = offering;
+
+      const recordedDateIso = recordedDate.toISOString();
+      const recordedDateMs = recordedDate.getTime();
+
+      let inserted;
+
+      try {
+        inserted = await this.insertRecords({
+          dbOrTx: tx,
+          onConflict: "doUpdate",
+          values: [
+            {
+              studentId,
+              classId: cls.id,
+              classOfferingId: offering.id,
+              classSessionId: session.id,
+              status,
+              createdAt: recordedDateIso,
+              recordedAt: recordedDateIso,
+              recordedMs: recordedDateMs,
+              updatedAt: recordedDateIso,
+              datePh: TimeUtil.toPhDate(recordedDate),
+            },
+          ],
+        }).then((r) => r[0]);
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_STORE_ERROR",
+          message: "Failed storing attendance record.",
+          err,
+        });
+      }
+
+      if (inserted === undefined)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_STORE_ERROR",
+          message: "Failed storing attendance record.",
+        });
+
+      return inserted;
+    }
+
+    async newRecord(args: {
       dbOrTx?: DbOrTx | undefined;
       onConflict?: "doNothing" | "doUpdate" | undefined;
       value: Types.InsertModels.AttendanceRecord;
@@ -213,7 +342,7 @@ export namespace AttendanceRegistration {
         : ResultBuilder.fail(stored.error);
     }
 
-    public async newRecords(args: {
+    async newRecords(args: {
       dbOrTx?: DbOrTx | undefined;
       onConflict?: "doNothing" | "doUpdate" | undefined;
       values: Types.InsertModels.AttendanceRecord[];
@@ -288,13 +417,73 @@ export namespace AttendanceRegistration {
       return { updated: updatedDto, inserted: insertedDto, rejected };
     }
 
+    private toRegisterScanDto(
+      classRuntime: Awaited<
+        ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
+      >,
+      attendance: NonNullable<
+        Awaited<ReturnType<typeof this.insertRecords>>[number]
+      >,
+    ): {
+      class: Core.Schemas.Dto.Class_ & {
+        course: Core.Schemas.Dto.Course;
+        offering: Core.Schemas.Dto.ClassOffering;
+        professor: Core.Schemas.Dto.Professor;
+        session: Core.Schemas.Dto.ClassSession;
+      };
+      attendance: Schemas.Dto.InsertedAttendance;
+    } {
+      const { offering: co, session: cs } = classRuntime;
+      const { class: cls, rooms: r } = co;
+      const { course: crs, professor: p } = cls;
+
+      return {
+        class: {
+          id: cls.id,
+          classNumber: cls.classNumber,
+          course: crs,
+          offering: {
+            id: co.id,
+            weekDay: co.weekDay,
+            room: r?.name ?? "N/A",
+            startTimeText: co.startTimeText,
+            endTimeText: co.endTimeText,
+            startTime: co.startTime,
+            endTime: co.endTime,
+          },
+          professor: {
+            surname: p.user.surname,
+            firstName: p.user.firstName,
+            middleName: p.user.middleName,
+            gender: p.user.gender,
+            college: p.college.name,
+            facultyRank: p.facultyRank,
+          },
+          session: Core.Schemas.Dto.classSession.parse({
+            id: cs.id,
+            status: cs.status,
+            datePh: cs.datePh,
+            startTimeMs: cs.startTimeMs,
+            endTimeMs: cs.endTimeMs,
+          }),
+        },
+        attendance: {
+          id: attendance.id,
+          status: attendance.status,
+          date: attendance.datePh,
+          time: TimeUtil.toPhTime(new Date(attendance.recordedAt)),
+          isNew: attendance.recordCount === 1,
+        },
+      };
+    }
+
     private async insertRecords(args: {
       dbOrTx?: DbOrTx | undefined;
       onConflict?: "doNothing" | "doUpdate" | undefined;
       values: Types.InsertModels.AttendanceRecord[];
     }) {
       const { dbOrTx, onConflict = "doNothing", values } = args;
-      return await this._attendanceRecordRepo.execInsert({
+      const insert = this._attendanceRecordRepo.execInsert({
         dbOrTx,
         fn: async ({ table: ar, insert, sql }) => {
           let insertion = insert.values(values);
@@ -322,6 +511,16 @@ export namespace AttendanceRegistration {
           return insertion.returning();
         },
       });
+
+      try {
+        return await insert;
+      } catch (err) {
+        throw DbAccess.normalizeError({
+          name: "DB_ACCESS_INSERT_ERROR",
+          message: "Failed inserting into `attendance_records` table.",
+          err,
+        });
+      }
     }
 
     private async getExistingRecords(args: {
