@@ -1,6 +1,11 @@
 import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { Schema } from "../../../../../models";
-import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
+import {
+  Clock,
+  RepositoryUtil,
+  ResultBuilder,
+  TimeUtil,
+} from "../../../../../utils";
 import { Core } from "../../../core";
 import { Repositories as CoreRepositories } from "../../../repositories";
 import { Data } from "../data";
@@ -44,7 +49,7 @@ export namespace AttendanceRegistration {
       values: {
         classId: number;
         classOfferingId: number;
-        currentDate: Date;
+        date: Date;
         professorId?: number | undefined;
         records: {
           recordedDate: Date;
@@ -104,14 +109,14 @@ export namespace AttendanceRegistration {
         return { updates, inserts, rejects };
       };
 
-      const createdOrUpdatedAt = values.currentDate.toISOString();
+      const createdOrUpdatedAt = Clock.now().toISOString();
 
       const txPromise = this._attendanceRecordRepo.execTransaction(
         async (tx) => {
           const session =
             await this._classRuntimeResolver.ensureScheduledSession({
               values: {
-                date: values.currentDate,
+                date: values.date,
                 classOfferingId: values.classOfferingId,
               },
               mode: "now",

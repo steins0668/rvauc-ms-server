@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { StrictValidatedRequest } from "../../../../../interfaces";
-import { Clock } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Schemas } from "../schemas";
 
@@ -59,7 +58,7 @@ export async function handleSubmitRecords(req: Request, res: Response) {
     values: {
       classId: params.classId,
       classOfferingId: params.classOfferingId,
-      currentDate: Clock.now(),
+      date: body.date,
       professorId: auth.payload.id,
       records: body.records,
     },
