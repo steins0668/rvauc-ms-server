@@ -286,6 +286,7 @@ export namespace AttendanceRegistration {
       const { offering, session } = clsRuntime;
       const { class: cls } = offering;
 
+      const nowIso = Clock.now().toISOString();
       const recordedDateIso = recordedDate.toISOString();
       const recordedDateMs = recordedDate.getTime();
 
@@ -302,10 +303,10 @@ export namespace AttendanceRegistration {
               classOfferingId: offering.id,
               classSessionId: session.id,
               status,
-              createdAt: recordedDateIso,
+              createdAt: nowIso,
               recordedAt: recordedDateIso,
               recordedMs: recordedDateMs,
-              updatedAt: recordedDateIso,
+              updatedAt: nowIso,
               datePh: TimeUtil.toPhDate(recordedDate),
             },
           ],
