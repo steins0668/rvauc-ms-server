@@ -20,6 +20,40 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
         }),
     });
   }
+  async getWithEnrollments(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classSessions"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classSessions"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    return await this.execQuery({
+      dbOrTx: args.dbOrTx,
+      fn: async (query) =>
+        query.findMany({
+          where: args.where,
+          orderBy: args.orderBy,
+          columns: { id: true, startTimeMs: true, endTimeMs: true },
+          with: {
+            classOffering: {
+              columns: { id: true, classId: true },
+              with: {
+                enrollments: {
+                  columns: { id: true, studentId: true, status: true },
+                },
+              },
+            },
+          },
+        }),
+    });
+  }
 
   public async queryMinimalShape(args: {
     constraints?: BaseRepositoryType.QueryConstraints;

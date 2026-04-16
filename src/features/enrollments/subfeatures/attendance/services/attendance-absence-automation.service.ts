@@ -15,13 +15,8 @@ export namespace AttendanceAbsenceAutomation {
     const context = await createContext();
 
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
-    const classOfferingRepo = new CoreRepositories.ClassOffering(context);
     const classSessionRepo = new CoreRepositories.ClassSession(context);
-    const classSessionDataService = new Core.Services.ClassSessionData.Service({
-      classOfferingRepo,
-      classSessionRepo,
-    });
-    return new Service({ attendanceRecordRepo, classSessionDataService });
+    return new Service({ attendanceRecordRepo, classSessionRepo });
   }
 
   type Generated = {
@@ -32,30 +27,29 @@ export namespace AttendanceAbsenceAutomation {
 
   export class Service {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
-    private readonly _classSessionDataService: Core.Services.ClassSessionData.Service;
+    private readonly _classSessionRepo: CoreRepositories.ClassSession;
 
     constructor(args: {
       attendanceRecordRepo: Repositories.AttendanceRecord;
-      classSessionDataService: Core.Services.ClassSessionData.Service;
+      classSessionRepo: CoreRepositories.ClassSession;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
-      this._classSessionDataService = args.classSessionDataService;
+      this._classSessionRepo = args.classSessionRepo;
     }
 
     async markMissingForDate(args: { date: Date; tx?: TxContext | undefined }) {
       const txPromise = execTransaction(async (tx) => {
-        //  get sessions for today
-        const sessions =
-          await this._classSessionDataService.getWithEnrollmentsForDate({
-            date: args.date,
-            tx,
-          });
-
         const datePh = TimeUtil.toPhDate(args.date);
         const now = Clock.now();
         const nowIso = now.toISOString();
 
         const records: Types.InsertModels.AttendanceRecord[] = [];
+
+        //  get sessions for today
+        const sessions = await this.getSessionsWithEnrollmentsForDate({
+          datePh,
+          tx,
+        });
 
         //  * generate records
         //  todo: abstract this
@@ -120,6 +114,25 @@ export namespace AttendanceAbsenceAutomation {
             err,
           }),
         );
+      }
+    }
+
+    private async getSessionsWithEnrollmentsForDate(args: {
+      datePh: string;
+      tx?: TxContext | undefined;
+    }) {
+      try {
+        return await this._classSessionRepo.getWithEnrollments({
+          where: (cs, { eq }) => eq(cs.datePh, args.datePh),
+          orderBy: (cs, { asc }) => asc(cs.startTimeMs),
+          dbOrTx: args.tx,
+        });
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: `Failed retrieving sessions for date: ${args.datePh}`,
+          err,
+        });
       }
     }
 
