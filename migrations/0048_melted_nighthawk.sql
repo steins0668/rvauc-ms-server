@@ -1,0 +1,1 @@
+ALTER TABLE `class_sessions` ADD `status` text DEFAULT 'scheduled' NOT NULL;

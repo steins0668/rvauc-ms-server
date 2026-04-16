@@ -25,6 +25,7 @@ export const classSessions = sqliteTable(
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
+    status: text("status").notNull().default("scheduled"),
     datePh: text("date_ph").notNull(), //  * Ph timezone date (yyyy-mm-dd)
     startTimeMs: integer("start_ms").notNull(), //  * UTC ms (in ph timezone) of when the schedule starts
     endTimeMs: integer("end_ms").notNull(), //  * UTC ms (in ph timezone) of when the schedule ends
