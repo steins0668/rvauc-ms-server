@@ -29,7 +29,7 @@ export const seedDatabase = async () => {
 
     const dateRange = {
       startDate: "2025-09-30",
-      endDate: "2025-11-30",
+      endDate: "2025-12-24",
     };
 
     const classSessions = await Enrollments.seedClassSessions({
