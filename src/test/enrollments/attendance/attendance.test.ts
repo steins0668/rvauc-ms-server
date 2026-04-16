@@ -88,12 +88,17 @@ describe("Attendance Test Suite", () => {
     minimalTokens.student = await getToken(credentials[1], "minimal");
   });
 
-  it(`GET records/class/${classId}`, async () => {
+  const params = new URLSearchParams({
+    timeMs: new Date("2025-12-03T11:00:00+08:00").getTime().toString(),
+  });
+  const reqQuery = params.toString();
+
+  it(`GET records/class/${classId}?${reqQuery}`, async () => {
     const res = await request(app)
-      .get(`/enrollments/attendance/records/class/${classId}`)
+      .get(`/enrollments/attendance/records/class/${classId}?${reqQuery}`)
       .set("Authorization", `Bearer ${tokens.professor}`);
 
-    console.debug(JSON.stringify(res.body));
+    console.debug(JSON.stringify(res.body, null, 2));
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
@@ -108,7 +113,7 @@ describe("Attendance Test Suite", () => {
       .get(url)
       .set("Authorization", `Bearer ${tokens.professor}`);
 
-    console.debug(JSON.stringify(res.body));
+    console.debug(JSON.stringify(res.body, null, 2));
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
@@ -124,27 +129,27 @@ describe("Attendance Test Suite", () => {
       .post(url)
       .set("Authorization", `Bearer ${tokens.professor}`)
       .send({
-        date: "2026-04-08T07:00:00+08:00",
+        date: "2025-12-03T07:00:00+08:00",
         records: [
           {
-            recordedDate: "2026-04-08T07:40:00+08:00",
+            recordedDate: "2025-12-03T07:40:00+08:00",
             studentId: 7,
             status: "late",
           },
           {
-            recordedDate: "2026-04-08T07:35:00+08:00",
+            recordedDate: "2025-12-03T07:35:00+08:00",
             studentId: 8,
             status: "late",
           },
           {
-            recordedDate: "2026-04-08T07:00:00+08:00",
+            recordedDate: "2025-12-03T07:00:00+08:00",
             studentId: 9,
             status: "absent",
           },
         ],
       });
 
-    console.debug(JSON.stringify(res.body));
+    console.debug(JSON.stringify(res.body, null, 2));
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
@@ -163,7 +168,7 @@ describe("Attendance Test Suite", () => {
       .get(`/enrollments/attendance/records/class/${classId}`)
       .set("Authorization", `Bearer ${tokens.student}`);
 
-    console.debug(JSON.stringify(res.body));
+    console.debug(JSON.stringify(res.body, null, 2));
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
@@ -178,10 +183,10 @@ describe("Attendance Test Suite", () => {
       .set("Authorization", `Bearer ${minimalTokens.student}`)
       .send({
         date: "2025-12-01T09:00:00+08:00",
-        room: "309",
+        room: "406",
       });
 
-    console.debug(JSON.stringify(res.body));
+    console.debug(JSON.stringify(res.body, null, 2));
 
     expect([200, 201]).toContain(res.status);
     expect(res.body).toHaveProperty("success");
