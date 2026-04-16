@@ -65,24 +65,11 @@ export namespace ClassSessionRuntime {
       role: keyof typeof roles;
       tx?: TxContext | undefined;
     }) {
-      const { date } = args.values;
-
       let offering;
       let session;
 
-      const txPromise = execTransaction(async (tx) => {
-        const offering = await this.ensureOffering({ ...args, mode: "now" });
-        const session = await this.ensureSession({
-          ...args,
-          values: { date, classOfferingId: offering.id },
-          mode: "now",
-        });
-
-        return { offering, session };
-      });
-
       try {
-        const result = await txPromise;
+        const result = await this.resolveRuntime({ ...args, mode: "now" });
 
         offering = result.offering;
         session = result.session;
@@ -128,27 +115,14 @@ export namespace ClassSessionRuntime {
       role: keyof typeof roles;
       tx?: TxContext | undefined;
     }) {
-      const { date } = args.values;
-
       let offering;
       let session;
 
-      const txPromise = execTransaction(async (tx) => {
-        const offering = await this.ensureOffering({
-          ...args,
-          mode: "now-or-next",
-        });
-        const session = await this.ensureSession({
-          ...args,
-          values: { date, classOfferingId: offering.id },
-          mode: "now-or-next",
-        });
-
-        return { offering, session };
-      });
-
       try {
-        const result = await txPromise;
+        const result = await this.resolveRuntime({
+          ...args,
+          mode: "now-or-next",
+        });
 
         offering = result.offering;
         session = result.session;
@@ -162,12 +136,6 @@ export namespace ClassSessionRuntime {
         );
       }
 
-      if (!session)
-        return new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_SYSTEM_ERROR",
-          message: `Failed ensuring existence of class session for ${JSON.stringify(offering)}`,
-        });
-
       try {
         const parsed = this.toDto(offering, session);
 
@@ -180,6 +148,45 @@ export namespace ClassSessionRuntime {
             err,
           }),
         );
+      }
+    }
+
+    private async resolveRuntime(args: {
+      values: {
+        date: Date;
+        termId: number;
+        userId: number;
+      };
+      role: keyof typeof roles;
+      mode: "now" | "now-or-next";
+      tx?: TxContext | undefined;
+    }) {
+      const { date, termId, userId } = args.values;
+
+      const txPromise = execTransaction(async (tx) => {
+        const offering = await this.ensureOffering({
+          values: { date, termId, userId },
+          role: args.role,
+          mode: args.mode,
+          tx,
+        });
+        const session = await this.ensureSession({
+          values: { date, classOfferingId: offering.id },
+          mode: args.mode,
+          tx,
+        });
+
+        return { offering, session };
+      }, args.tx);
+
+      try {
+        return await txPromise;
+      } catch (err) {
+        throw Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_TRANSACTION_ERROR",
+          message: "Failed resolving class offering and/or session runtime.",
+          err,
+        });
       }
     }
 
