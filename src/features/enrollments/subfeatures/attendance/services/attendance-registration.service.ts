@@ -401,35 +401,25 @@ export namespace AttendanceRegistration {
       const recordedDateIso = recordedDate.toISOString();
       const recordedDateMs = recordedDate.getTime();
 
-      let inserted;
-
-      try {
-        inserted = await this.insertRecords({
-          dbOrTx: tx,
-          onConflict: "doUpdate",
-          values: [
-            {
-              studentId,
-              enrollmentId,
-              classId: cls.id,
-              classOfferingId: offering.id,
-              classSessionId: session.id,
-              status,
-              createdAt: nowIso,
-              recordedAt: recordedDateIso,
-              recordedMs: recordedDateMs,
-              updatedAt: nowIso,
-              datePh: TimeUtil.toPhDate(recordedDate),
-            },
-          ],
-        }).then((r) => r[0]);
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_STORE_ERROR",
-          message: "Failed storing attendance record.",
-          err,
-        });
-      }
+      const inserted = await this.insertRecords({
+        dbOrTx: tx,
+        onConflict: "doUpdate",
+        values: [
+          {
+            studentId,
+            enrollmentId,
+            classId: cls.id,
+            classOfferingId: offering.id,
+            classSessionId: session.id,
+            status,
+            createdAt: nowIso,
+            recordedAt: recordedDateIso,
+            recordedMs: recordedDateMs,
+            updatedAt: nowIso,
+            datePh: TimeUtil.toPhDate(recordedDate),
+          },
+        ],
+      }).then((r) => r[0]);
 
       if (inserted === undefined)
         throw new Core.Errors.EnrollmentData.ErrorClass({
@@ -478,8 +468,8 @@ export namespace AttendanceRegistration {
       try {
         return await insert;
       } catch (err) {
-        throw DbAccess.normalizeError({
-          name: "DB_ACCESS_INSERT_ERROR",
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_STORE_ERROR",
           message: "Failed inserting into `attendance_records` table.",
           err,
         });
