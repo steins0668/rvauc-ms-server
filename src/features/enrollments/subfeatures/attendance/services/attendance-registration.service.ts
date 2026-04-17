@@ -272,7 +272,7 @@ export namespace AttendanceRegistration {
       }
 
       try {
-        const dto = this.toRegisterScanDto(
+        const dto = this.toSessionAttendanceDto(
           txResult.clsRuntime,
           txResult.inserted,
         );
@@ -318,7 +318,7 @@ export namespace AttendanceRegistration {
       return { updated: updatedDto, inserted: insertedDto, rejected };
     }
 
-    private toRegisterScanDto(
+    private toSessionAttendanceDto(
       classRuntime: Awaited<
         ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
       >,
