@@ -13,7 +13,7 @@ export const Routes = Router();
 
 Routes.use(Middlewares.attachAttendanceDataService);
 Routes.use(Middlewares.attachAttendanceRegistrationService);
-
+//#region OLD ENDPOINTS
 /**
  * GET /view-records/class/:classId
  *
@@ -50,7 +50,7 @@ Routes.post(
   validateRequest({ body: Schemas.RequestBody.newRecord }),
   Controllers.handleNewRfidScan,
 );
-
+//#endregion
 /**
  * ! past this point are new endpoints. some does exactly the same as the endpoints above but have been renamed for clarity.
  * todo: remove the endpoints above once the client has implemented the new endpoints
