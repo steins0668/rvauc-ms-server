@@ -3,26 +3,25 @@ import {
   execTransaction,
   TxContext,
 } from "../../../../db/create-context";
-import { DbAccess } from "../../../../error";
-import { Clock, ResultBuilder, TimeUtil } from "../../../../utils";
+import { Clock, ResultBuilder } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Types } from "../../types";
 import { Data } from "../data";
 import { Errors } from "../errors";
-import { ClassSession } from "./class-session.service";
+import { ClassSessionRecorder } from "./class-session-recorder";
 
 export namespace ClassSessionScheduler {
   export async function create() {
     const context = await createContext();
     const classOfferingRepo = new Repositories.ClassOffering(context);
     const classSessionRepo = new Repositories.ClassSession(context);
-    const classSessionService = new ClassSession.Service({
+    const classSessionRecorder = new ClassSessionRecorder.Service({
       classOfferingRepo,
       classSessionRepo,
     });
     return new Service({
       classSessionRepo,
-      classSessionService,
+      classSessionRecorder,
     });
   }
 
@@ -34,14 +33,14 @@ export namespace ClassSessionScheduler {
 
   export class Service {
     private readonly _classSessionRepo: Repositories.ClassSession;
-    private readonly _classSessionService: ClassSession.Service;
+    private readonly _classSessionRecorder: ClassSessionRecorder.Service;
 
     constructor(args: {
       classSessionRepo: Repositories.ClassSession;
-      classSessionService: ClassSession.Service;
+      classSessionRecorder: ClassSessionRecorder.Service;
     }) {
       this._classSessionRepo = args.classSessionRepo;
-      this._classSessionService = args.classSessionService;
+      this._classSessionRecorder = args.classSessionRecorder;
     }
 
     async recordMissingSessions(args: {
@@ -109,7 +108,7 @@ export namespace ClassSessionScheduler {
           const current = new Date(timeRange.startTime);
 
           const generated =
-            await this._classSessionService.ensureSessionsForDate({
+            await this._classSessionRecorder.ensureSessionsForDate({
               date: current,
               tx,
             });
@@ -149,7 +148,7 @@ export namespace ClassSessionScheduler {
       try {
         this.ensureValidDateRange({ startDate: args.date, endDate: args.date });
         const generated =
-          await this._classSessionService.ensureSessionsForDate(args);
+          await this._classSessionRecorder.ensureSessionsForDate(args);
 
         return ResultBuilder.success({ generated });
       } catch (err) {

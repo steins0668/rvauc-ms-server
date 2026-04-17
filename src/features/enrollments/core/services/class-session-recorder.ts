@@ -4,7 +4,7 @@ import { Clock, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Types } from "../../types";
 
-export namespace ClassSession {
+export namespace ClassSessionRecorder {
   type Generated = {
     attempted: Types.InsertModels.ClassSession[];
     inserted: Types.ViewModels.ClassSession[];
