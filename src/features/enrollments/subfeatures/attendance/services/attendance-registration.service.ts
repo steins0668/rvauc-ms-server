@@ -325,15 +325,7 @@ export namespace AttendanceRegistration {
       attendance: NonNullable<
         Awaited<ReturnType<typeof this.insertRecords>>[number]
       >,
-    ): {
-      class: Core.Schemas.Dto.Class_ & {
-        course: Core.Schemas.Dto.Course;
-        offering: Core.Schemas.Dto.ClassOffering;
-        professor: Core.Schemas.Dto.Professor;
-        session: Core.Schemas.Dto.ClassSession;
-      };
-      attendance: Schemas.Dto.InsertedAttendance;
-    } {
+    ): Schemas.Dto.ClassAttendance.SessionAttendanceResult {
       const { offering: co, session: cs } = classRuntime;
       const { class: cls, rooms: r } = co;
       const { course: crs, professor: p } = cls;
@@ -360,13 +352,13 @@ export namespace AttendanceRegistration {
             college: p.college.name,
             facultyRank: p.facultyRank,
           },
-          session: Core.Schemas.Dto.classSession.parse({
+          session: {
             id: cs.id,
             status: cs.status,
             datePh: cs.datePh,
             startTimeMs: cs.startTimeMs,
             endTimeMs: cs.endTimeMs,
-          }),
+          },
         },
         attendance: {
           id: attendance.id,

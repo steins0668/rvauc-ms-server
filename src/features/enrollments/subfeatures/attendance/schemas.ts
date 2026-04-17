@@ -147,6 +147,25 @@ export namespace Schemas {
         })
         .strip();
       export type MutationResult = z.infer<typeof mutationResult>;
+
+      export const sessionAttendanceResult = z
+        .strictObject({
+          class: z
+            .strictObject({
+              ...Core.Schemas.Dto.class_.shape,
+              course: Core.Schemas.Dto.course,
+              offering: Core.Schemas.Dto.classOffering,
+              professor: Core.Schemas.Dto.professor,
+              session: Core.Schemas.Dto.classSession,
+            })
+            .strip(),
+          attendance: insertedAttendance,
+        })
+        .strip();
+
+      export type SessionAttendanceResult = z.infer<
+        typeof sessionAttendanceResult
+      >;
       //#endregion
     }
 
