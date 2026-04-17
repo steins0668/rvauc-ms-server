@@ -72,7 +72,7 @@ export async function handleNewRfidScan(
   const { payload: student } = auth;
 
   logger.log("debug", "Recording attendance...");
-  const recorded = await registrationService.recordAttendanceForSession({
+  const recorded = await registrationService.recordSessionAttendance({
     values: { termId: term.id, studentId: student.id, recordedDate: finalDate },
   });
 

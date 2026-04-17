@@ -214,7 +214,7 @@ export namespace AttendanceRegistration {
       }
     }
 
-    async recordAttendanceForSession(args: {
+    async recordSessionAttendance(args: {
       values: {
         termId: number;
         studentId: number;
@@ -243,7 +243,7 @@ export namespace AttendanceRegistration {
           schedEndTime: clsRuntime.offering.endTime,
         });
 
-        const inserted = await this.persistRecord({
+        const inserted = await this.persistSessionAttendance({
           values: {
             clsRuntime,
             studentId,
@@ -288,68 +288,6 @@ export namespace AttendanceRegistration {
           }),
         );
       }
-    }
-
-    async persistRecord(args: {
-      values: {
-        clsRuntime: Awaited<
-          ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
-        >;
-        studentId: number;
-        enrollmentId: number;
-        status: string;
-        recordedDate: Date;
-      };
-      tx?: TxContext | undefined;
-    }) {
-      const { tx } = args;
-      const { clsRuntime, studentId, enrollmentId, status, recordedDate } =
-        args.values;
-
-      const { offering, session } = clsRuntime;
-      const { class: cls } = offering;
-
-      const nowIso = Clock.now().toISOString();
-      const recordedDateIso = recordedDate.toISOString();
-      const recordedDateMs = recordedDate.getTime();
-
-      let inserted;
-
-      try {
-        inserted = await this.insertRecords({
-          dbOrTx: tx,
-          onConflict: "doUpdate",
-          values: [
-            {
-              studentId,
-              enrollmentId,
-              classId: cls.id,
-              classOfferingId: offering.id,
-              classSessionId: session.id,
-              status,
-              createdAt: nowIso,
-              recordedAt: recordedDateIso,
-              recordedMs: recordedDateMs,
-              updatedAt: nowIso,
-              datePh: TimeUtil.toPhDate(recordedDate),
-            },
-          ],
-        }).then((r) => r[0]);
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_STORE_ERROR",
-          message: "Failed storing attendance record.",
-          err,
-        });
-      }
-
-      if (inserted === undefined)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_STORE_ERROR",
-          message: "Failed storing attendance record.",
-        });
-
-      return inserted;
     }
 
     private toAttendanceRecordMutationResultDto(
@@ -438,6 +376,68 @@ export namespace AttendanceRegistration {
           isNew: attendance.recordCount === 1,
         },
       };
+    }
+
+    private async persistSessionAttendance(args: {
+      values: {
+        clsRuntime: Awaited<
+          ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
+        >;
+        studentId: number;
+        enrollmentId: number;
+        status: string;
+        recordedDate: Date;
+      };
+      tx?: TxContext | undefined;
+    }) {
+      const { tx } = args;
+      const { clsRuntime, studentId, enrollmentId, status, recordedDate } =
+        args.values;
+
+      const { offering, session } = clsRuntime;
+      const { class: cls } = offering;
+
+      const nowIso = Clock.now().toISOString();
+      const recordedDateIso = recordedDate.toISOString();
+      const recordedDateMs = recordedDate.getTime();
+
+      let inserted;
+
+      try {
+        inserted = await this.insertRecords({
+          dbOrTx: tx,
+          onConflict: "doUpdate",
+          values: [
+            {
+              studentId,
+              enrollmentId,
+              classId: cls.id,
+              classOfferingId: offering.id,
+              classSessionId: session.id,
+              status,
+              createdAt: nowIso,
+              recordedAt: recordedDateIso,
+              recordedMs: recordedDateMs,
+              updatedAt: nowIso,
+              datePh: TimeUtil.toPhDate(recordedDate),
+            },
+          ],
+        }).then((r) => r[0]);
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_STORE_ERROR",
+          message: "Failed storing attendance record.",
+          err,
+        });
+      }
+
+      if (inserted === undefined)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_STORE_ERROR",
+          message: "Failed storing attendance record.",
+        });
+
+      return inserted;
     }
 
     private async insertRecords(args: {
