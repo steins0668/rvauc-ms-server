@@ -497,22 +497,30 @@ export namespace AttendanceRegistration {
     }) {
       const { values, dbOrTx } = args;
 
-      return await this._attendanceRecordRepo
-        .execQuery({
-          dbOrTx,
-          fn: async (query) =>
-            query.findMany({
-              where: (ar, { and, eq, inArray }) =>
-                and(
-                  inArray(ar.studentId, values.studentIds),
-                  eq(ar.classId, values.classId),
-                  eq(ar.classOfferingId, values.classOfferingId),
-                  eq(ar.datePh, values.datePh),
-                ),
-              columns: { studentId: true },
-            }),
-        })
-        .then((r) => new Set(r.map((r) => r.studentId)));
+      try {
+        return await this._attendanceRecordRepo
+          .execQuery({
+            dbOrTx,
+            fn: async (query) =>
+              query.findMany({
+                where: (ar, { and, eq, inArray }) =>
+                  and(
+                    inArray(ar.studentId, values.studentIds),
+                    eq(ar.classId, values.classId),
+                    eq(ar.classOfferingId, values.classOfferingId),
+                    eq(ar.datePh, values.datePh),
+                  ),
+                columns: { studentId: true },
+              }),
+          })
+          .then((r) => new Set(r.map((r) => r.studentId)));
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed to retrieve attendance records",
+          err,
+        });
+      }
     }
 
     private async getEnrollment(args: {
