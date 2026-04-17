@@ -66,6 +66,7 @@ export namespace AttendanceAbsenceAutomation {
           enrollments.forEach((e) =>
             records.push({
               studentId: e.studentId,
+              enrollmentId: e.id,
               classId: co.classId,
               classOfferingId: co.id,
               classSessionId: s.id,

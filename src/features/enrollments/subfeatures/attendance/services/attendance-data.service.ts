@@ -444,7 +444,7 @@ export namespace AttendanceData {
 
       for (const r of records) attendanceMap.set(r.studentId, r);
 
-      const dto = {
+      return {
         attendanceRecords: enrollments.map((e) => {
           const { student } = e;
 
@@ -458,9 +458,12 @@ export namespace AttendanceData {
             : "N/A";
 
           return {
-            student: {
-              ...student,
-              department: student.department ?? "No department.",
+            enrollment: {
+              id: e.id,
+              student: {
+                ...student,
+                department: student.department ?? "No department.",
+              },
             },
             record: {
               id: studentAttendance?.id ?? 0,
@@ -489,8 +492,6 @@ export namespace AttendanceData {
           missingRecords: totalEnrollments - summary.totalRecords,
         },
       };
-
-      return Schemas.Dto.ClassAttendance.professorView.parse(dto);
     }
 
     private toClassAttendanceStudentViewDto(
@@ -535,21 +536,24 @@ export namespace AttendanceData {
       >,
     ): Schemas.Dto.StudentAttendance.ProfessorView {
       const { course } = class_;
-      return Schemas.Dto.StudentAttendance.professorView.parse({
+      return {
         class: {
           id: class_.id,
           classNumber: class_.classNumber,
           course: { code: course.code, name: course.name },
         },
-        student: {
-          studentNumber: student.studentNumber,
-          department: student.department.name,
-          yearLevel: student.yearLevel,
-          block: student.block,
-          surname: student.user.surname,
-          firstName: student.user.firstName,
-          middleName: student.user.middleName,
-          gender: student.user.gender,
+        enrollment: {
+          id: 0, //  todo: replace this when you're using enrollments for attendance records
+          student: {
+            studentNumber: student.studentNumber,
+            department: student.department.name,
+            yearLevel: student.yearLevel,
+            block: student.block,
+            surname: student.user.surname,
+            firstName: student.user.firstName,
+            middleName: student.user.middleName,
+            gender: student.user.gender,
+          },
         },
         attendanceRecords: attendanceRecords.map((ar) => {
           return {
@@ -571,7 +575,7 @@ export namespace AttendanceData {
           };
         }),
         summary: { ...summary, missingRecords: 0 }, //  todo: update this to have logic for trackign misssing records
-      });
+      };
     }
 
     private async queryEnrollments(args: {

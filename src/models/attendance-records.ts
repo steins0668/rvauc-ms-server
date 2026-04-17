@@ -9,6 +9,7 @@ import {
   classes,
   classOfferings,
   classSessions,
+  enrollments,
   students,
   users,
 } from "./schema";
@@ -17,6 +18,12 @@ export const attendanceRecords = sqliteTable(
   "attendance_records",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
+    enrollmentId: integer("enrollment_id")
+      .notNull()
+      .references(() => enrollments.id, {
+        onDelete: "restrict",
+        onUpdate: "cascade",
+      }),
     studentId: integer("student_id")
       .notNull()
       .references(() => students.id, {
@@ -63,6 +70,10 @@ export const attendanceRecordsRelations = relations(
     student: one(students, {
       fields: [attendanceRecords.studentId],
       references: [students.id],
+    }),
+    enrollment: one(enrollments, {
+      fields: [attendanceRecords.enrollmentId],
+      references: [enrollments.id],
     }),
     class: one(classes, {
       fields: [attendanceRecords.classId],

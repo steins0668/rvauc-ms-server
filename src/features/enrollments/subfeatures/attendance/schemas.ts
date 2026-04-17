@@ -23,6 +23,7 @@ export namespace Schemas {
             .strictObject({
               recordedDate: z.coerce.date(),
               studentId: z.number(),
+              enrollmentId: z.number(),
               status: z.enum(Data.attendanceStatus),
             })
             .strip(),
@@ -105,7 +106,12 @@ export namespace Schemas {
             z
               .strictObject({
                 record: base,
-                student: Core.Schemas.Dto.student,
+                enrollment: z
+                  .strictObject({
+                    id: z.number(),
+                    student: Core.Schemas.Dto.student,
+                  })
+                  .strip(),
               })
               .strip(),
           ),
@@ -124,6 +130,7 @@ export namespace Schemas {
           datePh: z.string(),
           recordedDate: z.date(),
           studentId: z.number(),
+          enrollmentId: z.number(),
           status: z.enum(Data.attendanceStatus),
         })
         .strip();
@@ -161,7 +168,12 @@ export namespace Schemas {
               course: Core.Schemas.Dto.course,
             })
             .strip(),
-          student: Core.Schemas.Dto.student,
+          enrollment: z
+            .strictObject({
+              id: z.number(),
+              student: Core.Schemas.Dto.student,
+            })
+            .strip(),
           attendanceRecords,
           summary: summary,
         })

@@ -134,16 +134,19 @@ describe("Attendance Test Suite", () => {
           {
             recordedDate: "2025-12-03T07:40:00+08:00",
             studentId: 7,
+            enrollmentId: 7,
             status: "late",
           },
           {
             recordedDate: "2025-12-03T07:35:00+08:00",
             studentId: 8,
+            enrollmentId: 24,
             status: "late",
           },
           {
             recordedDate: "2025-12-03T07:00:00+08:00",
             studentId: 9,
+            enrollmentId: 41,
             status: "absent",
           },
         ],

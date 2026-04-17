@@ -351,6 +351,13 @@
       "when": 1776343779840,
       "tag": "0049_reflective_silhouette",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "6",
+      "when": 1776437468197,
+      "tag": "0050_classy_firelord",
+      "breakpoints": true
     }
   ]
 }

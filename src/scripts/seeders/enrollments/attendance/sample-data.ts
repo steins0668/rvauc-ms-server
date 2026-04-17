@@ -3,6 +3,7 @@ import { TxContext } from "../../../../db/create-context";
 import { TimeUtil } from "../../../../utils";
 import { SampleData as Enrollments } from "../sample-data";
 import { Enrollments as EnrollmentsFeature } from "../../../../features/enrollments";
+import { Attendance } from "../../../../features/enrollments/subfeatures/attendance";
 
 export namespace SampleData {
   type Status = "present" | "late" | "absent";
@@ -70,7 +71,7 @@ export namespace SampleData {
       classOfferings,
       enrollments,
     } = args;
-    const results = [];
+    const results: Attendance.Types.InsertModels.AttendanceRecord[] = [];
     let id = 1;
 
     const current = new Date(startDate);
@@ -109,6 +110,7 @@ export namespace SampleData {
             classId: o.classId,
             classOfferingId: o.id,
             classSessionId: s.id,
+            enrollmentId: e.id,
             status,
             createdAt: iso,
             recordedAt: iso,

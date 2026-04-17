@@ -74,6 +74,7 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
 
     const query = (args.dbOrTx ?? this._dbContext)
       .select({
+        id: enrollments.id,
         student: {
           id: students.id,
           studentNumber: students.studentNumber,

@@ -38,19 +38,23 @@ export namespace AttendanceRegistration {
     );
     return new Service({
       attendanceRecordRepo,
+      enrollmentRepo,
       classRuntimeResolver,
     });
   }
 
   export class Service {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
+    private readonly _enrollmentRepo: CoreRepositories.Enrollment;
     private readonly _classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
 
     public constructor(args: {
       attendanceRecordRepo: Repositories.AttendanceRecord;
+      enrollmentRepo: CoreRepositories.Enrollment;
       classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
+      this._enrollmentRepo = args.enrollmentRepo;
       this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
@@ -63,6 +67,7 @@ export namespace AttendanceRegistration {
         records: {
           recordedDate: Date;
           studentId: number;
+          enrollmentId: number;
           status: keyof typeof Data.attendanceStatus;
         }[];
       };
@@ -169,6 +174,7 @@ export namespace AttendanceRegistration {
                     classOfferingId: values.classOfferingId,
                     classSessionId: session.id,
                     studentId: r.studentId,
+                    enrollmentId: r.enrollmentId,
                     status: r.status,
                     createdAt: createdOrUpdatedAt,
                     recordedAt: r.recordedAt,
@@ -209,7 +215,11 @@ export namespace AttendanceRegistration {
     }
 
     async recordAttendanceForSession(args: {
-      values: { termId: number; studentId: number; recordedDate: Date };
+      values: {
+        termId: number;
+        studentId: number;
+        recordedDate: Date;
+      };
       tx?: TxContext | undefined;
     }) {
       const { termId, studentId, recordedDate } = args.values;
@@ -222,6 +232,11 @@ export namespace AttendanceRegistration {
           tx,
         });
 
+        const enrollment = await this.getEnrollment({
+          values: { studentId, classOfferingId: clsRuntime.offering.id },
+          tx,
+        });
+
         const status = Utils.AttendancePolicy.getAttendanceStatus({
           attendanceDate: recordedDate,
           schedStartTime: clsRuntime.offering.startTime,
@@ -229,7 +244,13 @@ export namespace AttendanceRegistration {
         });
 
         const inserted = await this.persistRecord({
-          values: { clsRuntime, studentId, status, recordedDate },
+          values: {
+            clsRuntime,
+            studentId,
+            status,
+            enrollmentId: enrollment.id,
+            recordedDate,
+          },
           tx,
         });
 
@@ -275,13 +296,15 @@ export namespace AttendanceRegistration {
           ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
         >;
         studentId: number;
+        enrollmentId: number;
         status: string;
         recordedDate: Date;
       };
       tx?: TxContext | undefined;
     }) {
       const { tx } = args;
-      const { clsRuntime, studentId, status, recordedDate } = args.values;
+      const { clsRuntime, studentId, enrollmentId, status, recordedDate } =
+        args.values;
 
       const { offering, session } = clsRuntime;
       const { class: cls } = offering;
@@ -299,6 +322,7 @@ export namespace AttendanceRegistration {
           values: [
             {
               studentId,
+              enrollmentId,
               classId: cls.id,
               classOfferingId: offering.id,
               classSessionId: session.id,
@@ -489,6 +513,42 @@ export namespace AttendanceRegistration {
             }),
         })
         .then((r) => new Set(r.map((r) => r.studentId)));
+    }
+
+    private async getEnrollment(args: {
+      values: { studentId: number; classOfferingId: number };
+      tx?: TxContext | undefined;
+    }) {
+      try {
+        const result = await this._enrollmentRepo.execQuery({
+          dbOrTx: args.tx,
+          fn: async (query) =>
+            query.findFirst({
+              where: (e, { and, eq }) =>
+                and(
+                  eq(e.studentId, args.values.studentId),
+                  eq(e.classOfferingId, args.values.classOfferingId),
+                ),
+              columns: { id: true, status: true },
+            }),
+        });
+
+        if (!result)
+          throw new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
+            message:
+              "There is no enrollment corresponding to the given student id and class offering id.",
+          });
+
+        return result;
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message:
+            "Failed to retrieve enrollment linked to student and class offering.",
+          err,
+        });
+      }
     }
 
     private async updateRecords(args: {
