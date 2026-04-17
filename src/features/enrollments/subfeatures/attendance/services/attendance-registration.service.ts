@@ -328,68 +328,6 @@ export namespace AttendanceRegistration {
       return inserted;
     }
 
-    async newRecord(args: {
-      dbOrTx?: DbOrTx | undefined;
-      onConflict?: "doNothing" | "doUpdate" | undefined;
-      value: Types.InsertModels.AttendanceRecord;
-    }) {
-      const stored = await this.newRecords({
-        ...args,
-        values: [args.value],
-      });
-
-      return stored.success
-        ? ResultBuilder.success(stored.result[0])
-        : ResultBuilder.fail(stored.error);
-    }
-
-    async newRecords(args: {
-      dbOrTx?: DbOrTx | undefined;
-      onConflict?: "doNothing" | "doUpdate" | undefined;
-      values: Types.InsertModels.AttendanceRecord[];
-    }) {
-      let inserted;
-
-      try {
-        inserted = await this.insertRecords(args);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_STORE_ERROR",
-            message: `Failed storing ${args.values.length} new attendance records`,
-            err,
-          }),
-        );
-      }
-
-      try {
-        const dtoList = inserted.map((raw) => this.toNewRecordDto(raw));
-        return ResultBuilder.success(dtoList);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw attendance to dto",
-            err,
-          }),
-        );
-      }
-    }
-
-    private toNewRecordDto(
-      raw: NonNullable<Awaited<ReturnType<typeof this.insertRecords>>[number]>,
-    ) {
-      const dto = {
-        id: raw.id,
-        status: raw.status,
-        date: raw.datePh,
-        time: TimeUtil.toPhTime(new Date(raw.recordedAt)),
-        isNew: raw.recordCount === 1,
-      };
-
-      return Schemas.Dto.insertedAttendance.parse(dto);
-    }
-
     private toAttendanceRecordMutationResultDto(
       updated: Awaited<ReturnType<typeof this.updateRecords>>,
       inserted: Awaited<ReturnType<typeof this.insertRecords>>,
