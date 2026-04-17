@@ -48,6 +48,11 @@ export namespace ClassRuntimeResolver {
       this._enrollmentRepo = args.enrollmentRepo;
     }
 
+    /**
+     * ! do not touch. query composition is done with reusability in mind.
+     * @param args
+     * @returns
+     */
     async resolve(args: {
       values: {
         date: Date;
