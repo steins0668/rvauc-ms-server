@@ -40,6 +40,7 @@ export namespace AttendanceAbsenceAutomation {
     async markMissingForDate(args: { date: Date; tx?: TxContext | undefined }) {
       const txPromise = execTransaction(async (tx) => {
         const datePh = TimeUtil.toPhDate(args.date);
+        const status = Core.Data.classSessionStatus.scheduled;
         const now = Clock.now();
         const nowIso = now.toISOString();
 
@@ -48,6 +49,7 @@ export namespace AttendanceAbsenceAutomation {
         //  get sessions for today
         const sessions = await this.getSessionsWithEnrollmentsForDate({
           datePh,
+          status,
           tx,
         });
 
@@ -119,11 +121,13 @@ export namespace AttendanceAbsenceAutomation {
 
     private async getSessionsWithEnrollmentsForDate(args: {
       datePh: string;
+      status: string;
       tx?: TxContext | undefined;
     }) {
       try {
         return await this._classSessionRepo.getWithEnrollments({
-          where: (cs, { eq }) => eq(cs.datePh, args.datePh),
+          where: (cs, { eq, and }) =>
+            and(eq(cs.datePh, args.datePh), eq(cs.status, args.status)),
           orderBy: (cs, { asc }) => asc(cs.startTimeMs),
           dbOrTx: args.tx,
         });
