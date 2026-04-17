@@ -20,6 +20,15 @@ export namespace Middlewares {
     next();
   }
 
+  export async function attachClassSessionDataService(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    req.classSessionDataService = await Services.ClassSessionData.create();
+    next();
+  }
+
   export async function attachClassSessionRuntimeService(
     req: Request,
     res: Response,
@@ -35,6 +44,7 @@ declare global {
   namespace Express {
     interface Request {
       classSchedService: Services.ClassSchedule.Service;
+      classSessionDataService: Services.ClassSessionData.Service;
       classSessionRuntimeService: Services.ClassSessionRuntime.Service;
       termDataService: Services.TermData.Service;
     }

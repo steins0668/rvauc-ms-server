@@ -59,6 +59,20 @@ Routes.post(
 /**
  * GET
  *
+ * @returns {import("../../core/schemas").Dto.ClassSessions}
+ */
+Routes.get(
+  "/sessions/class/:classId",
+  Auth.Core.Middlewares.validateJwt("full"),
+  validateRequest({
+    params: classId,
+  }),
+  Controllers.handleViewSessions,
+);
+
+/**
+ * GET
+ *
  * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
  * @returns {import("./schemas").Schemas.Dto.ClassAttendance.StudentView} for students
  */
