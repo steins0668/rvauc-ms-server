@@ -32,7 +32,7 @@ export namespace TermData {
                 semester,
               })
               .onConflictDoUpdate({
-                target: [t.yearStart, t.yearEnd, t.semester],
+                target: [t.yearStart, t.semester],
                 set: { yearEnd },
               })
               .returning()
@@ -48,7 +48,7 @@ export namespace TermData {
             name: "DB_ACCESS_INSERT_ERROR",
             message: "Failed inserting in `terms` table.",
             err,
-          })
+          }),
         );
       }
     }
