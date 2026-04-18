@@ -354,6 +354,7 @@ export namespace AttendanceRegistration {
           },
           session: {
             id: cs.id,
+            classOfferingId: cs.classOfferingId,
             status: cs.status,
             datePh: cs.datePh,
             startTimeMs: cs.startTimeMs,
