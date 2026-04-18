@@ -93,10 +93,10 @@ describe("Attendance Test Suite", () => {
   });
   const reqQuery = params.toString();
 
-  it(`GET records/class/${classId}?${reqQuery}`, async () => {
+  it(`GET records/class/${classId}`, async () => {
     const res = await request(app)
-      .get(`/enrollments/attendance/records/class/${classId}?${reqQuery}`)
-      .set("Authorization", `Bearer ${tokens.professor}`);
+      .get(`/enrollments/attendance/records/class/${classId}`)
+      .set("Authorization", `Bearer ${tokens.student}`);
 
     console.debug(JSON.stringify(res.body, null, 2));
 
@@ -104,7 +104,7 @@ describe("Attendance Test Suite", () => {
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(true);
 
-    Schemas.Dto.ClassAttendance.professorView.parse(res.body.result);
+    Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
   });
 
   it(`GET records/class/${classId}/student/${studentId}`, async () => {
@@ -123,8 +123,9 @@ describe("Attendance Test Suite", () => {
     Schemas.Dto.StudentAttendance.professorView.parse(res.body.result);
   });
 
-  it(`POST records/class/${classId}/class-offering/${classOfferingId}`, async () => {
-    const url = `/enrollments/attendance/records/class/${classId}/class-offering/${classOfferingId}`;
+  const sessionId = 157;
+  it(`POST records/class/offering/session/${sessionId}`, async () => {
+    const url = `/enrollments/attendance/records/class/offering/session/${sessionId}`;
     const res = await request(app)
       .post(url)
       .set("Authorization", `Bearer ${tokens.professor}`)
