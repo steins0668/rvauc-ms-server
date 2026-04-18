@@ -120,7 +120,7 @@ export namespace AttendanceData {
       let session;
       let enrollmentsData;
       let recordsAndSummary: Awaited<
-        ReturnType<typeof this.queryRecordsAndSummary>
+        ReturnType<typeof this.fetchRecordsAndSummary>
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
@@ -130,7 +130,7 @@ export namespace AttendanceData {
         };
 
         session = await this.getSessionDetails(args);
-        enrollmentsData = await this.queryEnrollmentsForClass({
+        enrollmentsData = await this.getEnrollmentsForClass({
           values: { classId: session.class.id },
           constraints,
         });
@@ -141,7 +141,7 @@ export namespace AttendanceData {
           //  * get attendance records for enrollments in the class session
           const enrollmentIds = enrollments.map((e) => e.id);
 
-          recordsAndSummary = await this.queryRecordsAndSummary({
+          recordsAndSummary = await this.fetchRecordsAndSummary({
             ...args,
             values: { classSessionId, enrollmentIds },
             constraints,
@@ -189,16 +189,16 @@ export namespace AttendanceData {
 
       let enrollment;
       let recordsAndSummary: Awaited<
-        ReturnType<typeof this.queryRecordsAndSummary>
+        ReturnType<typeof this.fetchRecordsAndSummary>
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
-        enrollment = await this.queryEnrollmentForClassAndStudent({
+        enrollment = await this.getEnrollmentForClassAndStudent({
           values: { classId, studentId },
           dbOrTx: args.dbOrTx,
         });
 
-        recordsAndSummary = await this.queryRecordsAndSummary({
+        recordsAndSummary = await this.fetchRecordsAndSummary({
           ...args,
           values: {
             classId,
@@ -246,14 +246,14 @@ export namespace AttendanceData {
       let enrollment;
       let cls;
       let recordsAndSummary: Awaited<
-        ReturnType<typeof this.queryRecordsAndSummaryWithSessionAndOffering>
+        ReturnType<typeof this.fetchRecordsAndSummaryWithSessionAndOffering>
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
         enrollment = await this.getEnrollmentWithStudentDetails(args);
         cls = await this.getClassWithCourse(args);
         recordsAndSummary =
-          await this.queryRecordsAndSummaryWithSessionAndOffering({
+          await this.fetchRecordsAndSummaryWithSessionAndOffering({
             values: {
               classId: cls.id,
               enrollmentIds: [enrollment.id],
@@ -299,11 +299,9 @@ export namespace AttendanceData {
           ReturnType<CoreRepositories.ClassSession["getWithClassAndOffering"]>
         >[number]
       >,
-      enrollmentsQuery: Awaited<
-        ReturnType<typeof this.queryEnrollmentsForClass>
-      >,
+      enrollmentsQuery: Awaited<ReturnType<typeof this.getEnrollmentsForClass>>,
       recordsAndSummary: Awaited<
-        ReturnType<typeof this.queryRecordsAndSummary>
+        ReturnType<typeof this.fetchRecordsAndSummary>
       >,
     ): Schemas.Dto.ClassAttendance.ProfessorView {
       const { classOffering: offering } = session;
@@ -368,7 +366,7 @@ export namespace AttendanceData {
 
     private toClassAttendanceStudentViewDto(
       recordsAndSummary: Awaited<
-        ReturnType<typeof this.queryRecordsAndSummary>
+        ReturnType<typeof this.fetchRecordsAndSummary>
       >,
     ) {
       const { records, summary } = recordsAndSummary;
@@ -399,7 +397,7 @@ export namespace AttendanceData {
         ReturnType<CoreRepositories.Enrollment["queryWithStudentDetails"]>
       >[number],
       recordsAndSummary: Awaited<
-        ReturnType<typeof this.queryRecordsAndSummaryWithSessionAndOffering>
+        ReturnType<typeof this.fetchRecordsAndSummaryWithSessionAndOffering>
       >,
     ): Schemas.Dto.StudentAttendance.ProfessorView {
       const { student } = enrollment;
@@ -494,7 +492,7 @@ export namespace AttendanceData {
       return session;
     }
 
-    private async queryEnrollmentsForClass(args: {
+    private async getEnrollmentsForClass(args: {
       values: { classId: number };
       constraints?: BaseRepositoryType.QueryConstraints;
       dbOrTx?: DbOrTx | undefined;
@@ -545,7 +543,7 @@ export namespace AttendanceData {
       return { enrollments: [...enrollments], totalEnrollments };
     }
 
-    private async queryEnrollmentForClassAndStudent(args: {
+    private async getEnrollmentForClassAndStudent(args: {
       values: {
         classId: number;
         studentId: number;
@@ -652,7 +650,7 @@ export namespace AttendanceData {
      * @description Queries attendance records matching a class id, time range, and
      * a set of student ids
      */
-    private async queryRecordsAndSummary(args: {
+    private async fetchRecordsAndSummary(args: {
       values: {
         classId?: number;
         classSessionId?: number;
@@ -721,7 +719,7 @@ export namespace AttendanceData {
       return { records, summary };
     }
 
-    private async queryRecordsAndSummaryWithSessionAndOffering(args: {
+    private async fetchRecordsAndSummaryWithSessionAndOffering(args: {
       values: {
         classId?: number;
         classSessionId?: number;
