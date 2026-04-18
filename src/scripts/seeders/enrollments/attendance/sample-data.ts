@@ -1,7 +1,5 @@
 import { randomInt } from "crypto";
-import { TxContext } from "../../../../db/create-context";
 import { TimeUtil } from "../../../../utils";
-import { SampleData as Enrollments } from "../sample-data";
 import { Enrollments as EnrollmentsFeature } from "../../../../features/enrollments";
 import { Attendance } from "../../../../features/enrollments/subfeatures/attendance";
 
@@ -108,7 +106,6 @@ export namespace SampleData {
             id: id++,
             studentId: e.studentId,
             classId: o.classId,
-            classOfferingId: o.id,
             classSessionId: s.id,
             enrollmentId: e.id,
             status,

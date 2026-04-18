@@ -334,15 +334,17 @@ export namespace AttendanceData {
 
       try {
         attendanceRecord =
-          await this._attendanceRecordRepo.queryMinimalShapeWithClassOfferings({
-            constraints: { limit, offset: (page - 1) * limit },
-            where: (ar, { and, eq }) =>
-              and(
-                eq(ar.studentId, values.studentId),
-                eq(ar.classId, values.classId),
-              ),
-            orderBy: (ar, { desc }) => desc(ar.recordedMs),
-          });
+          await this._attendanceRecordRepo.queryMinimalShapeWithSessionAndOffering(
+            {
+              constraints: { limit, offset: (page - 1) * limit },
+              where: (ar, { and, eq }) =>
+                and(
+                  eq(ar.studentId, values.studentId),
+                  eq(ar.classId, values.classId),
+                ),
+              orderBy: (ar, { desc }) => desc(ar.recordedMs),
+            },
+          );
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -515,7 +517,7 @@ export namespace AttendanceData {
       >[number],
       attendanceRecords: Awaited<
         ReturnType<
-          Repositories.AttendanceRecord["queryMinimalShapeWithClassOfferings"]
+          Repositories.AttendanceRecord["queryMinimalShapeWithSessionAndOffering"]
         >
       >,
       summary: Awaited<
@@ -543,15 +545,18 @@ export namespace AttendanceData {
           },
         },
         attendanceRecords: attendanceRecords.map((ar) => {
+          const { classSession: cs } = ar;
+          const { classOffering: co } = cs;
+
           return {
             classOffering: {
-              id: ar.classOffering.id,
-              weekDay: ar.classOffering.weekDay,
-              room: ar.classOffering.rooms?.name ?? "N/A",
-              startTimeText: ar.classOffering.startTimeText,
-              endTimeText: ar.classOffering.endTimeText,
-              startTime: ar.classOffering.startTime,
-              endTime: ar.classOffering.endTime,
+              id: co.id,
+              weekDay: co.weekDay,
+              room: co.rooms?.name ?? "N/A",
+              startTimeText: co.startTimeText,
+              endTimeText: co.endTimeText,
+              startTime: co.startTime,
+              endTime: co.endTime,
             },
             record: {
               id: ar.id,

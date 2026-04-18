@@ -68,7 +68,6 @@ export namespace AttendanceAbsenceAutomation {
               studentId: e.studentId,
               enrollmentId: e.id,
               classId: co.classId,
-              classOfferingId: co.id,
               classSessionId: s.id,
               status: Data.attendanceStatus.absent,
               createdAt: nowIso,
@@ -163,12 +162,7 @@ export namespace AttendanceAbsenceAutomation {
             onConflict === "doNothing"
               ? insertion.onConflictDoNothing({ target: targets })
               : insertion.onConflictDoUpdate({
-                  target: [
-                    ar.studentId,
-                    ar.classId,
-                    ar.classOfferingId,
-                    ar.datePh,
-                  ],
+                  target: [ar.studentId, ar.classSessionId, ar.datePh],
                   set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
                 });
 

@@ -1,6 +1,4 @@
-import { ResultSet } from "@libsql/client/.";
-import { and, count, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
-import { SQLiteSelectBase } from "drizzle-orm/sqlite-core";
+import { and, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
 import { DbContext, DbOrTx } from "../../../../db/create-context";
 import { attendanceRecords } from "../../../../models";
 import { Repository } from "../../../../services";
@@ -15,7 +13,7 @@ export namespace Repositories {
       super(context, attendanceRecords);
     }
 
-    public async queryMinimalShapeWithClassOfferings(args: {
+    public async queryMinimalShapeWithSessionAndOffering(args: {
       constraints?: BaseRepositoryType.QueryConstraints;
       where?:
         | NonNullable<
@@ -40,17 +38,20 @@ export namespace Repositories {
           offset,
           columns: {
             classId: false,
-            classOfferingId: false,
             recordCount: false,
             recordedMs: false,
           },
           with: {
-            classOffering: {
-              columns: {
-                classId: false,
-                roomId: false,
+            classSession: {
+              columns: { id: true, datePh: true, status: true },
+              with: {
+                classOffering: {
+                  columns: { classId: false, roomId: false },
+                  with: {
+                    rooms: { columns: { name: true } },
+                  },
+                },
               },
-              with: { rooms: { columns: { name: true } } },
             },
           },
         },
@@ -82,7 +83,6 @@ export namespace Repositories {
           offset,
           columns: {
             classId: false,
-            classOfferingId: false,
             recordCount: false,
             recordedMs: false,
           },

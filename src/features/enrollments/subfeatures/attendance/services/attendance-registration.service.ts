@@ -4,7 +4,6 @@ import {
   execTransaction,
   TxContext,
 } from "../../../../../db/create-context";
-import { DbAccess } from "../../../../../error";
 import { Schema } from "../../../../../models";
 import {
   Clock,
@@ -398,7 +397,6 @@ export namespace AttendanceRegistration {
             studentId,
             enrollmentId,
             classId: cls.id,
-            classOfferingId: offering.id,
             classSessionId: session.id,
             status,
             createdAt: nowIso,
@@ -441,12 +439,7 @@ export namespace AttendanceRegistration {
             onConflict === "doNothing"
               ? insertion.onConflictDoNothing({ target: targets })
               : insertion.onConflictDoUpdate({
-                  target: [
-                    ar.studentId,
-                    ar.classId,
-                    ar.classOfferingId,
-                    ar.datePh,
-                  ],
+                  target: [ar.studentId, ar.classSessionId, ar.datePh],
                   set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
                 });
 
