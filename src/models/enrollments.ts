@@ -1,6 +1,6 @@
 import { relations } from "drizzle-orm";
 import { sqliteTable, integer, text } from "drizzle-orm/sqlite-core";
-import { classOfferings, students } from "./schema";
+import { attendanceRecords, classOfferings, students } from "./schema";
 
 export const enrollments = sqliteTable("enrollments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -14,6 +14,7 @@ export const enrollments = sqliteTable("enrollments", {
 });
 
 export const enrollmentsRelations = relations(enrollments, ({ one, many }) => ({
+  attendanceRecords: many(attendanceRecords),
   student: one(students, {
     fields: [enrollments.studentId],
     references: [students.id],
