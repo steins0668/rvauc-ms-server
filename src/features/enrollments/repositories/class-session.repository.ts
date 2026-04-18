@@ -78,7 +78,6 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
       limit,
       offset,
       columns: {
-        classId: false,
         createdAt: false,
         updatedAt: false,
       },
