@@ -95,7 +95,7 @@ export namespace BaseRepositoryType {
   };
 
   export type QueryConstraints =
-    | Partial<{ limit: number; offset: number }>
+    | Partial<{ limit: number; offset: number; unlimited: boolean }>
     | undefined;
 
   export type Filters = typeof RepositoryUtil.filters;

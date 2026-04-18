@@ -3,6 +3,7 @@ import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import { SQLiteTable } from "drizzle-orm/sqlite-core";
 import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import type { DbContext, DbOrTx, TxContext } from "../db/create-context";
+import { BaseRepositoryType } from "../types";
 
 export abstract class Repository<
   TTable extends SQLiteTable,
@@ -145,5 +146,18 @@ export abstract class Repository<
    */
   protected async getCount(whereClause?: SQL | undefined): Promise<number> {
     return await this._dbContext.$count(this._table, whereClause);
+  }
+
+  protected resolveLimit(
+    c?: BaseRepositoryType.QueryConstraints,
+    defaultLimit = 6,
+  ) {
+    if (c?.unlimited) return undefined;
+    return c?.limit ?? defaultLimit;
+  }
+
+  protected resolveOffset(c?: BaseRepositoryType.QueryConstraints) {
+    if (c?.unlimited) return undefined;
+    return c?.offset ?? 0;
   }
 }
