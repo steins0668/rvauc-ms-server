@@ -139,8 +139,7 @@ export namespace AttendanceRegistration {
 
           const existingStudentIds = await this.getExistingRecords({
             values: {
-              classId: session.classId,
-              classOfferingId: session.classOfferingId,
+              classSessionId: session.id,
               datePh: session.datePh,
               studentIds,
             },
@@ -153,8 +152,7 @@ export namespace AttendanceRegistration {
             ? await this.updateRecords({
                 dbOrTx: tx,
                 values: {
-                  classId: session.classId,
-                  classOfferingId: session.classOfferingId,
+                  classSessionId: session.id,
                   updatedAt: createdOrUpdatedAt,
                   updatedByUserId: values.professorId,
                   records: organizedRecords.updates,
@@ -469,8 +467,7 @@ export namespace AttendanceRegistration {
 
     private async getExistingRecords(args: {
       values: {
-        classId: number;
-        classOfferingId: number;
+        classSessionId: number;
         datePh: string;
         studentIds: number[];
       };
@@ -487,8 +484,7 @@ export namespace AttendanceRegistration {
                 where: (ar, { and, eq, inArray }) =>
                   and(
                     inArray(ar.studentId, values.studentIds),
-                    eq(ar.classId, values.classId),
-                    eq(ar.classOfferingId, values.classOfferingId),
+                    eq(ar.classSessionId, values.classSessionId),
                     eq(ar.datePh, values.datePh),
                   ),
                 columns: { studentId: true },
@@ -572,8 +568,7 @@ export namespace AttendanceRegistration {
 
     private async updateRecords(args: {
       values: {
-        classId: number;
-        classOfferingId: number;
+        classSessionId: number;
         updatedByUserId?: number | undefined;
         updatedAt: string;
         records: {
@@ -607,8 +602,7 @@ export namespace AttendanceRegistration {
               .where(
                 and(
                   eq(ar.studentId, r.studentId),
-                  eq(ar.classId, values.classId),
-                  eq(ar.classOfferingId, values.classOfferingId),
+                  eq(ar.classSessionId, values.classSessionId),
                   eq(ar.datePh, r.datePh),
                 ),
               )
@@ -618,7 +612,7 @@ export namespace AttendanceRegistration {
         if (res.length === 0)
           throw new Core.Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_UPDATE_ERROR",
-            message: `Attendance record with class_id: ${values.classId}, class_offering_id: ${values.classOfferingId}, and student_id: ${r.studentId} for date: ${r.datePh} not found.`,
+            message: `Attendance record with for session, student in date: ${r.datePh} not found.`,
           });
 
         updated.push(...res);
