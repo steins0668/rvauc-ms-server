@@ -130,6 +130,21 @@ Routes.get(
 );
 
 /**
+ * POST
+ * Only allows professors for now.
+ * @returns {import('./schemas').Schemas.Dto.ClassAttendance.MutationResult } for professors
+ */
+Routes.post(
+  "/records/class/offering/session/:classSessionId",
+  Auth.Core.Middlewares.validateJwt("full"),
+  validateRequest({
+    params: classSessionId,
+    body: Schemas.RequestBody.recordSubmission,
+  }),
+  Controllers.handleSubmitRecords,
+);
+
+/**
  * GET
  *
  * @returns {import('./schemas').Schemas.Dto.StudentAttendance.ProfessorView} for professors
@@ -156,21 +171,6 @@ Routes.get(
       return { classId: params.classId, studentId: params.studentId };
     },
   }),
-);
-
-/**
- * POST
- * Only allows professors for now.
- * @returns {import('./schemas').Schemas.Dto.ClassAttendance.MutationResult } for professors
- */
-Routes.post(
-  "/records/class/offering/session/:classSessionId",
-  Auth.Core.Middlewares.validateJwt("full"),
-  validateRequest({
-    params: classSessionId,
-    body: Schemas.RequestBody.recordSubmission,
-  }),
-  Controllers.handleSubmitRecords,
 );
 
 /**
