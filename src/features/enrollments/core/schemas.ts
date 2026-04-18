@@ -53,6 +53,7 @@ export namespace Schemas {
     export const classSession = z
       .strictObject({
         id: z.number(),
+        classOfferingId: z.number(),
         status: z.string(),
         datePh: z.string(),
         startTimeMs: z.number(),
