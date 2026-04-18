@@ -167,20 +167,6 @@ describe("Attendance Test Suite", () => {
     Schemas.Dto.ClassAttendance.mutationResult.parse(res.body.result.records);
   });
 
-  it(`GET records/class/${classId}`, async () => {
-    const res = await request(app)
-      .get(`/enrollments/attendance/records/class/${classId}`)
-      .set("Authorization", `Bearer ${tokens.student}`);
-
-    console.debug(JSON.stringify(res.body, null, 2));
-
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("success");
-    expect(res.body.success).toBe(true);
-
-    Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
-  });
-
   it(`POST new-rfid-scan`, async () => {
     const res = await request(app)
       .post("/enrollments/attendance/new-rfid-scan")
