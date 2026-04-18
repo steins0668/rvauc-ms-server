@@ -92,34 +92,25 @@ export namespace AttendanceData {
       args: QueryArgs & {
         values: {
           termId: number;
-          classId: number;
+          classOfferingId: number;
+          classSessionId: number;
           professorId: number;
-          date: Date;
         };
       },
     ) {
       const { values } = args;
+      const { classOfferingId, classSessionId } = values;
       const { limit = 6, page = 1 } = args.constraints ?? {};
 
       let classOffering;
 
       //  * get the class along with enrollments
       try {
-        const { classId, date } = values;
-        const day = Enums.Days[date.getDay()] as string;
-        const weekDay = day.substring(0, 3);
-        const seconds = TimeUtil.secondsSinceMidnightPh(date);
-
         classOffering = await this._classOfferingRepo
           .queryWithClass({
             constraints: { limit: 1 },
             orderBy: (co, { desc }) => desc(co.startTime),
-            where: (co, { and, eq, lte }) =>
-              and(
-                eq(co.classId, classId),
-                eq(co.weekDay, weekDay),
-                lte(co.startTime, seconds),
-              ),
+            where: (co, { eq }) => eq(co.id, classOfferingId),
           })
           .then((result) => result[0]);
       } catch (err) {
@@ -187,16 +178,9 @@ export namespace AttendanceData {
         try {
           const studentIds = enrollments.map((e) => e.student.id);
 
-          const { startTime, endTime } = classOffering;
-          const timeRange = TimeUtil.getPhTimeRange(
-            values.date,
-            startTime - 30 * 60,
-            endTime,
-          );
-
           recordsAndSummary = await this.queryRecordsAndSummary({
             ...args,
-            values: { classId: values.classId, timeRange, studentIds },
+            values: { classSessionId, studentIds },
             constraints: { limit, offset: (page - 1) * limit },
           });
         } catch (err) {
@@ -616,16 +600,14 @@ export namespace AttendanceData {
      */
     private async queryRecordsAndSummary(args: {
       values: {
-        classId: number;
-        timeRange?:
-          | Partial<{ startTimeMs: number; endTimeMs: number }>
-          | undefined;
+        classId?: number;
+        classSessionId?: number;
         studentIds: number[];
       };
       constraints?: BaseRepositoryType.QueryConstraints;
       dbOrTx?: DbOrTx | undefined;
     }) {
-      const { classId, timeRange, studentIds } = args.values;
+      const { classId, classSessionId, studentIds } = args.values;
 
       if (!studentIds.length)
         return {
@@ -639,54 +621,24 @@ export namespace AttendanceData {
           },
         };
 
-      const records = await this._attendanceRecordRepo.queryMinimalShape({
-        constraints: args.constraints,
-        where: (ar, { inArray, and, eq, gte, lte }) => {
-          const conditions: (SQLWrapper | undefined)[] = [
-            inArray(ar.studentId, studentIds),
-            eq(ar.classId, classId),
-          ];
-
-          if (timeRange) {
-            const timeRangeConditions: (SQLWrapper | undefined)[] = [];
-
-            if (timeRange.startTimeMs !== undefined)
-              timeRangeConditions.push(
-                gte(ar.recordedMs, timeRange.startTimeMs),
-              );
-            if (timeRange.endTimeMs !== undefined)
-              timeRangeConditions.push(lte(ar.recordedMs, timeRange.endTimeMs));
-
-            const filtered = timeRangeConditions.filter(Boolean);
-
-            if (filtered.length) conditions.push(and(...filtered));
-          }
-
-          return and(...conditions.filter(Boolean));
-        },
-        orderBy: (ar, { desc }) => desc(ar.recordedMs),
-      });
-
       const { attendanceRecords: ar } = Schema;
-      const { and, eq, gte, inArray, lte } = RepositoryUtil.filters;
+      const { and, eq, inArray } = RepositoryUtil.filters;
 
       const conditions: (SQLWrapper | undefined)[] = [
         inArray(ar.studentId, studentIds),
-        eq(ar.classId, classId),
       ];
 
-      if (timeRange) {
-        const timeRangeConditions: (SQLWrapper | undefined)[] = [];
+      if (classId) conditions.push(eq(ar.classId, classId));
+      if (classSessionId)
+        conditions.push(eq(ar.classSessionId, classSessionId));
 
-        if (timeRange.startTimeMs !== undefined)
-          timeRangeConditions.push(gte(ar.recordedMs, timeRange.startTimeMs));
-        if (timeRange.endTimeMs !== undefined)
-          timeRangeConditions.push(lte(ar.recordedMs, timeRange.endTimeMs));
+      const where = and(...conditions.filter(Boolean));
 
-        const filtered = timeRangeConditions.filter(Boolean);
-
-        if (filtered.length) conditions.push(and(...filtered));
-      }
+      const records = await this._attendanceRecordRepo.queryMinimalShape({
+        constraints: args.constraints,
+        where,
+        orderBy: (ar, { desc }) => desc(ar.recordedMs),
+      });
 
       const summary = await this._attendanceRecordRepo.selectSummary({
         where: and(...conditions.filter(Boolean)),

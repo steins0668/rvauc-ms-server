@@ -55,12 +55,17 @@ export namespace Schemas {
       .strictObject({ classOfferingId: z.coerce.number() })
       .strip();
 
+    export const classSessionId = z
+      .strictObject({ classSessionId: z.coerce.number() })
+      .strip();
+
     export const studentId = z
       .strictObject({ studentId: z.coerce.number() })
       .strip();
 
     export type ClassId = z.infer<typeof classId>;
     export type ClassOfferingId = z.infer<typeof classOfferingId>;
+    export type ClassSessionId = z.infer<typeof classSessionId>;
     export type StudentId = z.infer<typeof studentId>;
   }
 
@@ -240,7 +245,8 @@ export namespace Schemas {
           values: z
             .strictObject({
               ...defaultValues.shape,
-              classId: z.number(),
+              classOfferingId: z.number(),
+              classSessionId: z.number(),
               professorId: z.number(),
             })
             .strip(),

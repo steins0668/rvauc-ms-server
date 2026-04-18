@@ -6,7 +6,8 @@ import { Schemas } from "./schemas";
 import { Controllers } from "./controllers";
 import { Middlewares } from "./middlewares";
 
-const { classId, classOfferingId, studentId } = Schemas.RequestParams;
+const { classId, classOfferingId, classSessionId, studentId } =
+  Schemas.RequestParams;
 const { attendanceRecord } = Schemas.RequestQuery;
 
 export const Routes = Router();
@@ -16,7 +17,7 @@ Routes.use(Middlewares.attachAttendanceRegistrationService);
 //#region OLD ENDPOINTS
 /**
  * GET /view-records/class/:classId
- *
+ * ! OBSOLETE | BROKEN
  * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
  * @returns {import("./schemas").Schemas.Dto.ClassAttendance.StudentView} for students
  */
@@ -72,8 +73,6 @@ Routes.get(
 
 /**
  * GET
- *
- * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
  * @returns {import("./schemas").Schemas.Dto.ClassAttendance.StudentView} for students
  */
 Routes.get(
@@ -84,7 +83,7 @@ Routes.get(
     query: attendanceRecord,
   }),
   Controllers.handleViewRecords({
-    allowedRoles: ["student", "professor"],
+    allowedRoles: ["student"],
     scope: "class",
     extractInput: (req) => {
       const { validated } = req as StrictValidatedRequest<
@@ -96,6 +95,38 @@ Routes.get(
       const { params } = validated;
 
       return { classId: params.classId };
+    },
+  }),
+);
+
+/**
+ * GET
+ * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
+ */
+Routes.get(
+  "/records/class/offering/:classOfferingId/session/:classSessionId",
+  Auth.Core.Middlewares.validateJwt("full"),
+  validateRequest({
+    params: classOfferingId.extend(classSessionId.shape),
+    query: attendanceRecord,
+  }),
+  Controllers.handleViewRecords({
+    allowedRoles: ["professor"],
+    scope: "class",
+    extractInput: (req) => {
+      const { validated } = req as StrictValidatedRequest<
+        Schemas.RequestParams.ClassOfferingId &
+          Schemas.RequestParams.ClassSessionId,
+        {},
+        {},
+        {}
+      >;
+      const { params } = validated;
+
+      return {
+        classOfferingId: params.classOfferingId,
+        classSessionId: params.classSessionId,
+      };
     },
   }),
 );
