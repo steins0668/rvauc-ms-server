@@ -43,6 +43,16 @@ export namespace AttendanceData {
     private readonly _enrollmentRepo: CoreRepositories.Enrollment;
     private readonly _professorRepo: Auth.Repositories.Professor;
     private readonly _studentRepo: Auth.Repositories.Student;
+    private readonly EMPTY_ATTENDANCE_RESULT = {
+      records: [],
+      summary: {
+        present: 0,
+        absent: 0,
+        late: 0,
+        excused: 0,
+        totalRecords: 0,
+      },
+    };
 
     constructor(args: {
       attendanceRecordRepo: Repositories.AttendanceRecord;
@@ -106,28 +116,23 @@ export namespace AttendanceData {
     ) {
       const { values } = args;
       const { classSessionId } = values;
-      const { limit = 6, page = 1 } = args.constraints ?? {};
 
       let session;
       let enrollmentsData;
       let recordsAndSummary: Awaited<
         ReturnType<typeof this.queryRecordsAndSummary>
-      > = {
-        records: [],
-        summary: {
-          present: 0,
-          absent: 0,
-          late: 0,
-          excused: 0,
-          totalRecords: 0,
-        },
-      };
+      > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
+        const constraints = {
+          limit: RepositoryUtil.resolveLimit(args.constraints),
+          offset: RepositoryUtil.resolveOffset(args.constraints),
+        };
+
         session = await this.getSessionDetails(args);
         enrollmentsData = await this.queryEnrollmentsForClass({
           values: { classId: session.class.id },
-          constraints: { limit, offset: (page - 1) * limit },
+          constraints,
         });
 
         const { enrollments } = enrollmentsData;
@@ -139,7 +144,7 @@ export namespace AttendanceData {
           recordsAndSummary = await this.queryRecordsAndSummary({
             ...args,
             values: { classSessionId, enrollmentIds },
-            constraints: { limit, offset: (page - 1) * limit },
+            constraints,
           });
         }
       } catch (err) {
@@ -181,21 +186,11 @@ export namespace AttendanceData {
       },
     ) {
       const { classId, studentId } = args.values;
-      const { limit = 6, page = 1 } = args.constraints ?? {};
 
       let enrollment;
       let recordsAndSummary: Awaited<
         ReturnType<typeof this.queryRecordsAndSummary>
-      > = {
-        records: [],
-        summary: {
-          present: 0,
-          absent: 0,
-          late: 0,
-          excused: 0,
-          totalRecords: 0,
-        },
-      };
+      > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
         enrollment = await this.queryEnrollmentForClassAndStudent({
@@ -209,7 +204,10 @@ export namespace AttendanceData {
             classId,
             enrollmentIds: [enrollment.id],
           },
-          constraints: { limit, offset: (page - 1) * limit },
+          constraints: {
+            limit: RepositoryUtil.resolveLimit(args.constraints),
+            offset: RepositoryUtil.resolveOffset(args.constraints),
+          },
         });
       } catch (err) {
         return ResultBuilder.fail(
@@ -249,16 +247,7 @@ export namespace AttendanceData {
       let cls;
       let recordsAndSummary: Awaited<
         ReturnType<typeof this.queryRecordsAndSummaryWithSessionAndOffering>
-      > = {
-        records: [],
-        summary: {
-          present: 0,
-          absent: 0,
-          late: 0,
-          excused: 0,
-          totalRecords: 0,
-        },
-      };
+      > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
         enrollment = await this.getEnrollmentWithStudentDetails(args);
