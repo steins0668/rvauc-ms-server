@@ -13,7 +13,8 @@ export const resetDatabase = async () => {
   for (const t of tables) {
     const { name } = t as any;
 
-    if (name !== "sqlite_sequence") await context.run(`DELETE FROM ${name};`);
+    if (name !== "sqlite_sequence" || name !== "__drizzle_migrations")
+      await context.run(`DELETE FROM ${name};`);
   }
 
   await context.run(`DELETE FROM sqlite_sequence;`);
