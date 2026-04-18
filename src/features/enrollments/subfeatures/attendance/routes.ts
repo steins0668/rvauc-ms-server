@@ -166,10 +166,10 @@ Routes.get(
  * @returns {import('./schemas').Schemas.Dto.ClassAttendance.MutationResult } for professors
  */
 Routes.post(
-  "/records/class/:classId/class-offering/:classOfferingId",
+  "/records/class/offering/session/:classSessionId",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
-    params: classId.extend(classOfferingId.shape),
+    params: classSessionId,
     body: Schemas.RequestBody.recordSubmission,
   }),
   Controllers.handleSubmitRecords,

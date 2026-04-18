@@ -13,7 +13,7 @@ export async function handleSubmitRecords(req: Request, res: Response) {
     termDataService,
     requestLogger: logger,
   } = req as StrictValidatedRequest<
-    Schemas.RequestParams.ClassId & Schemas.RequestParams.ClassOfferingId,
+    Schemas.RequestParams.ClassSessionId,
     {},
     Schemas.RequestBody.RecordSubmission,
     {}
@@ -56,8 +56,7 @@ export async function handleSubmitRecords(req: Request, res: Response) {
   logger.log("debug", "Attempting to update records...");
   const tx = await attendanceRegistrationService.mutateRecords({
     values: {
-      classId: params.classId,
-      classOfferingId: params.classOfferingId,
+      classSessionId: params.classSessionId,
       date: body.date,
       professorId: auth.payload.id,
       records: body.records,

@@ -38,6 +38,7 @@ export namespace AttendanceRegistration {
     );
     return new Service({
       attendanceRecordRepo,
+      classSessionRepo,
       enrollmentRepo,
       classRuntimeResolver,
     });
@@ -45,23 +46,25 @@ export namespace AttendanceRegistration {
 
   export class Service {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
+    private readonly _classSessionRepo: CoreRepositories.ClassSession;
     private readonly _enrollmentRepo: CoreRepositories.Enrollment;
     private readonly _classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
 
     public constructor(args: {
       attendanceRecordRepo: Repositories.AttendanceRecord;
+      classSessionRepo: CoreRepositories.ClassSession;
       enrollmentRepo: CoreRepositories.Enrollment;
       classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
+      this._classSessionRepo = args.classSessionRepo;
       this._enrollmentRepo = args.enrollmentRepo;
       this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
     async mutateRecords(args: {
       values: {
-        classId: number;
-        classOfferingId: number;
+        classSessionId: number;
         date: Date;
         professorId?: number | undefined;
         records: {
@@ -127,22 +130,17 @@ export namespace AttendanceRegistration {
 
       const txPromise = this._attendanceRecordRepo.execTransaction(
         async (tx) => {
-          const session =
-            await this._classRuntimeResolver.ensureScheduledSession({
-              values: {
-                date: values.date,
-                classOfferingId: values.classOfferingId,
-              },
-              mode: "now",
-              tx,
-            });
+          const session = await this.getSession({
+            values: { id: values.classSessionId },
+            tx,
+          });
 
           const studentIds = values.records.map((r) => r.studentId);
 
           const existingStudentIds = await this.getExistingRecords({
             values: {
-              classId: values.classId,
-              classOfferingId: values.classOfferingId,
+              classId: session.classId,
+              classOfferingId: session.classOfferingId,
               datePh: session.datePh,
               studentIds,
             },
@@ -155,8 +153,8 @@ export namespace AttendanceRegistration {
             ? await this.updateRecords({
                 dbOrTx: tx,
                 values: {
-                  classId: values.classId,
-                  classOfferingId: values.classOfferingId,
+                  classId: session.classId,
+                  classOfferingId: session.classOfferingId,
                   updatedAt: createdOrUpdatedAt,
                   updatedByUserId: values.professorId,
                   records: organizedRecords.updates,
@@ -170,8 +168,8 @@ export namespace AttendanceRegistration {
                 onConflict: "doNothing",
                 values: organizedRecords.inserts.map((r) => {
                   return {
-                    classId: values.classId,
-                    classOfferingId: values.classOfferingId,
+                    classId: session.classId,
+                    classOfferingId: session.classOfferingId,
                     classSessionId: session.id,
                     studentId: r.studentId,
                     enrollmentId: r.enrollmentId,
@@ -504,6 +502,36 @@ export namespace AttendanceRegistration {
           err,
         });
       }
+    }
+
+    private async getSession(args: {
+      values: { id: number };
+      tx?: TxContext | undefined;
+    }) {
+      let session;
+
+      try {
+        session = await this._classSessionRepo
+          .queryMinimalShape({
+            where: (cs, { eq }) => eq(cs.id, args.values.id),
+            dbOrTx: args.tx,
+          })
+          .then((r) => r[0]);
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed querying `class_sessions` table.",
+          err,
+        });
+      }
+
+      if (!session)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Could not find the specified class session.",
+        });
+
+      return session;
     }
 
     private async getEnrollment(args: {
