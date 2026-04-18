@@ -246,7 +246,7 @@ export namespace AttendanceData {
       },
     ) {
       let enrollment;
-      let class_;
+      let cls;
       let recordsAndSummary: Awaited<
         ReturnType<typeof this.queryRecordsAndSummaryWithSessionAndOffering>
       > = {
@@ -262,11 +262,11 @@ export namespace AttendanceData {
 
       try {
         enrollment = await this.getEnrollmentWithStudentDetails(args);
-        class_ = await this.getClassWithCourse(args);
+        cls = await this.getClassWithCourse(args);
         recordsAndSummary =
           await this.queryRecordsAndSummaryWithSessionAndOffering({
             values: {
-              classId: class_.id,
+              classId: cls.id,
               enrollmentIds: [enrollment.id],
             },
           });
@@ -284,7 +284,7 @@ export namespace AttendanceData {
       try {
         return ResultBuilder.success(
           this.toStudentAttendanceProfessorViewDto(
-            class_,
+            cls,
             enrollment,
             recordsAndSummary,
           ),
@@ -318,7 +318,7 @@ export namespace AttendanceData {
       >,
     ): Schemas.Dto.ClassAttendance.ProfessorView {
       const { classOffering: offering } = session;
-      const { course, ...class_ } = session.class;
+      const { course, ...cls } = session.class;
       const { enrollments, totalEnrollments } = enrollmentsQuery;
       const { records, summary } = recordsAndSummary;
 
@@ -330,13 +330,13 @@ export namespace AttendanceData {
         attendanceRecords: enrollments.map((e) => {
           const { student } = e;
 
-          const studentAttendance = attendanceMap.get(student.id);
+          const enrollmentAttendance = attendanceMap.get(e.id);
 
           const status =
-            studentAttendance?.status ?? Data.attendanceStatus.absent;
-          const date = studentAttendance?.datePh ?? "N/A";
-          const time = studentAttendance?.recordedAt
-            ? TimeUtil.toPhTime(new Date(studentAttendance.recordedAt))
+            enrollmentAttendance?.status ?? Data.attendanceStatus.absent;
+          const date = enrollmentAttendance?.datePh ?? "N/A";
+          const time = enrollmentAttendance?.recordedAt
+            ? TimeUtil.toPhTime(new Date(enrollmentAttendance.recordedAt))
             : "N/A";
 
           return {
@@ -349,7 +349,7 @@ export namespace AttendanceData {
               },
             },
             record: {
-              id: studentAttendance?.id ?? 0,
+              id: enrollmentAttendance?.id ?? 0,
               status,
               date,
               time,
@@ -357,8 +357,8 @@ export namespace AttendanceData {
           };
         }),
         class: {
-          id: class_.id,
-          classNumber: class_.classNumber,
+          id: cls.id,
+          classNumber: cls.classNumber,
           course,
           offering: {
             id: offering.id,
@@ -403,7 +403,7 @@ export namespace AttendanceData {
     }
 
     private toStudentAttendanceProfessorViewDto(
-      class_: Awaited<
+      cls: Awaited<
         ReturnType<CoreRepositories.Class["queryWithCourse"]>
       >[number],
       enrollment: Awaited<
@@ -414,13 +414,13 @@ export namespace AttendanceData {
       >,
     ): Schemas.Dto.StudentAttendance.ProfessorView {
       const { student } = enrollment;
-      const { course } = class_;
+      const { course } = cls;
       const { records, summary } = recordsAndSummary;
 
       return {
         class: {
-          id: class_.id,
-          classNumber: class_.classNumber,
+          id: cls.id,
+          classNumber: cls.classNumber,
           course: { code: course.code, name: course.name },
         },
         enrollment: {
