@@ -32,13 +32,13 @@ export const classes = sqliteTable(
     classNumber: text("class_number").notNull(),
   },
   (t) => [
-    uniqueIndex("uidx_classes_professor_id_course_id_term_id_class_number").on(
+    uniqueIndex("uidx_classes_professor_id_term_id_course_id_class_number").on(
       t.professorId,
-      t.courseId,
       t.termId,
-      t.classNumber
+      t.courseId,
+      t.classNumber,
     ),
-  ]
+  ],
 );
 
 export const classesRelations = relations(classes, ({ one, many }) => ({

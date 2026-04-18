@@ -32,7 +32,11 @@ export const classSessions = sqliteTable(
     updatedAt: text("updated_at").notNull(), //  * UTC ISO Date (when the record was updated)
   },
   (t) => [
-    index("idx_class_sessions_date_ph").on(t.datePh),
+    index("idx_class_sessions_date_ph_status").on(t.datePh, t.status),
+    index("idx_class_sessions_class_id_start_time_ms").on(
+      t.classId,
+      t.startTimeMs,
+    ),
     uniqueIndex("uidx_class_sessions_class_offering_id_date_ph").on(
       t.classOfferingId,
       t.datePh,
