@@ -44,8 +44,8 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     return await (dbOrTx ?? this._dbContext).query.enrollments.findMany({
       where,
       orderBy,
-      limit: this.resolveLimit(args.constraints),
-      offset: this.resolveOffset(args.constraints),
+      limit: RepositoryUtil.resolveLimit(args.constraints),
+      offset: RepositoryUtil.resolveOffset(args.constraints),
       columns: { id: true, status: true },
       with: {
         student: {

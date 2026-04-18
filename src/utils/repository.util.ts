@@ -23,6 +23,7 @@ import {
   asc,
   desc,
 } from "drizzle-orm";
+import { BaseRepositoryType } from "../types";
 
 export namespace RepositoryUtil {
   export const filters = {
@@ -50,4 +51,17 @@ export namespace RepositoryUtil {
   } as const;
 
   export const orderOperators = { asc, desc } as const;
+
+  export function resolveLimit(
+    c?: BaseRepositoryType.QueryConstraints,
+    defaultLimit = 6,
+  ) {
+    if (c?.unlimited) return undefined;
+    return c?.limit ?? defaultLimit;
+  }
+
+  export function resolveOffset(c?: BaseRepositoryType.QueryConstraints) {
+    if (c?.unlimited) return undefined;
+    return c?.offset ?? 0;
+  }
 }

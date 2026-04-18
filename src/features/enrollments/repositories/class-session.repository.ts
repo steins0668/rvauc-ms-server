@@ -36,8 +36,8 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     dbOrTx?: DbOrTx | undefined;
   }) {
     return await (args.dbOrTx ?? this._dbContext).query.classSessions.findMany({
-      limit: this.resolveLimit(args.constraints),
-      offset: this.resolveOffset(args.constraints),
+      limit: RepositoryUtil.resolveLimit(args.constraints),
+      offset: RepositoryUtil.resolveOffset(args.constraints),
       where: args.where,
       orderBy: args.orderBy,
       columns: {},

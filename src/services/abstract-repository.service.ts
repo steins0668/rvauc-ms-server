@@ -147,17 +147,4 @@ export abstract class Repository<
   protected async getCount(whereClause?: SQL | undefined): Promise<number> {
     return await this._dbContext.$count(this._table, whereClause);
   }
-
-  protected resolveLimit(
-    c?: BaseRepositoryType.QueryConstraints,
-    defaultLimit = 6,
-  ) {
-    if (c?.unlimited) return undefined;
-    return c?.limit ?? defaultLimit;
-  }
-
-  protected resolveOffset(c?: BaseRepositoryType.QueryConstraints) {
-    if (c?.unlimited) return undefined;
-    return c?.offset ?? 0;
-  }
 }
