@@ -20,6 +20,42 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
         }),
     });
   }
+
+  async getWithClassAndOffering(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classSessions"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["classSessions"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    return await (args.dbOrTx ?? this._dbContext).query.classSessions.findMany({
+      limit: this.resolveLimit(args.constraints),
+      offset: this.resolveOffset(args.constraints),
+      where: args.where,
+      orderBy: args.orderBy,
+      columns: {},
+      with: {
+        class: {
+          columns: { id: true, classNumber: true, professorId: true },
+          with: {
+            course: { columns: { code: true, name: true } },
+          },
+        },
+        classOffering: {
+          columns: { classId: false },
+          with: { rooms: { columns: { name: true } } },
+        },
+      },
+    });
+  }
+
   async getWithEnrollments(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:

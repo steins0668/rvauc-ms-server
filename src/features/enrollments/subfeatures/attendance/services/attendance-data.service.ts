@@ -17,6 +17,7 @@ export namespace AttendanceData {
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
     const classRepo = new CoreRepositories.Class(context);
     const classOfferingRepo = new CoreRepositories.ClassOffering(context);
+    const classSessionRepo = new CoreRepositories.ClassSession(context);
     const enrollmentRepo = new CoreRepositories.Enrollment(context);
     const professorRepo = new Auth.Repositories.Professor(context);
     const studentRepo = new Auth.Repositories.Student(context);
@@ -24,6 +25,7 @@ export namespace AttendanceData {
       attendanceRecordRepo,
       classRepo,
       classOfferingRepo,
+      classSessionRepo,
       enrollmentRepo,
       professorRepo,
       studentRepo,
@@ -34,6 +36,7 @@ export namespace AttendanceData {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
     private readonly _classRepo: CoreRepositories.Class;
     private readonly _classOfferingRepo: CoreRepositories.ClassOffering;
+    private readonly _classSessionRepo: CoreRepositories.ClassSession;
     private readonly _enrollmentRepo: CoreRepositories.Enrollment;
     private readonly _professorRepo: Auth.Repositories.Professor;
     private readonly _studentRepo: Auth.Repositories.Student;
@@ -42,6 +45,7 @@ export namespace AttendanceData {
       attendanceRecordRepo: Repositories.AttendanceRecord;
       classRepo: CoreRepositories.Class;
       classOfferingRepo: CoreRepositories.ClassOffering;
+      classSessionRepo: CoreRepositories.ClassSession;
       enrollmentRepo: CoreRepositories.Enrollment;
       professorRepo: Auth.Repositories.Professor;
       studentRepo: Auth.Repositories.Student;
@@ -49,6 +53,7 @@ export namespace AttendanceData {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
       this._classRepo = args.classRepo;
       this._classOfferingRepo = args.classOfferingRepo;
+      this._classSessionRepo = args.classSessionRepo;
       this._enrollmentRepo = args.enrollmentRepo;
       this._professorRepo = args.professorRepo;
       this._studentRepo = args.studentRepo;
@@ -91,26 +96,23 @@ export namespace AttendanceData {
     private async getClassAttendanceProfessorView(
       args: QueryArgs & {
         values: {
-          termId: number;
-          classOfferingId: number;
           classSessionId: number;
           professorId: number;
         };
       },
     ) {
       const { values } = args;
-      const { classOfferingId, classSessionId } = values;
+      const { classSessionId } = values;
       const { limit = 6, page = 1 } = args.constraints ?? {};
 
-      let classOffering;
+      let session;
 
       //  * get the class along with enrollments
       try {
-        classOffering = await this._classOfferingRepo
-          .queryWithClass({
-            constraints: { limit: 1 },
-            orderBy: (co, { desc }) => desc(co.startTime),
-            where: (co, { eq }) => eq(co.id, classOfferingId),
+        session = await this._classSessionRepo
+          .getWithClassAndOffering({
+            where: (cs, { eq }) => eq(cs.id, classSessionId),
+            dbOrTx: args.dbOrTx,
           })
           .then((result) => result[0]);
       } catch (err) {
@@ -123,7 +125,7 @@ export namespace AttendanceData {
         );
       }
 
-      if (!classOffering)
+      if (!session)
         return ResultBuilder.fail(
           new Core.Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
@@ -132,7 +134,7 @@ export namespace AttendanceData {
           }),
         );
 
-      if (classOffering.class.professorId !== values.professorId)
+      if (session.class.professorId !== values.professorId)
         return ResultBuilder.fail(
           new Core.Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
@@ -145,7 +147,7 @@ export namespace AttendanceData {
 
       try {
         enrollmentsQuery = await this.queryEnrollments({
-          values: { classOfferingId: classOffering.id },
+          values: { classOfferingId: session.classOffering.id },
           constraints: { limit, offset: (page - 1) * limit },
         });
       } catch (err) {
@@ -197,7 +199,7 @@ export namespace AttendanceData {
       try {
         return ResultBuilder.success(
           this.toClassAttendanceProfessorViewDto(
-            classOffering,
+            session,
             enrollmentsQuery,
             recordsAndSummary,
           ),
@@ -410,9 +412,9 @@ export namespace AttendanceData {
      * attendance records by setting "absent" as the default value for the "status" field and "N/A" for the others.
      */
     private toClassAttendanceProfessorViewDto(
-      classOffering: NonNullable<
+      session: NonNullable<
         Awaited<
-          ReturnType<CoreRepositories.ClassOffering["queryWithClass"]>
+          ReturnType<CoreRepositories.ClassSession["getWithClassAndOffering"]>
         >[number]
       >,
       enrollmentsQuery: Awaited<ReturnType<typeof this.queryEnrollments>>,
@@ -420,7 +422,8 @@ export namespace AttendanceData {
         ReturnType<typeof this.queryRecordsAndSummary>
       >,
     ): Schemas.Dto.ClassAttendance.ProfessorView {
-      const { course, ...class_ } = classOffering.class;
+      const { classOffering: offering } = session;
+      const { course, ...class_ } = session.class;
       const { enrollments, totalEnrollments } = enrollmentsQuery;
       const { records, summary } = recordsAndSummary;
 
@@ -462,13 +465,13 @@ export namespace AttendanceData {
           classNumber: class_.classNumber,
           course,
           offering: {
-            id: classOffering.id,
-            weekDay: classOffering.weekDay,
-            room: classOffering.rooms?.name ?? "N/A",
-            startTimeText: classOffering.startTimeText,
-            endTimeText: classOffering.endTimeText,
-            startTime: classOffering.startTime,
-            endTime: classOffering.endTime,
+            id: offering.id,
+            weekDay: offering.weekDay,
+            room: offering.rooms?.name ?? "N/A",
+            startTimeText: offering.startTimeText,
+            endTimeText: offering.endTimeText,
+            startTime: offering.startTime,
+            endTime: offering.endTime,
           },
         },
         summary: {

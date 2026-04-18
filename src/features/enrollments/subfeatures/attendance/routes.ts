@@ -104,10 +104,10 @@ Routes.get(
  * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
  */
 Routes.get(
-  "/records/class/offering/:classOfferingId/session/:classSessionId",
+  "/records/class/offering/session/:classSessionId",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
-    params: classOfferingId.extend(classSessionId.shape),
+    params: classSessionId,
     query: attendanceRecord,
   }),
   Controllers.handleViewRecords({
@@ -115,8 +115,7 @@ Routes.get(
     scope: "class",
     extractInput: (req) => {
       const { validated } = req as StrictValidatedRequest<
-        Schemas.RequestParams.ClassOfferingId &
-          Schemas.RequestParams.ClassSessionId,
+        Schemas.RequestParams.ClassSessionId,
         {},
         {},
         {}
@@ -124,7 +123,6 @@ Routes.get(
       const { params } = validated;
 
       return {
-        classOfferingId: params.classOfferingId,
         classSessionId: params.classSessionId,
       };
     },

@@ -245,7 +245,6 @@ export namespace Schemas {
           values: z
             .strictObject({
               ...defaultValues.shape,
-              classOfferingId: z.number(),
               classSessionId: z.number(),
               professorId: z.number(),
             })

@@ -124,6 +124,23 @@ describe("Attendance Test Suite", () => {
   });
 
   const sessionId = 157;
+
+  it(`GET records/class/offering/session/${sessionId}`, async () => {
+    const url = `/enrollments/attendance/records/class/offering/session/${sessionId}`;
+    const res = await request(app)
+      .get(url)
+      .set("Authorization", `Bearer ${tokens.professor}`);
+
+    console.debug(JSON.stringify(res.body, null, 2));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(true);
+    expect(res.body).toHaveProperty("result");
+
+    Schemas.Dto.ClassAttendance.professorView.parse(res.body.result);
+  });
+
   it(`POST records/class/offering/session/${sessionId}`, async () => {
     const url = `/enrollments/attendance/records/class/offering/session/${sessionId}`;
     const res = await request(app)
