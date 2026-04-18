@@ -496,7 +496,7 @@ export namespace AttendanceData {
         });
 
       if (session.class.professorId !== professorId)
-        new Core.Errors.EnrollmentData.ErrorClass({
+        throw new Core.Errors.EnrollmentData.ErrorClass({
           name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
           message:
             "This professor does not have a class associated with this class_id.",
