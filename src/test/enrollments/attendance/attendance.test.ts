@@ -11,7 +11,7 @@ import { Schemas as CoreSchemas } from "../../../features/enrollments/core/schem
 
 const classId = 6;
 const classOfferingId = 7;
-const studentId = 7;
+const enrollmentId = 6;
 
 describe("Attendance Test Suite", () => {
   const tokens = {
@@ -107,8 +107,8 @@ describe("Attendance Test Suite", () => {
     Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
   });
 
-  it(`GET records/class/${classId}/student/${studentId}`, async () => {
-    const url = `/enrollments/attendance/records/class/${classId}/student/${studentId}`;
+  it(`GET records/class/${classId}/enrollment/${enrollmentId}`, async () => {
+    const url = `/enrollments/attendance/records/class/${classId}/enrollment/${enrollmentId}`;
     const res = await request(app)
       .get(url)
       .set("Authorization", `Bearer ${tokens.professor}`);
@@ -150,21 +150,21 @@ describe("Attendance Test Suite", () => {
         date: "2025-12-03T07:00:00+08:00",
         records: [
           {
+            //  * student id 7
             recordedDate: "2025-12-03T07:40:00+08:00",
-            studentId: 7,
-            enrollmentId: 7,
+            enrollmentId: 6,
             status: "late",
           },
           {
+            //  * student id 8
             recordedDate: "2025-12-03T07:35:00+08:00",
-            studentId: 8,
-            enrollmentId: 24,
+            enrollmentId: 12,
             status: "late",
           },
           {
+            //  * student id 9
             recordedDate: "2025-12-03T07:00:00+08:00",
-            studentId: 9,
-            enrollmentId: 41,
+            enrollmentId: 18,
             status: "absent",
           },
         ],
