@@ -109,62 +109,7 @@ export namespace AttendanceData {
       const { limit = 6, page = 1 } = args.constraints ?? {};
 
       let session;
-
-      //  * get the class along with enrollments
-      try {
-        session = await this._classSessionRepo
-          .getWithClassAndOffering({
-            where: (cs, { eq }) => eq(cs.id, classSessionId),
-            dbOrTx: args.dbOrTx,
-          })
-          .then((result) => result[0]);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying class_offerings table.",
-            err,
-          }),
-        );
-      }
-
-      if (!session)
-        return ResultBuilder.fail(
-          new Core.Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-            message:
-              "Provided class has no existing schedule at the provided date.",
-          }),
-        );
-
-      if (session.class.professorId !== values.professorId)
-        return ResultBuilder.fail(
-          new Core.Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
-            message:
-              "This professor does not have a class associated with this class_id.",
-          }),
-        );
-
-      let enrollmentsQuery;
-
-      try {
-        enrollmentsQuery = await this.queryEnrollmentsForClass({
-          values: { classId: session.class.id },
-          constraints: { limit, offset: (page - 1) * limit },
-        });
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying enrollments table.",
-            err,
-          }),
-        );
-      }
-
-      const { enrollments } = enrollmentsQuery;
-
+      let enrollmentsData;
       let recordsAndSummary: Awaited<
         ReturnType<typeof this.queryRecordsAndSummary>
       > = {
@@ -178,9 +123,17 @@ export namespace AttendanceData {
         },
       };
 
-      if (enrollments.length) {
-        //  * get attendance records matching the schedule of the class
-        try {
+      try {
+        session = await this.getSessionDetails(args);
+        enrollmentsData = await this.queryEnrollmentsForClass({
+          values: { classId: session.class.id },
+          constraints: { limit, offset: (page - 1) * limit },
+        });
+
+        const { enrollments } = enrollmentsData;
+
+        if (enrollments.length) {
+          //  * get attendance records for enrollments in the class session
           const enrollmentIds = enrollments.map((e) => e.id);
 
           recordsAndSummary = await this.queryRecordsAndSummary({
@@ -188,22 +141,23 @@ export namespace AttendanceData {
             values: { classSessionId, enrollmentIds },
             constraints: { limit, offset: (page - 1) * limit },
           });
-        } catch (err) {
-          return ResultBuilder.fail(
-            Core.Errors.EnrollmentData.normalizeError({
-              name: "ENROLLMENT_DATA_QUERY_ERROR",
-              message: "Failed querying attendance_records table.",
-              err,
-            }),
-          );
         }
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
+            message:
+              "Failed retrieving class attendance records for professor.",
+            err,
+          }),
+        );
       }
 
       try {
         return ResultBuilder.success(
           this.toClassAttendanceProfessorViewDto(
             session,
-            enrollmentsQuery,
+            enrollmentsData,
             recordsAndSummary,
           ),
         );
@@ -229,49 +183,39 @@ export namespace AttendanceData {
       const { classId, studentId } = args.values;
       const { limit = 6, page = 1 } = args.constraints ?? {};
 
-      let enrollments;
+      let enrollment;
+      let recordsAndSummary: Awaited<
+        ReturnType<typeof this.queryRecordsAndSummary>
+      > = {
+        records: [],
+        summary: {
+          present: 0,
+          absent: 0,
+          late: 0,
+          excused: 0,
+          totalRecords: 0,
+        },
+      };
 
       try {
-        enrollments = await this.queryEnrollmentsForClassAndStudent({
+        enrollment = await this.queryEnrollmentForClassAndStudent({
           values: { classId, studentId },
           dbOrTx: args.dbOrTx,
         });
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed to retrieve enrollments for student.",
-            err,
-          }),
-        );
-      }
-
-      if (!enrollments.length)
-        return ResultBuilder.fail(
-          new Core.Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR",
-            message: "This student is not enrolled in this class.",
-          }),
-        );
-
-      let recordsAndSummary;
-
-      try {
-        const enrollmentIds = enrollments.map((e) => e.id);
 
         recordsAndSummary = await this.queryRecordsAndSummary({
           ...args,
           values: {
             classId,
-            enrollmentIds,
+            enrollmentIds: [enrollment.id],
           },
           constraints: { limit, offset: (page - 1) * limit },
         });
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed getting attendance records for student.",
+            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
+            message: "Failed retrieving class attendance records for student.",
             err,
           }),
         );
@@ -301,118 +245,37 @@ export namespace AttendanceData {
         };
       },
     ) {
-      const { dbOrTx, values } = args;
-      const { limit = 6, page = 1 } = args.constraints ?? {};
-
       let enrollment;
-
-      try {
-        enrollment = await this._enrollmentRepo
-          .queryWithStudentDetails({
-            where: (e, { eq }) => eq(e.id, values.enrollmentId),
-            constraints: { limit: 1 },
-            dbOrTx,
-          })
-          .then((r) => r[0]);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying `enrollments` table.",
-            err,
-          }),
-        );
-      }
-
-      if (!enrollment)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
-          message: "The specified enrollment was not found.",
-        });
-
       let class_;
+      let recordsAndSummary: Awaited<
+        ReturnType<typeof this.queryRecordsAndSummaryWithSessionAndOffering>
+      > = {
+        records: [],
+        summary: {
+          present: 0,
+          absent: 0,
+          late: 0,
+          excused: 0,
+          totalRecords: 0,
+        },
+      };
 
       try {
-        class_ = await this._classRepo
-          .queryWithCourse({
-            where: (c, { eq }) => eq(c.id, values.classId),
-            orderBy: (c, { asc }) => asc(c.id), //  ! should be user input eventually
-            dbOrTx,
-          })
-          .then((result) => result[0]);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying classes table",
-            err,
-          }),
-        );
-      }
-
-      if (!class_)
-        return ResultBuilder.fail(
-          new Core.Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
-            message: "Class with specified id does not exist.",
-          }),
-        );
-
-      let attendanceRecord;
-
-      try {
-        attendanceRecord =
-          await this._attendanceRecordRepo.queryMinimalShapeWithSessionAndOffering(
-            {
-              constraints: { limit, offset: (page - 1) * limit },
-              where: (ar, { and, eq }) =>
-                and(
-                  eq(ar.enrollmentId, enrollment.id),
-                  eq(ar.classId, values.classId),
-                ),
-              orderBy: (ar, { desc }) => desc(ar.recordedMs),
-              dbOrTx,
+        enrollment = await this.getEnrollmentWithStudentDetails(args);
+        class_ = await this.getClassWithCourse(args);
+        recordsAndSummary =
+          await this.queryRecordsAndSummaryWithSessionAndOffering({
+            values: {
+              classId: class_.id,
+              enrollmentIds: [enrollment.id],
             },
-          );
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying attendance_records table.",
-            err,
-          }),
-        );
-      }
-
-      if (!attendanceRecord)
-        return ResultBuilder.fail(
-          new Core.Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
-            message: "Class with specified id does not exist.",
-          }),
-        );
-
-      let summary: Awaited<
-        ReturnType<Repositories.AttendanceRecord["selectSummary"]>
-      > = { present: 0, absent: 0, late: 0, excused: 0, totalRecords: 0 };
-
-      try {
-        if (attendanceRecord.length) {
-          const { attendanceRecords: ar } = Schema;
-          const { and, eq } = RepositoryUtil.filters;
-
-          summary = await this._attendanceRecordRepo.selectSummary({
-            where: and(
-              eq(ar.enrollmentId, enrollment.id),
-              eq(ar.classId, values.classId),
-            ),
           });
-        }
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying attendance_records table.",
+            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
+            message:
+              "Failed retrieving class attendance of student for professor.",
             err,
           }),
         );
@@ -423,8 +286,7 @@ export namespace AttendanceData {
           this.toStudentAttendanceProfessorViewDto(
             class_,
             enrollment,
-            attendanceRecord,
-            summary,
+            recordsAndSummary,
           ),
         );
       } catch (err) {
@@ -547,17 +409,14 @@ export namespace AttendanceData {
       enrollment: Awaited<
         ReturnType<CoreRepositories.Enrollment["queryWithStudentDetails"]>
       >[number],
-      attendanceRecords: Awaited<
-        ReturnType<
-          Repositories.AttendanceRecord["queryMinimalShapeWithSessionAndOffering"]
-        >
-      >,
-      summary: Awaited<
-        ReturnType<Repositories.AttendanceRecord["selectSummary"]>
+      recordsAndSummary: Awaited<
+        ReturnType<typeof this.queryRecordsAndSummaryWithSessionAndOffering>
       >,
     ): Schemas.Dto.StudentAttendance.ProfessorView {
       const { student } = enrollment;
       const { course } = class_;
+      const { records, summary } = recordsAndSummary;
+
       return {
         class: {
           id: class_.id,
@@ -578,7 +437,7 @@ export namespace AttendanceData {
             gender: student.user.gender,
           },
         },
-        attendanceRecords: attendanceRecords.map((ar) => {
+        attendanceRecords: records.map((ar) => {
           const { classSession: cs } = ar;
           const { classOffering: co } = cs;
 
@@ -604,6 +463,48 @@ export namespace AttendanceData {
       };
     }
 
+    private async getSessionDetails(args: {
+      values: { classSessionId: number; professorId: number };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { classSessionId, professorId } = args.values;
+
+      let session;
+
+      //  * get session info w/ class and offering details
+      try {
+        session = await this._classSessionRepo
+          .getWithClassAndOffering({
+            where: (cs, { eq }) => eq(cs.id, classSessionId),
+            constraints: { limit: 1 },
+            dbOrTx: args.dbOrTx,
+          })
+          .then((result) => result[0]);
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed querying `class_offerings` table.",
+          err,
+        });
+      }
+
+      if (!session)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
+          message:
+            "Provided class has no ongoing session at the provided date.",
+        });
+
+      if (session.class.professorId !== professorId)
+        new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
+          message:
+            "This professor does not have a class associated with this class_id.",
+        });
+
+      return session;
+    }
+
     private async queryEnrollmentsForClass(args: {
       values: { classId: number };
       constraints?: BaseRepositoryType.QueryConstraints;
@@ -615,8 +516,10 @@ export namespace AttendanceData {
 
       const where = eq(e.classId, args.values.classId);
 
-      const enrollments =
-        await this._enrollmentRepo.selectStudentsFromEnrollments({
+      let enrollments;
+
+      try {
+        enrollments = await this._enrollmentRepo.selectStudentsFromEnrollments({
           constraints: args.constraints,
           where,
           orderBy: [
@@ -627,16 +530,33 @@ export namespace AttendanceData {
           ],
           dbOrTx: args.dbOrTx,
         });
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed retrieving enrollments for class.",
+          err,
+        });
+      }
 
-      const totalEnrollments = await this._enrollmentRepo.countEnrollments({
-        where,
-        dbOrTx: args.dbOrTx,
-      });
+      let totalEnrollments;
+
+      try {
+        totalEnrollments = await this._enrollmentRepo.countEnrollments({
+          where,
+          dbOrTx: args.dbOrTx,
+        });
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed counting enrollments for class.",
+          err,
+        });
+      }
 
       return { enrollments: [...enrollments], totalEnrollments };
     }
 
-    private async queryEnrollmentsForClassAndStudent(args: {
+    private async queryEnrollmentForClassAndStudent(args: {
       values: {
         classId: number;
         studentId: number;
@@ -645,14 +565,98 @@ export namespace AttendanceData {
     }) {
       const { classId, studentId } = args.values;
 
-      return await this._enrollmentRepo.execQuery({
-        dbOrTx: args.dbOrTx,
-        fn: async (query) =>
-          query.findMany({
-            where: (e, { and, eq }) =>
-              and(eq(e.studentId, studentId), eq(e.classId, classId)),
-          }),
-      });
+      let enrollment;
+
+      try {
+        enrollment = await this._enrollmentRepo.execQuery({
+          dbOrTx: args.dbOrTx,
+          fn: async (query) =>
+            query.findFirst({
+              where: (e, { and, eq }) =>
+                and(eq(e.studentId, studentId), eq(e.classId, classId)),
+            }),
+        });
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed querying `enrollments` table.",
+          err,
+        });
+      }
+
+      if (!enrollment)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
+          message: "This student is not enrolled in this class.",
+        });
+
+      return enrollment;
+    }
+
+    private async getEnrollmentWithStudentDetails(args: {
+      values: { enrollmentId: number };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { values, dbOrTx } = args;
+
+      let enrollment;
+
+      try {
+        enrollment = await this._enrollmentRepo
+          .queryWithStudentDetails({
+            where: (e, { eq }) => eq(e.id, values.enrollmentId),
+            constraints: { limit: 1 },
+            dbOrTx,
+          })
+          .then((r) => r[0]);
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed querying `enrollments` table.",
+          err,
+        });
+      }
+
+      if (!enrollment)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
+          message: "The specified enrollment was not found.",
+        });
+
+      return enrollment;
+    }
+
+    private async getClassWithCourse(args: {
+      values: { classId: number };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { values, dbOrTx } = args;
+
+      let cls;
+
+      try {
+        cls = await this._classRepo
+          .queryWithCourse({
+            where: (c, { eq }) => eq(c.id, values.classId),
+            orderBy: (c, { asc }) => asc(c.id), //  ! should be user input eventually
+            dbOrTx,
+          })
+          .then((result) => result[0]);
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed querying `classes` table",
+          err,
+        });
+      }
+
+      if (!cls)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
+          message: "The specified class was not found.",
+        });
+
+      return cls;
     }
 
     /**
@@ -695,15 +699,107 @@ export namespace AttendanceData {
 
       const where = and(...conditions.filter(Boolean));
 
-      const records = await this._attendanceRecordRepo.queryMinimalShape({
-        constraints: args.constraints,
-        where,
-        orderBy: (ar, { desc }) => desc(ar.recordedMs),
-      });
+      let records;
 
-      const summary = await this._attendanceRecordRepo.selectSummary({
-        where: and(...conditions.filter(Boolean)),
-      });
+      try {
+        records = await this._attendanceRecordRepo.queryMinimalShape({
+          constraints: args.constraints,
+          where,
+          orderBy: (ar, { desc }) => desc(ar.recordedMs),
+        });
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed retreiving attendance records.",
+          err,
+        });
+      }
+
+      let summary;
+
+      try {
+        summary = await this._attendanceRecordRepo.selectSummary({
+          where: and(...conditions.filter(Boolean)),
+        });
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed retrieving attendance summary.",
+          err,
+        });
+      }
+
+      return { records, summary };
+    }
+
+    private async queryRecordsAndSummaryWithSessionAndOffering(args: {
+      values: {
+        classId?: number;
+        classSessionId?: number;
+        enrollmentIds: number[];
+      };
+      constraints?: BaseRepositoryType.QueryConstraints;
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { classId, classSessionId, enrollmentIds } = args.values;
+
+      if (!enrollmentIds.length)
+        return {
+          records: [],
+          summary: {
+            present: 0,
+            absent: 0,
+            late: 0,
+            excused: 0,
+            totalRecords: 0,
+          },
+        };
+
+      const { attendanceRecords: ar } = Schema;
+      const { and, eq, inArray } = RepositoryUtil.filters;
+
+      const conditions: (SQLWrapper | undefined)[] = [
+        inArray(ar.enrollmentId, enrollmentIds),
+      ];
+
+      if (classId) conditions.push(eq(ar.classId, classId));
+      if (classSessionId)
+        conditions.push(eq(ar.classSessionId, classSessionId));
+
+      const where = and(...conditions.filter(Boolean));
+
+      let records;
+
+      try {
+        records =
+          await this._attendanceRecordRepo.queryMinimalShapeWithSessionAndOffering(
+            {
+              constraints: args.constraints,
+              where,
+              orderBy: (ar, { desc }) => desc(ar.recordedMs),
+            },
+          );
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed retreiving attendance records.",
+          err,
+        });
+      }
+
+      let summary;
+
+      try {
+        summary = await this._attendanceRecordRepo.selectSummary({
+          where: and(...conditions.filter(Boolean)),
+        });
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed retrieving attendance summary.",
+          err,
+        });
+      }
 
       return { records, summary };
     }
