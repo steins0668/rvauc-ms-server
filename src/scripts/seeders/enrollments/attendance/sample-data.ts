@@ -104,7 +104,6 @@ export namespace SampleData {
 
           results.push({
             id: id++,
-            studentId: e.studentId,
             classId: o.classId,
             classSessionId: s.id,
             enrollmentId: e.id,

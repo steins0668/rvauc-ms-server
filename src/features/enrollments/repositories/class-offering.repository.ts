@@ -1,4 +1,5 @@
 import { and, eq, or, sql, SQL } from "drizzle-orm";
+import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx } from "../../../db/create-context";
 import { classOfferings, Schema } from "../../../models";
 import { Repository } from "../../../services";
@@ -35,7 +36,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     }
   }
 
-  public async queryWithClass(args: {
+  async queryWithClass(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:
       | NonNullable<
@@ -70,7 +71,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     });
   }
 
-  public async queryWithClassAndProfessor(args: {
+  async queryWithClassAndProfessor(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:
       | NonNullable<
@@ -119,9 +120,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     });
   }
 
-  public async execInsert<T>(
-    args: Types.Repository.InsertArgs.ClassOffering<T>,
-  ) {
+  async execInsert<T>(args: Types.Repository.InsertArgs.ClassOffering<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(classOfferings);
     return await args.fn({
       table: classOfferings,
@@ -131,6 +130,29 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     });
   }
 
+  existsForContext(args: {
+    dbOrTx?: DbOrTx | undefined;
+    values: { classOfferingId: SQLiteColumn; classId: number };
+  }) {
+    const { dbOrTx } = args;
+    const { classOfferingId, classId } = args.values;
+    return this.getContext({
+      dbOrTx,
+      fn: ({ table: co, context }) => {
+        const { eq, and } = RepositoryUtil.filters;
+
+        const conditions = [
+          eq(co.id, classOfferingId),
+          eq(co.classId, classId),
+        ];
+
+        return context
+          .select({ id: co.id })
+          .from(co)
+          .where(and(...conditions));
+      },
+    });
+  }
   public getContext<T>(args: Types.Repository.ContextArgs.ClassOffering<T>) {
     const context = args.dbOrTx ?? this._dbContext;
 

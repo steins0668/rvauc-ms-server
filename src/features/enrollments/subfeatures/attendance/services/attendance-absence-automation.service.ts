@@ -65,7 +65,6 @@ export namespace AttendanceAbsenceAutomation {
 
           enrollments.forEach((e) =>
             records.push({
-              studentId: e.studentId,
               enrollmentId: e.id,
               classId: co.classId,
               classSessionId: s.id,
@@ -152,9 +151,8 @@ export namespace AttendanceAbsenceAutomation {
           let insertion = insert.values(values);
 
           const targets = [
-            sql`student_id`,
-            sql`class_id`,
-            sql`class_offering_id`,
+            sql`enrollment_id`,
+            sql`class_session_id`,
             sql`date_ph`,
           ];
 
@@ -162,7 +160,7 @@ export namespace AttendanceAbsenceAutomation {
             onConflict === "doNothing"
               ? insertion.onConflictDoNothing({ target: targets })
               : insertion.onConflictDoUpdate({
-                  target: [ar.studentId, ar.classSessionId, ar.datePh],
+                  target: [ar.enrollmentId, ar.classSessionId, ar.datePh],
                   set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
                 });
 

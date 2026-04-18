@@ -167,47 +167,15 @@ export namespace Repositories {
       return await args.fn(deleteBase, AttendanceRecord.buildWhereClause);
     }
 
+    /**
+     * @deprecated
+     * ! DO NOT USE
+     * @param filter
+     * @returns
+     */
     public static buildWhereClause(
       filter?: Types.Repository.QueryFilters.AttendanceRecord,
     ): SQL | undefined {
-      const conditions = [];
-
-      if (filter) {
-        const {
-          filterType = "or",
-          id,
-          studentId,
-          classId,
-          status,
-          recordCount,
-          recordedAt,
-          recordedMs,
-          datePh,
-          custom,
-        } = filter;
-
-        if (id !== undefined) conditions.push(eq(attendanceRecords.id, id));
-        if (studentId !== undefined)
-          conditions.push(eq(attendanceRecords.studentId, studentId));
-        if (classId !== undefined)
-          conditions.push(eq(attendanceRecords.classId, classId));
-        if (status && status.trim())
-          conditions.push(eq(attendanceRecords.status, status));
-        if (recordCount !== undefined)
-          conditions.push(eq(attendanceRecords.recordCount, recordCount));
-        if (recordedAt && recordedAt.trim())
-          conditions.push(eq(attendanceRecords.recordedAt, recordedAt));
-        if (recordedMs !== undefined)
-          conditions.push(eq(attendanceRecords.recordedMs, recordedMs));
-        if (datePh && datePh.trim())
-          conditions.push(eq(attendanceRecords.datePh, datePh));
-        if (custom)
-          conditions.push(...custom(attendanceRecords, RepositoryUtil.filters));
-
-        if (conditions.length > 0)
-          return filterType === "or" ? or(...conditions) : and(...conditions);
-      }
-
       return undefined;
     }
 

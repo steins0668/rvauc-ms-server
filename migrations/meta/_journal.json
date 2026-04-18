@@ -372,6 +372,13 @@
       "when": 1776506468174,
       "tag": "0052_spotty_khan",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "6",
+      "when": 1776515850463,
+      "tag": "0053_organic_vulture",
+      "breakpoints": true
     }
   ]
 }

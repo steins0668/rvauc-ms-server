@@ -1,15 +1,18 @@
 import { SQLWrapper } from "drizzle-orm";
-import { createContext, DbOrTx } from "../../../../../db/create-context";
-import { Enums } from "../../../../../data";
-import { attendanceRecords, Schema } from "../../../../../models";
+import {
+  createContext,
+  DbOrTx,
+  TxContext,
+} from "../../../../../db/create-context";
+import { Schema } from "../../../../../models";
 import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
+import { BaseRepositoryType } from "../../../../../types";
 import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Repositories as CoreRepositories } from "../../../repositories";
 import { Data } from "../data";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
-import { BaseRepositoryType } from "../../../../../types";
 
 export namespace AttendanceData {
   export async function create() {
@@ -146,7 +149,7 @@ export namespace AttendanceData {
       let enrollmentsQuery;
 
       try {
-        enrollmentsQuery = await this.queryEnrollments({
+        enrollmentsQuery = await this.queryEnrollmentsForClassOffering({
           values: { classOfferingId: session.classOffering.id },
           constraints: { limit, offset: (page - 1) * limit },
         });
@@ -178,11 +181,11 @@ export namespace AttendanceData {
       if (enrollments.length) {
         //  * get attendance records matching the schedule of the class
         try {
-          const studentIds = enrollments.map((e) => e.student.id);
+          const enrollmentIds = enrollments.map((e) => e.id);
 
           recordsAndSummary = await this.queryRecordsAndSummary({
             ...args,
-            values: { classSessionId, studentIds },
+            values: { classSessionId, enrollmentIds },
             constraints: { limit, offset: (page - 1) * limit },
           });
         } catch (err) {
@@ -226,14 +229,41 @@ export namespace AttendanceData {
       const { classId, studentId } = args.values;
       const { limit = 6, page = 1 } = args.constraints ?? {};
 
+      let enrollments;
+
+      try {
+        enrollments = await this.queryEnrollmentsForClassAndStudent({
+          values: { classId, studentId },
+          dbOrTx: args.dbOrTx,
+        });
+      } catch (err) {
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.normalizeError({
+            name: "ENROLLMENT_DATA_QUERY_ERROR",
+            message: "Failed to retrieve enrollments for student.",
+            err,
+          }),
+        );
+      }
+
+      if (!enrollments.length)
+        return ResultBuilder.fail(
+          new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR",
+            message: "This student is not enrolled in this class.",
+          }),
+        );
+
       let recordsAndSummary;
 
       try {
+        const enrollmentIds = enrollments.map((e) => e.id);
+
         recordsAndSummary = await this.queryRecordsAndSummary({
           ...args,
           values: {
             classId,
-            studentIds: [studentId],
+            enrollmentIds,
           },
           constraints: { limit, offset: (page - 1) * limit },
         });
@@ -280,28 +310,25 @@ export namespace AttendanceData {
         student = await this._studentRepo
           .queryWithUserAndDepartment({
             where: (s, { eq }) => eq(s.id, values.studentId),
-            orderBy: (s, { asc }) => asc(s.studentNumber), //   ! should be user input eventually
             constraints: { limit: 1 },
             dbOrTx,
           })
-          .then((result) => result[0]);
+          .then((r) => r[0]);
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
             name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying students table.",
+            message: "Failed querying `students` table.",
             err,
           }),
         );
       }
 
       if (!student)
-        return ResultBuilder.fail(
-          new Core.Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR",
-            message: "Student with the specified id does not exist.",
-          }),
-        );
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR",
+          message: "The specified student was not found.",
+        });
 
       let class_;
 
@@ -310,6 +337,7 @@ export namespace AttendanceData {
           .queryWithCourse({
             where: (c, { eq }) => eq(c.id, values.classId),
             orderBy: (c, { asc }) => asc(c.id), //  ! should be user input eventually
+            dbOrTx,
           })
           .then((result) => result[0]);
       } catch (err) {
@@ -337,12 +365,18 @@ export namespace AttendanceData {
           await this._attendanceRecordRepo.queryMinimalShapeWithSessionAndOffering(
             {
               constraints: { limit, offset: (page - 1) * limit },
-              where: (ar, { and, eq }) =>
+              where: (ar, { and, eq, exists }) =>
                 and(
-                  eq(ar.studentId, values.studentId),
+                  exists(
+                    this._enrollmentRepo.existsForStudent({
+                      enrollmentId: ar.enrollmentId,
+                      studentId: student.id,
+                    }),
+                  ),
                   eq(ar.classId, values.classId),
                 ),
               orderBy: (ar, { desc }) => desc(ar.recordedMs),
+              dbOrTx,
             },
           );
       } catch (err) {
@@ -370,11 +404,16 @@ export namespace AttendanceData {
       try {
         if (attendanceRecord.length) {
           const { attendanceRecords: ar } = Schema;
-          const { and, eq } = RepositoryUtil.filters;
+          const { and, eq, exists } = RepositoryUtil.filters;
 
           summary = await this._attendanceRecordRepo.selectSummary({
             where: and(
-              eq(ar.studentId, values.studentId),
+              exists(
+                this._enrollmentRepo.existsForStudent({
+                  enrollmentId: ar.enrollmentId,
+                  studentId: student.id,
+                }),
+              ),
               eq(ar.classId, values.classId),
             ),
           });
@@ -419,7 +458,9 @@ export namespace AttendanceData {
           ReturnType<CoreRepositories.ClassSession["getWithClassAndOffering"]>
         >[number]
       >,
-      enrollmentsQuery: Awaited<ReturnType<typeof this.queryEnrollments>>,
+      enrollmentsQuery: Awaited<
+        ReturnType<typeof this.queryEnrollmentsForClassOffering>
+      >,
       recordsAndSummary: Awaited<
         ReturnType<typeof this.queryRecordsAndSummary>
       >,
@@ -431,7 +472,7 @@ export namespace AttendanceData {
 
       const attendanceMap = new Map<number, (typeof records)[number]>();
 
-      for (const r of records) attendanceMap.set(r.studentId, r);
+      for (const r of records) attendanceMap.set(r.enrollmentId, r);
 
       return {
         attendanceRecords: enrollments.map((e) => {
@@ -449,6 +490,7 @@ export namespace AttendanceData {
           return {
             enrollment: {
               id: e.id,
+              status: e.status,
               student: {
                 ...student,
                 department: student.department ?? "No department.",
@@ -532,7 +574,6 @@ export namespace AttendanceData {
           course: { code: course.code, name: course.name },
         },
         enrollment: {
-          id: 0, //  todo: replace this when you're using enrollments for attendance records
           student: {
             studentNumber: student.studentNumber,
             department: student.department.name,
@@ -570,7 +611,7 @@ export namespace AttendanceData {
       };
     }
 
-    private async queryEnrollments(args: {
+    private async queryEnrollmentsForClassOffering(args: {
       values: { classOfferingId: number };
       constraints?: BaseRepositoryType.QueryConstraints;
       dbOrTx?: DbOrTx | undefined;
@@ -602,6 +643,39 @@ export namespace AttendanceData {
       return { enrollments: [...enrollments], totalEnrollments };
     }
 
+    private async queryEnrollmentsForClassAndStudent(args: {
+      values: {
+        classId: number;
+        studentId: number;
+      };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const { classId, studentId } = args.values;
+
+      const coSubquery = (
+        args: NonNullable<
+          Parameters<CoreRepositories.ClassOffering["existsForContext"]>[0]
+        >,
+      ) => this._classOfferingRepo.existsForContext(args);
+
+      return await this._enrollmentRepo.execQuery({
+        dbOrTx: args.dbOrTx,
+        fn: async (query) =>
+          query.findMany({
+            where: (e, { and, eq, exists }) =>
+              and(
+                eq(e.studentId, studentId),
+                exists(
+                  coSubquery({
+                    values: { classOfferingId: e.classOfferingId, classId },
+                    dbOrTx: args.dbOrTx,
+                  }),
+                ),
+              ),
+          }),
+      });
+    }
+
     /**
      * @description Queries attendance records matching a class id, time range, and
      * a set of student ids
@@ -610,14 +684,14 @@ export namespace AttendanceData {
       values: {
         classId?: number;
         classSessionId?: number;
-        studentIds: number[];
+        enrollmentIds: number[];
       };
       constraints?: BaseRepositoryType.QueryConstraints;
       dbOrTx?: DbOrTx | undefined;
     }) {
-      const { classId, classSessionId, studentIds } = args.values;
+      const { classId, classSessionId, enrollmentIds } = args.values;
 
-      if (!studentIds.length)
+      if (!enrollmentIds.length)
         return {
           records: [],
           summary: {
@@ -633,7 +707,7 @@ export namespace AttendanceData {
       const { and, eq, inArray } = RepositoryUtil.filters;
 
       const conditions: (SQLWrapper | undefined)[] = [
-        inArray(ar.studentId, studentIds),
+        inArray(ar.enrollmentId, enrollmentIds),
       ];
 
       if (classId) conditions.push(eq(ar.classId, classId));

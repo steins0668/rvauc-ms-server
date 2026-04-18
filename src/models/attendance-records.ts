@@ -17,12 +17,6 @@ export const attendanceRecords = sqliteTable(
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
-    studentId: integer("student_id")
-      .notNull()
-      .references(() => students.id, {
-        onDelete: "restrict",
-        onUpdate: "cascade",
-      }),
     classId: integer("class_id")
       .notNull()
       .references(() => classes.id, {
@@ -46,18 +40,14 @@ export const attendanceRecords = sqliteTable(
   },
   (t) => [
     uniqueIndex(
-      "uidx_attendance_records_student_id_class_session_id_date_ph",
-    ).on(t.studentId, t.classSessionId, t.datePh),
+      "uidx_attendance_records_enrollment_id_class_session_id_date_ph",
+    ).on(t.enrollmentId, t.classSessionId, t.datePh),
   ],
 );
 
 export const attendanceRecordsRelations = relations(
   attendanceRecords,
   ({ one }) => ({
-    student: one(students, {
-      fields: [attendanceRecords.studentId],
-      references: [students.id],
-    }),
     enrollment: one(enrollments, {
       fields: [attendanceRecords.enrollmentId],
       references: [enrollments.id],

@@ -68,7 +68,6 @@ export namespace AttendanceRegistration {
         professorId?: number | undefined;
         records: {
           recordedDate: Date;
-          studentId: number;
           enrollmentId: number;
           status: keyof typeof Data.attendanceStatus;
         }[];
@@ -79,7 +78,7 @@ export namespace AttendanceRegistration {
 
       const uniqueRecords = new Map<number, (typeof values.records)[number]>();
 
-      for (const r of values.records) uniqueRecords.set(r.studentId, r);
+      for (const r of values.records) uniqueRecords.set(r.enrollmentId, r);
 
       values.records = Array.from(uniqueRecords.values());
 
@@ -94,7 +93,7 @@ export namespace AttendanceRegistration {
       };
 
       const organizeRecords = (
-        existingStudentIds: Set<number>,
+        existingEnrollmentIds: Set<number>,
         session: { datePh: string; startTimeMs: number; endTimeMs: number },
       ) => {
         let updates: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
@@ -104,7 +103,7 @@ export namespace AttendanceRegistration {
         for (const r of values.records) {
           const normalized = normalizeRecord(r);
 
-          const exists = existingStudentIds.has(normalized.studentId);
+          const exists = existingEnrollmentIds.has(normalized.enrollmentId);
 
           const isSameDate = normalized.datePh === session.datePh;
 
@@ -134,18 +133,21 @@ export namespace AttendanceRegistration {
             tx,
           });
 
-          const studentIds = values.records.map((r) => r.studentId);
+          const enrollmentIds = values.records.map((r) => r.enrollmentId);
 
-          const existingStudentIds = await this.getExistingRecords({
+          const existingEnrollmentIds = await this.getExistingRecords({
             values: {
               classSessionId: session.id,
               datePh: session.datePh,
-              studentIds,
+              enrollmentIds,
             },
             dbOrTx: tx,
           });
 
-          const organizedRecords = organizeRecords(existingStudentIds, session);
+          const organizedRecords = organizeRecords(
+            existingEnrollmentIds,
+            session,
+          );
 
           const updated = organizedRecords.updates.length
             ? await this.updateRecords({
@@ -168,7 +170,6 @@ export namespace AttendanceRegistration {
                     classId: session.classId,
                     classOfferingId: session.classOfferingId,
                     classSessionId: session.id,
-                    studentId: r.studentId,
                     enrollmentId: r.enrollmentId,
                     status: r.status,
                     createdAt: createdOrUpdatedAt,
@@ -241,7 +242,6 @@ export namespace AttendanceRegistration {
         const inserted = await this.persistSessionAttendance({
           values: {
             clsRuntime,
-            studentId,
             status,
             enrollmentId: enrollment.id,
             recordedDate,
@@ -371,7 +371,6 @@ export namespace AttendanceRegistration {
         clsRuntime: Awaited<
           ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
         >;
-        studentId: number;
         enrollmentId: number;
         status: string;
         recordedDate: Date;
@@ -379,8 +378,7 @@ export namespace AttendanceRegistration {
       tx?: TxContext | undefined;
     }) {
       const { tx } = args;
-      const { clsRuntime, studentId, enrollmentId, status, recordedDate } =
-        args.values;
+      const { clsRuntime, enrollmentId, status, recordedDate } = args.values;
 
       const { offering, session } = clsRuntime;
       const { class: cls } = offering;
@@ -394,7 +392,6 @@ export namespace AttendanceRegistration {
         onConflict: "doUpdate",
         values: [
           {
-            studentId,
             enrollmentId,
             classId: cls.id,
             classSessionId: session.id,
@@ -429,9 +426,8 @@ export namespace AttendanceRegistration {
           let insertion = insert.values(values);
 
           const targets = [
-            sql`student_id`,
-            sql`class_id`,
-            sql`class_offering_id`,
+            sql`enrollment_id`,
+            sql`class_session_id`,
             sql`date_ph`,
           ];
 
@@ -439,7 +435,7 @@ export namespace AttendanceRegistration {
             onConflict === "doNothing"
               ? insertion.onConflictDoNothing({ target: targets })
               : insertion.onConflictDoUpdate({
-                  target: [ar.studentId, ar.classSessionId, ar.datePh],
+                  target: [ar.enrollmentId, ar.classSessionId, ar.datePh],
                   set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
                 });
 
@@ -462,7 +458,7 @@ export namespace AttendanceRegistration {
       values: {
         classSessionId: number;
         datePh: string;
-        studentIds: number[];
+        enrollmentIds: number[];
       };
       dbOrTx?: DbOrTx | undefined;
     }) {
@@ -476,14 +472,14 @@ export namespace AttendanceRegistration {
               query.findMany({
                 where: (ar, { and, eq, inArray }) =>
                   and(
-                    inArray(ar.studentId, values.studentIds),
+                    inArray(ar.enrollmentId, values.enrollmentIds),
                     eq(ar.classSessionId, values.classSessionId),
                     eq(ar.datePh, values.datePh),
                   ),
-                columns: { studentId: true },
+                columns: { enrollmentId: true },
               }),
           })
-          .then((r) => new Set(r.map((r) => r.studentId)));
+          .then((r) => new Set(r.map((r) => r.enrollmentId)));
       } catch (err) {
         throw Core.Errors.EnrollmentData.normalizeError({
           name: "ENROLLMENT_DATA_QUERY_ERROR",
@@ -568,7 +564,7 @@ export namespace AttendanceRegistration {
           datePh: string;
           recordedAt: string;
           recordedMs: number;
-          studentId: number;
+          enrollmentId: number;
           status: keyof typeof Data.attendanceStatus;
         }[];
       };
@@ -594,7 +590,7 @@ export namespace AttendanceRegistration {
               })
               .where(
                 and(
-                  eq(ar.studentId, r.studentId),
+                  eq(ar.enrollmentId, r.enrollmentId),
                   eq(ar.classSessionId, values.classSessionId),
                   eq(ar.datePh, r.datePh),
                 ),

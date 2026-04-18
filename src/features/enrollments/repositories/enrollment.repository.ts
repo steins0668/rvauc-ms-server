@@ -25,35 +25,54 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     return await (dbOrTx ?? this._dbContext).$count(enrollments, where);
   }
 
-  public existsForStudentAndOffering(args: {
+  async queryWithStudentDetails(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["enrollments"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["enrollments"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
     dbOrTx?: DbOrTx | undefined;
-    classOfferingId: SQLiteColumn;
-    studentId: number;
   }) {
-    const { dbOrTx, classOfferingId, studentId } = args;
-    return this.getContext({
-      dbOrTx,
-      fn: ({ table: e, context, converter }) =>
-        context
-          .select({ id: e.id })
-          .from(e)
-          .where(
-            converter({
-              custom: (e, { eq, and }) => [
-                and(
-                  eq(e.classOfferingId, classOfferingId),
-                  eq(e.studentId, studentId),
-                ),
-              ],
-            }),
-          ),
+    const { where, orderBy, dbOrTx } = args;
+
+    return await (dbOrTx ?? this._dbContext).query.enrollments.findMany({
+      where,
+      orderBy,
+      limit: this.resolveLimit(args.constraints),
+      offset: this.resolveOffset(args.constraints),
+      columns: { id: true, status: true },
+      with: {
+        student: {
+          columns: { studentNumber: true, yearLevel: true, block: true },
+          with: {
+            user: {
+              columns: {
+                surname: true,
+                firstName: true,
+                middleName: true,
+                gender: true,
+              },
+            },
+            department: {
+              columns: { name: true },
+              with: { college: { columns: { name: true } } },
+            },
+          },
+        },
+      },
     });
   }
 
   /**
    * @description Selects a student linked to the current enrollment/s.
    */
-  public async selectStudentsFromEnrollments(args: {
+  async selectStudentsFromEnrollments(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?: SQL;
     orderBy?: Parameters<
@@ -75,6 +94,7 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     const query = (args.dbOrTx ?? this._dbContext)
       .select({
         id: enrollments.id,
+        status: enrollments.status,
         student: {
           id: students.id,
           studentNumber: students.studentNumber,
@@ -103,13 +123,50 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     return await query;
   }
 
-  public async execInsert<T>(args: Types.Repository.InsertArgs.Enrollment<T>) {
-    const insert = (args.dbOrTx ?? this._dbContext).insert(enrollments);
-    return await args.fn({
-      table: enrollments,
-      insert,
-      converter: Enrollment.buildWhereClause,
-      sql,
+  existsForStudent(args: {
+    dbOrTx?: DbOrTx | undefined;
+    enrollmentId: SQLiteColumn;
+    studentId: number;
+  }) {
+    const { dbOrTx, enrollmentId, studentId } = args;
+    return this.getContext({
+      dbOrTx,
+      fn: ({ table: e, context, converter }) =>
+        context
+          .select({ id: e.id })
+          .from(e)
+          .where(
+            converter({
+              custom: (e, { eq, and }) => [
+                and(eq(e.id, enrollmentId), eq(e.studentId, studentId)),
+              ],
+            }),
+          ),
+    });
+  }
+
+  existsForStudentAndOffering(args: {
+    dbOrTx?: DbOrTx | undefined;
+    classOfferingId: SQLiteColumn;
+    studentId: number;
+  }) {
+    const { dbOrTx, classOfferingId, studentId } = args;
+    return this.getContext({
+      dbOrTx,
+      fn: ({ table: e, context, converter }) =>
+        context
+          .select({ id: e.id })
+          .from(e)
+          .where(
+            converter({
+              custom: (e, { eq, and }) => [
+                and(
+                  eq(e.classOfferingId, classOfferingId),
+                  eq(e.studentId, studentId),
+                ),
+              ],
+            }),
+          ),
     });
   }
 
@@ -135,6 +192,16 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
       selectBase,
       converter: Enrollment.buildWhereClause,
       order: Enrollment.sqlOrderBy,
+    });
+  }
+
+  public async execInsert<T>(args: Types.Repository.InsertArgs.Enrollment<T>) {
+    const insert = (args.dbOrTx ?? this._dbContext).insert(enrollments);
+    return await args.fn({
+      table: enrollments,
+      insert,
+      converter: Enrollment.buildWhereClause,
+      sql,
     });
   }
 
