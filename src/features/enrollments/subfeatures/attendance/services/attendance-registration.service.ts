@@ -168,7 +168,6 @@ export namespace AttendanceRegistration {
                 values: organizedRecords.inserts.map((r) => {
                   return {
                     classId: session.classId,
-                    classOfferingId: session.classOfferingId,
                     classSessionId: session.id,
                     enrollmentId: r.enrollmentId,
                     status: r.status,
