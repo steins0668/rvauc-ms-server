@@ -104,7 +104,7 @@ Routes.get(
  * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
  */
 Routes.get(
-  "/records/class/offering/:classOfferingId/session/:classSessionId",
+  "/records/class/class-offering/:classOfferingId/session/:classSessionId",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
     params: classOfferingId.extend(classSessionId.shape),
