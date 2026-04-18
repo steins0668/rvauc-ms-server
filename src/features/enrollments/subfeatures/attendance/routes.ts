@@ -63,7 +63,7 @@ Routes.post(
  * @returns {import("../../core/schemas").Dto.ClassSessions}
  */
 Routes.get(
-  "/sessions/class/:classId",
+  "/class/:classId/sessions",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
     params: classId,
