@@ -118,7 +118,7 @@ export namespace AttendanceData {
       const { classSessionId } = values;
 
       let session;
-      let enrollmentsData;
+      let classEnrollments;
       let recordsAndSummary: Awaited<
         ReturnType<typeof this.fetchRecordsAndSummary>
       > = this.EMPTY_ATTENDANCE_RESULT;
@@ -130,12 +130,12 @@ export namespace AttendanceData {
         };
 
         session = await this.getSessionDetails(args);
-        enrollmentsData = await this.getEnrollmentsForClass({
+        classEnrollments = await this.getEnrollmentsForClass({
           values: { classId: session.class.id },
           constraints,
         });
 
-        const { enrollments } = enrollmentsData;
+        const { enrollments } = classEnrollments;
 
         if (enrollments.length) {
           //  * get attendance records for enrollments in the class session
@@ -162,7 +162,7 @@ export namespace AttendanceData {
         return ResultBuilder.success(
           this.toClassAttendanceProfessorViewDto(
             session,
-            enrollmentsData,
+            classEnrollments,
             recordsAndSummary,
           ),
         );
@@ -299,14 +299,14 @@ export namespace AttendanceData {
           ReturnType<CoreRepositories.ClassSession["getWithClassAndOffering"]>
         >[number]
       >,
-      enrollmentsQuery: Awaited<ReturnType<typeof this.getEnrollmentsForClass>>,
+      classEnrollments: Awaited<ReturnType<typeof this.getEnrollmentsForClass>>,
       recordsAndSummary: Awaited<
         ReturnType<typeof this.fetchRecordsAndSummary>
       >,
     ): Schemas.Dto.ClassAttendance.ProfessorView {
       const { classOffering: offering } = session;
       const { course, ...cls } = session.class;
-      const { enrollments, totalEnrollments } = enrollmentsQuery;
+      const { enrollments, totalEnrollments } = classEnrollments;
       const { records, summary } = recordsAndSummary;
 
       const attendanceMap = new Map<number, (typeof records)[number]>();
@@ -492,6 +492,7 @@ export namespace AttendanceData {
       return session;
     }
 
+    //  todo: move to enrollments data fetcher
     private async getEnrollmentsForClass(args: {
       values: { classId: number };
       constraints?: BaseRepositoryType.QueryConstraints;
@@ -543,6 +544,7 @@ export namespace AttendanceData {
       return { enrollments: [...enrollments], totalEnrollments };
     }
 
+    //  todo: move to enrollments data fetcher
     private async getEnrollmentForClassAndStudent(args: {
       values: {
         classId: number;
@@ -580,6 +582,7 @@ export namespace AttendanceData {
       return enrollment;
     }
 
+    //  todo: move to enrollments data fetcher
     private async getEnrollmentWithStudentDetails(args: {
       values: { enrollmentId: number };
       dbOrTx?: DbOrTx | undefined;
@@ -613,6 +616,7 @@ export namespace AttendanceData {
       return enrollment;
     }
 
+    //  todo: move to class data fetcher
     private async getClassWithCourse(args: {
       values: { classId: number };
       dbOrTx?: DbOrTx | undefined;
@@ -646,6 +650,7 @@ export namespace AttendanceData {
       return cls;
     }
 
+    //  todo: move to attendance data fetcher
     /**
      * @description Queries attendance records matching a class id, time range, and
      * a set of student ids
@@ -719,6 +724,7 @@ export namespace AttendanceData {
       return { records, summary };
     }
 
+    //  todo: move to attendance data fetcher
     private async fetchRecordsAndSummaryWithSessionAndOffering(args: {
       values: {
         classId?: number;
