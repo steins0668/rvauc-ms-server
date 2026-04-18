@@ -145,12 +145,12 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     });
   }
 
-  existsForStudentAndOffering(args: {
+  existsForClassAndStudent(args: {
     dbOrTx?: DbOrTx | undefined;
-    classOfferingId: SQLiteColumn;
+    classId: SQLiteColumn;
     studentId: number;
   }) {
-    const { dbOrTx, classOfferingId, studentId } = args;
+    const { dbOrTx, classId, studentId } = args;
     return this.getContext({
       dbOrTx,
       fn: ({ table: e, context, converter }) =>
@@ -160,10 +160,7 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
           .where(
             converter({
               custom: (e, { eq, and }) => [
-                and(
-                  eq(e.classOfferingId, classOfferingId),
-                  eq(e.studentId, studentId),
-                ),
+                and(eq(e.classId, classId), eq(e.studentId, studentId)),
               ],
             }),
           ),
@@ -220,35 +217,15 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     return await args.fn(deleteBase, Enrollment.buildWhereClause);
   }
 
+  /**
+   * @deprecated
+   * ! DO NOT USE!!
+   * @param filter
+   * @returns
+   */
   public static buildWhereClause(
     filter?: Types.Repository.QueryFilters.Enrollment,
   ): SQL | undefined {
-    const conditions = [];
-
-    if (filter) {
-      const {
-        filterType = "or",
-        id,
-        studentId,
-        classOfferingId,
-        status,
-        custom,
-      } = filter;
-
-      if (id !== undefined) conditions.push(eq(enrollments.id, id));
-      if (studentId !== undefined)
-        conditions.push(eq(enrollments.studentId, studentId));
-      if (classOfferingId !== undefined)
-        conditions.push(eq(enrollments.classOfferingId, classOfferingId));
-      if (status && status.trim())
-        conditions.push(eq(enrollments.status, status));
-      if (custom)
-        conditions.push(...custom(enrollments, RepositoryUtil.filters));
-
-      if (conditions.length > 0)
-        return filterType === "or" ? or(...conditions) : and(...conditions);
-    }
-
     return undefined;
   }
 

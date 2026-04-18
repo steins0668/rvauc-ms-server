@@ -285,10 +285,10 @@ export namespace ClassSchedule {
           termId,
           professorId: role === "professor" ? userId : undefined,
         });
-      const subqueryE = (classOfferingId: SQLiteColumn) =>
-        this._enrollmentRepo.existsForStudentAndOffering({
+      const subqueryE = (classId: SQLiteColumn) =>
+        this._enrollmentRepo.existsForClassAndStudent({
           dbOrTx,
-          classOfferingId,
+          classId,
           studentId: userId,
         });
 
@@ -297,7 +297,7 @@ export namespace ClassSchedule {
 
         conditions.push(exists(subqueryC(co.classId)));
 
-        if (role === "student") conditions.push(exists(subqueryE(co.id))); //  ! professors don't need enrollments subquery
+        if (role === "student") conditions.push(exists(subqueryE(co.classId))); //  ! professors don't need enrollments subquery
 
         if (scope === "today") {
           const day = Enums.Days[date.getDay()] as string;

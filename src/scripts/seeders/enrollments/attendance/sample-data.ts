@@ -83,9 +83,7 @@ export namespace SampleData {
       for (const s of sessionsToday) {
         const cls = classes.find((c) => c.id === s.classId);
         const o = classOfferings.find((c) => c.id === s.classOfferingId);
-        const enrollees = enrollments.filter(
-          (e) => e.classOfferingId === s.classOfferingId,
-        );
+        const enrollees = enrollments.filter((e) => e.classId === s.classId);
 
         if (!o) throw new Error("Expected a class offering.");
 

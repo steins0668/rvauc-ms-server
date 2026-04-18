@@ -198,6 +198,8 @@ export namespace Schemas {
             .strip(),
           enrollment: z
             .strictObject({
+              id: z.number(),
+              status: z.string(),
               student: Core.Schemas.Dto.student,
             })
             .strip(),
@@ -265,7 +267,7 @@ export namespace Schemas {
               ...defaultValues.shape,
               classId: z.number(),
               professorId: z.number(),
-              studentId: z.number(),
+              enrollmentId: z.number(),
             })
             .strip(),
         })

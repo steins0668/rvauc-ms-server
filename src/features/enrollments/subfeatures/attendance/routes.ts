@@ -6,7 +6,7 @@ import { Schemas } from "./schemas";
 import { Controllers } from "./controllers";
 import { Middlewares } from "./middlewares";
 
-const { classId, classOfferingId, classSessionId, studentId } =
+const { classId, classSessionId, enrollmentId, studentId } =
   Schemas.RequestParams;
 const { attendanceRecord } = Schemas.RequestQuery;
 
@@ -150,10 +150,10 @@ Routes.post(
  * @returns {import('./schemas').Schemas.Dto.StudentAttendance.ProfessorView} for professors
  */
 Routes.get(
-  "/records/class/:classId/student/:studentId",
+  "/records/class/:classId/enrollment/:enrollmentId",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
-    params: classId.extend(studentId.shape),
+    params: classId.extend(enrollmentId.shape),
     query: Schemas.RequestQuery.attendanceRecord,
   }),
   Controllers.handleViewRecords({
@@ -161,14 +161,14 @@ Routes.get(
     scope: "student",
     extractInput: (req) => {
       const { validated } = req as StrictValidatedRequest<
-        Schemas.RequestParams.ClassId & Schemas.RequestParams.StudentId,
+        Schemas.RequestParams.ClassId & Schemas.RequestParams.EnrollmentId,
         {},
         {},
         {}
       >;
       const { params } = validated;
 
-      return { classId: params.classId, studentId: params.studentId };
+      return { classId: params.classId, enrollmentId: params.enrollmentId };
     },
   }),
 );

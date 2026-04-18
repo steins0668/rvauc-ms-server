@@ -110,7 +110,7 @@ export namespace SampleData {
 
       for (const o of offeringsToday) {
         const enrollees = Enrollments.enrollments.filter(
-          (e) => e.classOfferingId === o.id,
+          (e) => e.classId === o.classId,
         );
 
         for (const e of enrollees) {

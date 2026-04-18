@@ -229,7 +229,7 @@ export namespace AttendanceRegistration {
         });
 
         const enrollment = await this.getEnrollment({
-          values: { studentId, classOfferingId: clsRuntime.offering.id },
+          values: { studentId, classId: clsRuntime.offering.class.id },
           tx,
         });
 
@@ -520,7 +520,7 @@ export namespace AttendanceRegistration {
     }
 
     private async getEnrollment(args: {
-      values: { studentId: number; classOfferingId: number };
+      values: { studentId: number; classId: number };
       tx?: TxContext | undefined;
     }) {
       try {
@@ -531,7 +531,7 @@ export namespace AttendanceRegistration {
               where: (e, { and, eq }) =>
                 and(
                   eq(e.studentId, args.values.studentId),
-                  eq(e.classOfferingId, args.values.classOfferingId),
+                  eq(e.classId, args.values.classId),
                 ),
               columns: { id: true, status: true },
             }),

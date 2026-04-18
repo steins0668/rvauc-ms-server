@@ -149,8 +149,8 @@ export namespace AttendanceData {
       let enrollmentsQuery;
 
       try {
-        enrollmentsQuery = await this.queryEnrollmentsForClassOffering({
-          values: { classOfferingId: session.classOffering.id },
+        enrollmentsQuery = await this.queryEnrollmentsForClass({
+          values: { classId: session.class.id },
           constraints: { limit, offset: (page - 1) * limit },
         });
       } catch (err) {
@@ -296,7 +296,7 @@ export namespace AttendanceData {
         values: {
           termId: number;
           classId: number;
-          studentId: number;
+          enrollmentId: number;
           date: Date;
         };
       },
@@ -304,12 +304,12 @@ export namespace AttendanceData {
       const { dbOrTx, values } = args;
       const { limit = 6, page = 1 } = args.constraints ?? {};
 
-      let student;
+      let enrollment;
 
       try {
-        student = await this._studentRepo
-          .queryWithUserAndDepartment({
-            where: (s, { eq }) => eq(s.id, values.studentId),
+        enrollment = await this._enrollmentRepo
+          .queryWithStudentDetails({
+            where: (e, { eq }) => eq(e.id, values.enrollmentId),
             constraints: { limit: 1 },
             dbOrTx,
           })
@@ -318,16 +318,16 @@ export namespace AttendanceData {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
             name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying `students` table.",
+            message: "Failed querying `enrollments` table.",
             err,
           }),
         );
       }
 
-      if (!student)
+      if (!enrollment)
         throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR",
-          message: "The specified student was not found.",
+          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
+          message: "The specified enrollment was not found.",
         });
 
       let class_;
@@ -365,14 +365,9 @@ export namespace AttendanceData {
           await this._attendanceRecordRepo.queryMinimalShapeWithSessionAndOffering(
             {
               constraints: { limit, offset: (page - 1) * limit },
-              where: (ar, { and, eq, exists }) =>
+              where: (ar, { and, eq }) =>
                 and(
-                  exists(
-                    this._enrollmentRepo.existsForStudent({
-                      enrollmentId: ar.enrollmentId,
-                      studentId: student.id,
-                    }),
-                  ),
+                  eq(ar.enrollmentId, enrollment.id),
                   eq(ar.classId, values.classId),
                 ),
               orderBy: (ar, { desc }) => desc(ar.recordedMs),
@@ -404,16 +399,11 @@ export namespace AttendanceData {
       try {
         if (attendanceRecord.length) {
           const { attendanceRecords: ar } = Schema;
-          const { and, eq, exists } = RepositoryUtil.filters;
+          const { and, eq } = RepositoryUtil.filters;
 
           summary = await this._attendanceRecordRepo.selectSummary({
             where: and(
-              exists(
-                this._enrollmentRepo.existsForStudent({
-                  enrollmentId: ar.enrollmentId,
-                  studentId: student.id,
-                }),
-              ),
+              eq(ar.enrollmentId, enrollment.id),
               eq(ar.classId, values.classId),
             ),
           });
@@ -432,7 +422,7 @@ export namespace AttendanceData {
         return ResultBuilder.success(
           this.toStudentAttendanceProfessorViewDto(
             class_,
-            student,
+            enrollment,
             attendanceRecord,
             summary,
           ),
@@ -459,7 +449,7 @@ export namespace AttendanceData {
         >[number]
       >,
       enrollmentsQuery: Awaited<
-        ReturnType<typeof this.queryEnrollmentsForClassOffering>
+        ReturnType<typeof this.queryEnrollmentsForClass>
       >,
       recordsAndSummary: Awaited<
         ReturnType<typeof this.queryRecordsAndSummary>
@@ -554,8 +544,8 @@ export namespace AttendanceData {
       class_: Awaited<
         ReturnType<CoreRepositories.Class["queryWithCourse"]>
       >[number],
-      student: Awaited<
-        ReturnType<Auth.Repositories.Student["queryWithUserAndDepartment"]>
+      enrollment: Awaited<
+        ReturnType<CoreRepositories.Enrollment["queryWithStudentDetails"]>
       >[number],
       attendanceRecords: Awaited<
         ReturnType<
@@ -566,6 +556,7 @@ export namespace AttendanceData {
         ReturnType<Repositories.AttendanceRecord["selectSummary"]>
       >,
     ): Schemas.Dto.StudentAttendance.ProfessorView {
+      const { student } = enrollment;
       const { course } = class_;
       return {
         class: {
@@ -574,6 +565,8 @@ export namespace AttendanceData {
           course: { code: course.code, name: course.name },
         },
         enrollment: {
+          id: enrollment.id,
+          status: enrollment.status,
           student: {
             studentNumber: student.studentNumber,
             department: student.department.name,
@@ -611,8 +604,8 @@ export namespace AttendanceData {
       };
     }
 
-    private async queryEnrollmentsForClassOffering(args: {
-      values: { classOfferingId: number };
+    private async queryEnrollmentsForClass(args: {
+      values: { classId: number };
       constraints?: BaseRepositoryType.QueryConstraints;
       dbOrTx?: DbOrTx | undefined;
     }) {
@@ -620,7 +613,7 @@ export namespace AttendanceData {
       const { eq } = RepositoryUtil.filters;
       const { asc } = RepositoryUtil.orderOperators;
 
-      const where = eq(e.classOfferingId, args.values.classOfferingId);
+      const where = eq(e.classId, args.values.classId);
 
       const enrollments =
         await this._enrollmentRepo.selectStudentsFromEnrollments({
@@ -652,26 +645,12 @@ export namespace AttendanceData {
     }) {
       const { classId, studentId } = args.values;
 
-      const coSubquery = (
-        args: NonNullable<
-          Parameters<CoreRepositories.ClassOffering["existsForContext"]>[0]
-        >,
-      ) => this._classOfferingRepo.existsForContext(args);
-
       return await this._enrollmentRepo.execQuery({
         dbOrTx: args.dbOrTx,
         fn: async (query) =>
           query.findMany({
-            where: (e, { and, eq, exists }) =>
-              and(
-                eq(e.studentId, studentId),
-                exists(
-                  coSubquery({
-                    values: { classOfferingId: e.classOfferingId, classId },
-                    dbOrTx: args.dbOrTx,
-                  }),
-                ),
-              ),
+            where: (e, { and, eq }) =>
+              and(eq(e.studentId, studentId), eq(e.classId, classId)),
           }),
       });
     }

@@ -231,9 +231,9 @@ export namespace ClassRuntimeResolver {
           professorId: role === "professor" ? userId : undefined,
         });
       const subqueryE = (classOfferingId: SQLiteColumn) =>
-        this._enrollmentRepo.existsForStudentAndOffering({
+        this._enrollmentRepo.existsForClassAndStudent({
           dbOrTx: tx,
-          classOfferingId,
+          classId: classOfferingId,
           studentId: userId,
         });
 
