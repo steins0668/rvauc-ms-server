@@ -1,9 +1,4 @@
-import { SQLWrapper } from "drizzle-orm";
-import {
-  createContext,
-  DbOrTx,
-  TxContext,
-} from "../../../../../db/create-context";
+import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { Schema } from "../../../../../models";
 import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
 import { BaseRepositoryType } from "../../../../../types";
@@ -13,6 +8,7 @@ import { Repositories as CoreRepositories } from "../../../repositories";
 import { Data } from "../data";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
+import { AttendanceQuery } from "./attendance-query.service";
 
 export namespace AttendanceData {
   export async function create() {
@@ -24,6 +20,12 @@ export namespace AttendanceData {
     const enrollmentRepo = new CoreRepositories.Enrollment(context);
     const professorRepo = new Auth.Repositories.Professor(context);
     const studentRepo = new Auth.Repositories.Student(context);
+    const attendanceQueryService = new AttendanceQuery.Service({
+      attendanceRecordRepo,
+    });
+    const classQueryService = new Core.Services.ClassQuery.Service({
+      classRepo,
+    });
     return new Service({
       attendanceRecordRepo,
       classRepo,
@@ -32,6 +34,8 @@ export namespace AttendanceData {
       enrollmentRepo,
       professorRepo,
       studentRepo,
+      attendanceQueryService,
+      classQueryService,
     });
   }
 
@@ -43,6 +47,8 @@ export namespace AttendanceData {
     private readonly _enrollmentRepo: CoreRepositories.Enrollment;
     private readonly _professorRepo: Auth.Repositories.Professor;
     private readonly _studentRepo: Auth.Repositories.Student;
+    private readonly _attendanceQueryService: AttendanceQuery.Service;
+    private readonly _classQueryService: Core.Services.ClassQuery.Service;
     private readonly EMPTY_ATTENDANCE_RESULT = {
       records: [],
       summary: {
@@ -62,6 +68,8 @@ export namespace AttendanceData {
       enrollmentRepo: CoreRepositories.Enrollment;
       professorRepo: Auth.Repositories.Professor;
       studentRepo: Auth.Repositories.Student;
+      attendanceQueryService: AttendanceQuery.Service;
+      classQueryService: Core.Services.ClassQuery.Service;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
       this._classRepo = args.classRepo;
@@ -70,6 +78,8 @@ export namespace AttendanceData {
       this._enrollmentRepo = args.enrollmentRepo;
       this._professorRepo = args.professorRepo;
       this._studentRepo = args.studentRepo;
+      this._attendanceQueryService = args.attendanceQueryService;
+      this._classQueryService = args.classQueryService;
     }
 
     async getAttendance(
@@ -120,7 +130,7 @@ export namespace AttendanceData {
       let session;
       let classEnrollments;
       let recordsAndSummary: Awaited<
-        ReturnType<typeof this.fetchRecordsAndSummary>
+        ReturnType<AttendanceQuery.Service["fetchRecordsAndSummary"]>
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
@@ -141,11 +151,12 @@ export namespace AttendanceData {
           //  * get attendance records for enrollments in the class session
           const enrollmentIds = enrollments.map((e) => e.id);
 
-          recordsAndSummary = await this.fetchRecordsAndSummary({
-            ...args,
-            values: { classSessionId, enrollmentIds },
-            constraints,
-          });
+          recordsAndSummary =
+            await this._attendanceQueryService.fetchRecordsAndSummary({
+              ...args,
+              values: { classSessionId, enrollmentIds },
+              constraints,
+            });
         }
       } catch (err) {
         return ResultBuilder.fail(
@@ -189,7 +200,7 @@ export namespace AttendanceData {
 
       let enrollment;
       let recordsAndSummary: Awaited<
-        ReturnType<typeof this.fetchRecordsAndSummary>
+        ReturnType<AttendanceQuery.Service["fetchRecordsAndSummary"]>
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
@@ -198,17 +209,18 @@ export namespace AttendanceData {
           dbOrTx: args.dbOrTx,
         });
 
-        recordsAndSummary = await this.fetchRecordsAndSummary({
-          ...args,
-          values: {
-            classId,
-            enrollmentIds: [enrollment.id],
-          },
-          constraints: {
-            limit: RepositoryUtil.resolveLimit(args.constraints),
-            offset: RepositoryUtil.resolveOffset(args.constraints),
-          },
-        });
+        recordsAndSummary =
+          await this._attendanceQueryService.fetchRecordsAndSummary({
+            ...args,
+            values: {
+              classId,
+              enrollmentIds: [enrollment.id],
+            },
+            constraints: {
+              limit: RepositoryUtil.resolveLimit(args.constraints),
+              offset: RepositoryUtil.resolveOffset(args.constraints),
+            },
+          });
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -246,19 +258,23 @@ export namespace AttendanceData {
       let enrollment;
       let cls;
       let recordsAndSummary: Awaited<
-        ReturnType<typeof this.fetchRecordsAndSummaryWithSessionAndOffering>
+        ReturnType<
+          AttendanceQuery.Service["fetchRecordsAndSummaryWithSessionAndOffering"]
+        >
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
         enrollment = await this.getEnrollmentWithStudentDetails(args);
         cls = await this.getClassWithCourse(args);
         recordsAndSummary =
-          await this.fetchRecordsAndSummaryWithSessionAndOffering({
-            values: {
-              classId: cls.id,
-              enrollmentIds: [enrollment.id],
+          await this._attendanceQueryService.fetchRecordsAndSummaryWithSessionAndOffering(
+            {
+              values: {
+                classId: cls.id,
+                enrollmentIds: [enrollment.id],
+              },
             },
-          });
+          );
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -301,7 +317,7 @@ export namespace AttendanceData {
       >,
       classEnrollments: Awaited<ReturnType<typeof this.getEnrollmentsForClass>>,
       recordsAndSummary: Awaited<
-        ReturnType<typeof this.fetchRecordsAndSummary>
+        ReturnType<AttendanceQuery.Service["fetchRecordsAndSummary"]>
       >,
     ): Schemas.Dto.ClassAttendance.ProfessorView {
       const { classOffering: offering } = session;
@@ -366,7 +382,7 @@ export namespace AttendanceData {
 
     private toClassAttendanceStudentViewDto(
       recordsAndSummary: Awaited<
-        ReturnType<typeof this.fetchRecordsAndSummary>
+        ReturnType<AttendanceQuery.Service["fetchRecordsAndSummary"]>
       >,
     ) {
       const { records, summary } = recordsAndSummary;
@@ -397,7 +413,9 @@ export namespace AttendanceData {
         ReturnType<CoreRepositories.Enrollment["queryWithStudentDetails"]>
       >[number],
       recordsAndSummary: Awaited<
-        ReturnType<typeof this.fetchRecordsAndSummaryWithSessionAndOffering>
+        ReturnType<
+          AttendanceQuery.Service["fetchRecordsAndSummaryWithSessionAndOffering"]
+        >
       >,
     ): Schemas.Dto.StudentAttendance.ProfessorView {
       const { student } = enrollment;
@@ -648,153 +666,6 @@ export namespace AttendanceData {
         });
 
       return cls;
-    }
-
-    //  todo: move to attendance data fetcher
-    /**
-     * @description Queries attendance records matching a class id, time range, and
-     * a set of student ids
-     */
-    private async fetchRecordsAndSummary(args: {
-      values: {
-        classId?: number;
-        classSessionId?: number;
-        enrollmentIds: number[];
-      };
-      constraints?: BaseRepositoryType.QueryConstraints;
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { classId, classSessionId, enrollmentIds } = args.values;
-
-      if (!enrollmentIds.length)
-        return {
-          records: [],
-          summary: {
-            present: 0,
-            absent: 0,
-            late: 0,
-            excused: 0,
-            totalRecords: 0,
-          },
-        };
-
-      const { attendanceRecords: ar } = Schema;
-      const { and, eq, inArray } = RepositoryUtil.filters;
-
-      const conditions: (SQLWrapper | undefined)[] = [
-        inArray(ar.enrollmentId, enrollmentIds),
-      ];
-
-      if (classId) conditions.push(eq(ar.classId, classId));
-      if (classSessionId)
-        conditions.push(eq(ar.classSessionId, classSessionId));
-
-      const where = and(...conditions.filter(Boolean));
-
-      let records;
-
-      try {
-        records = await this._attendanceRecordRepo.queryMinimalShape({
-          constraints: args.constraints,
-          where,
-          orderBy: (ar, { desc }) => desc(ar.recordedMs),
-        });
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed retreiving attendance records.",
-          err,
-        });
-      }
-
-      let summary;
-
-      try {
-        summary = await this._attendanceRecordRepo.selectSummary({
-          where: and(...conditions.filter(Boolean)),
-        });
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed retrieving attendance summary.",
-          err,
-        });
-      }
-
-      return { records, summary };
-    }
-
-    //  todo: move to attendance data fetcher
-    private async fetchRecordsAndSummaryWithSessionAndOffering(args: {
-      values: {
-        classId?: number;
-        classSessionId?: number;
-        enrollmentIds: number[];
-      };
-      constraints?: BaseRepositoryType.QueryConstraints;
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { classId, classSessionId, enrollmentIds } = args.values;
-
-      if (!enrollmentIds.length)
-        return {
-          records: [],
-          summary: {
-            present: 0,
-            absent: 0,
-            late: 0,
-            excused: 0,
-            totalRecords: 0,
-          },
-        };
-
-      const { attendanceRecords: ar } = Schema;
-      const { and, eq, inArray } = RepositoryUtil.filters;
-
-      const conditions: (SQLWrapper | undefined)[] = [
-        inArray(ar.enrollmentId, enrollmentIds),
-      ];
-
-      if (classId) conditions.push(eq(ar.classId, classId));
-      if (classSessionId)
-        conditions.push(eq(ar.classSessionId, classSessionId));
-
-      const where = and(...conditions.filter(Boolean));
-
-      let records;
-
-      try {
-        records =
-          await this._attendanceRecordRepo.queryMinimalShapeWithSessionAndOffering(
-            {
-              constraints: args.constraints,
-              where,
-              orderBy: (ar, { desc }) => desc(ar.recordedMs),
-            },
-          );
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed retreiving attendance records.",
-          err,
-        });
-      }
-
-      let summary;
-
-      try {
-        summary = await this._attendanceRecordRepo.selectSummary({
-          where: and(...conditions.filter(Boolean)),
-        });
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed retrieving attendance summary.",
-          err,
-        });
-      }
-
-      return { records, summary };
     }
   }
 
