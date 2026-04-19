@@ -20,12 +20,6 @@ export namespace AttendanceData {
     const enrollmentRepo = new CoreRepositories.Enrollment(context);
     const professorRepo = new Auth.Repositories.Professor(context);
     const studentRepo = new Auth.Repositories.Student(context);
-    const attendanceQueryService = new AttendanceQuery.Service({
-      attendanceRecordRepo,
-    });
-    const classQueryService = new Core.Services.ClassQuery.Service({
-      classRepo,
-    });
     return new Service({
       attendanceRecordRepo,
       classRepo,
@@ -34,8 +28,6 @@ export namespace AttendanceData {
       enrollmentRepo,
       professorRepo,
       studentRepo,
-      attendanceQueryService,
-      classQueryService,
     });
   }
 
@@ -47,8 +39,6 @@ export namespace AttendanceData {
     private readonly _enrollmentRepo: CoreRepositories.Enrollment;
     private readonly _professorRepo: Auth.Repositories.Professor;
     private readonly _studentRepo: Auth.Repositories.Student;
-    private readonly _attendanceQueryService: AttendanceQuery.Service;
-    private readonly _classQueryService: Core.Services.ClassQuery.Service;
     private readonly EMPTY_ATTENDANCE_RESULT = {
       records: [],
       summary: {
@@ -68,8 +58,6 @@ export namespace AttendanceData {
       enrollmentRepo: CoreRepositories.Enrollment;
       professorRepo: Auth.Repositories.Professor;
       studentRepo: Auth.Repositories.Student;
-      attendanceQueryService: AttendanceQuery.Service;
-      classQueryService: Core.Services.ClassQuery.Service;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
       this._classRepo = args.classRepo;
@@ -78,8 +66,6 @@ export namespace AttendanceData {
       this._enrollmentRepo = args.enrollmentRepo;
       this._professorRepo = args.professorRepo;
       this._studentRepo = args.studentRepo;
-      this._attendanceQueryService = args.attendanceQueryService;
-      this._classQueryService = args.classQueryService;
     }
 
     async getAttendance(
