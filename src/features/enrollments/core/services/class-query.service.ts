@@ -1,4 +1,3 @@
-import { DbOrTx } from "../../../../db/create-context";
 import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
 
@@ -10,6 +9,10 @@ export namespace ClassQuery {
       this._classRepo = args.classRepo;
     }
 
+    /**
+     * @description
+     * Throws when a class is not found.
+     */
     async ensureClassWithCourse(
       args: Pick<
         NonNullable<Parameters<Repositories.Class["queryWithCourse"]>[0]>,
@@ -30,6 +33,10 @@ export namespace ClassQuery {
       return cls;
     }
 
+    /**
+     * @description
+     * Queries classes and returns a class including course with name and code.
+     */
     async getClassesWithCourse(
       args: NonNullable<Parameters<Repositories.Class["queryWithCourse"]>[0]>,
     ) {

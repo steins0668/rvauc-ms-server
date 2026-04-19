@@ -20,6 +20,12 @@ export namespace AttendanceData {
     const enrollmentRepo = new CoreRepositories.Enrollment(context);
     const professorRepo = new Auth.Repositories.Professor(context);
     const studentRepo = new Auth.Repositories.Student(context);
+    const attendanceQueryService = new AttendanceQuery.Service({
+      attendanceRecordRepo,
+    });
+    const classQueryService = new Core.Services.ClassQuery.Service({
+      classRepo,
+    });
     return new Service({
       attendanceRecordRepo,
       classRepo,
@@ -28,6 +34,8 @@ export namespace AttendanceData {
       enrollmentRepo,
       professorRepo,
       studentRepo,
+      attendanceQueryService,
+      classQueryService,
     });
   }
 
@@ -39,6 +47,8 @@ export namespace AttendanceData {
     private readonly _enrollmentRepo: CoreRepositories.Enrollment;
     private readonly _professorRepo: Auth.Repositories.Professor;
     private readonly _studentRepo: Auth.Repositories.Student;
+    private readonly _attendanceQueryService: AttendanceQuery.Service;
+    private readonly _classQueryService: Core.Services.ClassQuery.Service;
     private readonly EMPTY_ATTENDANCE_RESULT = {
       records: [],
       summary: {
@@ -58,6 +68,8 @@ export namespace AttendanceData {
       enrollmentRepo: CoreRepositories.Enrollment;
       professorRepo: Auth.Repositories.Professor;
       studentRepo: Auth.Repositories.Student;
+      attendanceQueryService: AttendanceQuery.Service;
+      classQueryService: Core.Services.ClassQuery.Service;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
       this._classRepo = args.classRepo;
@@ -66,6 +78,8 @@ export namespace AttendanceData {
       this._enrollmentRepo = args.enrollmentRepo;
       this._professorRepo = args.professorRepo;
       this._studentRepo = args.studentRepo;
+      this._attendanceQueryService = args.attendanceQueryService;
+      this._classQueryService = args.classQueryService;
     }
 
     async getAttendance(
@@ -251,7 +265,11 @@ export namespace AttendanceData {
 
       try {
         enrollment = await this.getEnrollmentWithStudentDetails(args);
-        cls = await this.getClassWithCourse(args);
+        cls = await this._classQueryService.ensureClassWithCourse({
+          where: (c, { eq }) => eq(c.id, args.values.classId),
+          orderBy: (c, { asc }) => asc(c.id), //  ! should be user input eventually
+          dbOrTx: args.dbOrTx,
+        });
         recordsAndSummary =
           await this._attendanceQueryService.fetchRecordsAndSummaryWithSessionAndOffering(
             {
@@ -618,40 +636,6 @@ export namespace AttendanceData {
         });
 
       return enrollment;
-    }
-
-    //  todo: move to class data fetcher
-    private async getClassWithCourse(args: {
-      values: { classId: number };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { values, dbOrTx } = args;
-
-      let cls;
-
-      try {
-        cls = await this._classRepo
-          .queryWithCourse({
-            where: (c, { eq }) => eq(c.id, values.classId),
-            orderBy: (c, { asc }) => asc(c.id), //  ! should be user input eventually
-            dbOrTx,
-          })
-          .then((result) => result[0]);
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `classes` table",
-          err,
-        });
-      }
-
-      if (!cls)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
-          message: "The specified class was not found.",
-        });
-
-      return cls;
     }
   }
 
