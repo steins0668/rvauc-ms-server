@@ -11,7 +11,7 @@ export namespace ClassSessionQuery {
 
     /**
      * @description
-     * Retrieves class sessions with its class and class offering relations.
+     * Retrieves a class session with its class and class offering relations.
      * Throws if not found.
      */
     async ensureWithClassContext(
@@ -47,6 +47,53 @@ export namespace ClassSessionQuery {
     ) {
       try {
         return await this._classSessionRepo.getWithClassAndOffering(args);
+      } catch (err) {
+        throw Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed querying `class_sessions` table.",
+          err,
+        });
+      }
+    }
+
+    /**
+     * @description
+     * Retrieves a class session with minimal shape.
+     * Throws if not found.
+     */
+    async ensureMinimalShape(
+      args: Pick<
+        NonNullable<
+          Parameters<Repositories.ClassSession["queryMinimalShape"]>[0]
+        >,
+        "where" | "orderBy" | "dbOrTx"
+      >,
+    ) {
+      const session = await this.getMinimalShape({
+        ...args,
+        constraints: { limit: 1 },
+      }).then((r) => r[0]);
+
+      if (!session)
+        throw new Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_CLASS_SESSION_NOT_FOUND_ERROR",
+          message: "Could not find the specified class session.",
+        });
+
+      return session;
+    }
+
+    /**
+     * @description
+     * Retrieves a class session with minimal shape.
+     */
+    async getMinimalShape(
+      args: NonNullable<
+        Parameters<Repositories.ClassSession["queryMinimalShape"]>[0]
+      >,
+    ) {
+      try {
+        return await this._classSessionRepo.queryMinimalShape(args);
       } catch (err) {
         throw Errors.EnrollmentData.normalizeError({
           name: "ENROLLMENT_DATA_QUERY_ERROR",

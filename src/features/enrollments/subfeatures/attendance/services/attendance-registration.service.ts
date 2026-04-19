@@ -18,6 +18,7 @@ import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
 import { Types } from "../types";
 import { Utils } from "../utils";
+import { AttendanceQuery } from "./attendance-query.service";
 
 export namespace AttendanceRegistration {
   export async function create() {
@@ -39,6 +40,15 @@ export namespace AttendanceRegistration {
       attendanceRecordRepo,
       classSessionRepo,
       enrollmentRepo,
+      attendanceQueryService: new AttendanceQuery.Service({
+        attendanceRecordRepo,
+      }),
+      classSessionQuery: new Core.Services.ClassSessionQuery.Service({
+        classSessionRepo,
+      }),
+      enrollmentQueryService: new Core.Services.EnrollmentQuery.Service({
+        enrollmentRepo,
+      }),
       classRuntimeResolver,
     });
   }
@@ -47,17 +57,26 @@ export namespace AttendanceRegistration {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
     private readonly _classSessionRepo: CoreRepositories.ClassSession;
     private readonly _enrollmentRepo: CoreRepositories.Enrollment;
+    private readonly _attendanceQueryService: AttendanceQuery.Service;
+    private readonly _classSessionQueryService: Core.Services.ClassSessionQuery.Service;
+    private readonly _enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
     private readonly _classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
 
     public constructor(args: {
       attendanceRecordRepo: Repositories.AttendanceRecord;
       classSessionRepo: CoreRepositories.ClassSession;
       enrollmentRepo: CoreRepositories.Enrollment;
+      attendanceQueryService: AttendanceQuery.Service;
+      classSessionQuery: Core.Services.ClassSessionQuery.Service;
+      enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
       classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
       this._classSessionRepo = args.classSessionRepo;
       this._enrollmentRepo = args.enrollmentRepo;
+      this._attendanceQueryService = args.attendanceQueryService;
+      this._classSessionQueryService = args.classSessionQuery;
+      this._enrollmentQueryService = args.enrollmentQueryService;
       this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
@@ -128,24 +147,27 @@ export namespace AttendanceRegistration {
 
       const txPromise = this._attendanceRecordRepo.execTransaction(
         async (tx) => {
-          const session = await this.getSession({
-            values: { id: values.classSessionId },
-            tx,
-          });
+          const session =
+            await this._classSessionQueryService.ensureMinimalShape({
+              where: (cs, { eq }) => eq(cs.id, values.classSessionId),
+              dbOrTx: args.dbOrTx,
+            });
 
           const enrollmentIds = values.records.map((r) => r.enrollmentId);
 
-          const existingEnrollmentIds = await this.getExistingRecords({
-            values: {
-              classSessionId: session.id,
-              datePh: session.datePh,
-              enrollmentIds,
-            },
-            dbOrTx: tx,
-          });
+          const existingRecords =
+            await this._attendanceQueryService.fetchMinimalRecordsForSessionEnrollments(
+              {
+                values: {
+                  classSessionId: session.id,
+                  enrollmentIds,
+                },
+                dbOrTx: tx,
+              },
+            );
 
           const organizedRecords = organizeRecords(
-            existingEnrollmentIds,
+            new Set(existingRecords.map((r) => r.enrollmentId)),
             session,
           );
 
@@ -227,10 +249,13 @@ export namespace AttendanceRegistration {
           tx,
         });
 
-        const enrollment = await this.getEnrollment({
-          values: { studentId, classId: clsRuntime.offering.class.id },
-          tx,
-        });
+        const enrollment =
+          await this._enrollmentQueryService.ensureEnrollmentForClassAndStudent(
+            {
+              values: { studentId, classId: clsRuntime.offering.class.id },
+              dbOrTx: tx,
+            },
+          );
 
         const status = Utils.AttendancePolicy.getAttendanceStatus({
           attendanceDate: recordedDate,
@@ -448,107 +473,6 @@ export namespace AttendanceRegistration {
         throw Core.Errors.EnrollmentData.normalizeError({
           name: "ENROLLMENT_DATA_STORE_ERROR",
           message: "Failed inserting into `attendance_records` table.",
-          err,
-        });
-      }
-    }
-
-    private async getExistingRecords(args: {
-      values: {
-        classSessionId: number;
-        datePh: string;
-        enrollmentIds: number[];
-      };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { values, dbOrTx } = args;
-
-      try {
-        return await this._attendanceRecordRepo
-          .execQuery({
-            dbOrTx,
-            fn: async (query) =>
-              query.findMany({
-                where: (ar, { and, eq, inArray }) =>
-                  and(
-                    inArray(ar.enrollmentId, values.enrollmentIds),
-                    eq(ar.classSessionId, values.classSessionId),
-                    eq(ar.datePh, values.datePh),
-                  ),
-                columns: { enrollmentId: true },
-              }),
-          })
-          .then((r) => new Set(r.map((r) => r.enrollmentId)));
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed to retrieve attendance records",
-          err,
-        });
-      }
-    }
-
-    private async getSession(args: {
-      values: { id: number };
-      tx?: TxContext | undefined;
-    }) {
-      let session;
-
-      try {
-        session = await this._classSessionRepo
-          .queryMinimalShape({
-            where: (cs, { eq }) => eq(cs.id, args.values.id),
-            dbOrTx: args.tx,
-          })
-          .then((r) => r[0]);
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `class_sessions` table.",
-          err,
-        });
-      }
-
-      if (!session)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Could not find the specified class session.",
-        });
-
-      return session;
-    }
-
-    private async getEnrollment(args: {
-      values: { studentId: number; classId: number };
-      tx?: TxContext | undefined;
-    }) {
-      try {
-        const result = await this._enrollmentRepo.execQuery({
-          dbOrTx: args.tx,
-          fn: async (query) =>
-            query.findFirst({
-              where: (e, { and, eq }) =>
-                and(
-                  eq(e.studentId, args.values.studentId),
-                  eq(e.classId, args.values.classId),
-                ),
-              columns: { id: true, status: true },
-            }),
-        });
-
-        if (!result)
-          throw new Core.Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message:
-              "There is no enrollment corresponding to the given student id and class offering id.",
-          });
-
-        return result;
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message:
-            "Failed to retrieve enrollment linked to student and class offering.",
           err,
         });
       }
