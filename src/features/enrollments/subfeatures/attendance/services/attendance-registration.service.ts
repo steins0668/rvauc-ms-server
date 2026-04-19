@@ -1,6 +1,5 @@
 import {
   createContext,
-  DbOrTx,
   execTransaction,
   TxContext,
 } from "../../../../../db/create-context";
@@ -92,9 +91,9 @@ export namespace AttendanceRegistration {
           status: keyof typeof Data.attendanceStatus;
         }[];
       };
-      dbOrTx?: DbOrTx | undefined;
+      tx?: TxContext | undefined;
     }) {
-      const { values, dbOrTx } = args;
+      const { values, tx } = args;
       const datePh = TimeUtil.toPhDate(values.date);
 
       const uniqueRecords = new Map<number, (typeof values.records)[number]>();
@@ -147,70 +146,68 @@ export namespace AttendanceRegistration {
 
       const createdOrUpdatedAt = Clock.now().toISOString();
 
-      const txPromise = this._attendanceRecordRepo.execTransaction(
-        async (tx) => {
-          const session =
-            await this._classSessionQueryService.ensureMinimalShape({
-              where: (cs, { eq }) => eq(cs.id, values.classSessionId),
-              dbOrTx: args.dbOrTx,
-            });
+      const txPromise = execTransaction(async (tx) => {
+        const session = await this._classSessionQueryService.ensureMinimalShape(
+          {
+            where: (cs, { eq }) => eq(cs.id, values.classSessionId),
+            dbOrTx: args.tx,
+          },
+        );
 
-          const enrollmentIds = values.records.map((r) => r.enrollmentId);
+        const enrollmentIds = values.records.map((r) => r.enrollmentId);
 
-          const existingRecords =
-            await this._attendanceQueryService.fetchMinimalRecordsForSessionEnrollments(
-              {
-                values: {
-                  classSessionId: session.id,
-                  enrollmentIds,
-                },
-                dbOrTx: tx,
+        const existingRecords =
+          await this._attendanceQueryService.fetchMinimalRecordsForSessionEnrollments(
+            {
+              values: {
+                classSessionId: session.id,
+                enrollmentIds,
               },
-            );
-
-          const organizedRecords = organizeRecords(
-            new Set(existingRecords.map((r) => r.enrollmentId)),
-            session,
+              dbOrTx: tx,
+            },
           );
 
-          const updated = organizedRecords.updates.length
-            ? await this._attendanceCommand.updateClassSessionRecords({
-                tx,
-                values: {
+        const organizedRecords = organizeRecords(
+          new Set(existingRecords.map((r) => r.enrollmentId)),
+          session,
+        );
+
+        const updated = organizedRecords.updates.length
+          ? await this._attendanceCommand.updateClassSessionRecords({
+              tx,
+              values: {
+                classSessionId: session.id,
+                datePh,
+                updatedAt: createdOrUpdatedAt,
+                updatedByUserId: values.professorId,
+                records: organizedRecords.updates,
+              },
+            })
+          : [];
+
+        const inserted = organizedRecords.inserts.length
+          ? await this._attendanceCommand.persistRecords({
+              tx,
+              onConflict: "doNothing",
+              values: organizedRecords.inserts.map((r) => {
+                return {
+                  classId: session.classId,
                   classSessionId: session.id,
-                  datePh,
+                  enrollmentId: r.enrollmentId,
+                  status: r.status,
+                  createdAt: createdOrUpdatedAt,
+                  recordedAt: r.recordedAt,
+                  recordedMs: r.recordedMs,
                   updatedAt: createdOrUpdatedAt,
-                  updatedByUserId: values.professorId,
-                  records: organizedRecords.updates,
-                },
-              })
-            : [];
+                  updatedByUserId: values.professorId ?? null,
+                  datePh: r.datePh,
+                };
+              }),
+            })
+          : [];
 
-          const inserted = organizedRecords.inserts.length
-            ? await this._attendanceCommand.persistRecords({
-                tx,
-                onConflict: "doNothing",
-                values: organizedRecords.inserts.map((r) => {
-                  return {
-                    classId: session.classId,
-                    classSessionId: session.id,
-                    enrollmentId: r.enrollmentId,
-                    status: r.status,
-                    createdAt: createdOrUpdatedAt,
-                    recordedAt: r.recordedAt,
-                    recordedMs: r.recordedMs,
-                    updatedAt: createdOrUpdatedAt,
-                    updatedByUserId: values.professorId ?? null,
-                    datePh: r.datePh,
-                  };
-                }),
-              })
-            : [];
-
-          return { updated, inserted, rejected: organizedRecords.rejects };
-        },
-        dbOrTx,
-      );
+        return { updated, inserted, rejected: organizedRecords.rejects };
+      }, tx);
 
       try {
         const result = await txPromise;
