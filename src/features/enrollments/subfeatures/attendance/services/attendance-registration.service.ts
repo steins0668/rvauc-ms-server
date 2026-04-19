@@ -22,18 +22,7 @@ export namespace AttendanceRegistration {
     const classOfferingRepo = new CoreRepositories.ClassOffering(context);
     const classSessionRepo = new CoreRepositories.ClassSession(context);
     const enrollmentRepo = new CoreRepositories.Enrollment(context);
-    const classRuntimeResolver = new Core.Services.ClassRuntimeResolver.Service(
-      {
-        classRepo,
-        classOfferingRepo,
-        classSessionRepo,
-        enrollmentRepo,
-      },
-    );
     return new Service({
-      attendanceRecordRepo,
-      classSessionRepo,
-      enrollmentRepo,
       attendanceCommand: new AttendanceCommand.Service({
         attendanceRecordRepo,
       }),
@@ -46,14 +35,16 @@ export namespace AttendanceRegistration {
       enrollmentQueryService: new Core.Services.EnrollmentQuery.Service({
         enrollmentRepo,
       }),
-      classRuntimeResolver,
+      classRuntimeResolver: new Core.Services.ClassRuntimeResolver.Service({
+        classRepo,
+        classOfferingRepo,
+        classSessionRepo,
+        enrollmentRepo,
+      }),
     });
   }
 
   export class Service {
-    private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
-    private readonly _classSessionRepo: CoreRepositories.ClassSession;
-    private readonly _enrollmentRepo: CoreRepositories.Enrollment;
     private readonly _attendanceCommand: AttendanceCommand.Service;
     private readonly _attendanceQueryService: AttendanceQuery.Service;
     private readonly _classSessionQueryService: Core.Services.ClassSessionQuery.Service;
@@ -61,18 +52,12 @@ export namespace AttendanceRegistration {
     private readonly _classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
 
     public constructor(args: {
-      attendanceRecordRepo: Repositories.AttendanceRecord;
-      classSessionRepo: CoreRepositories.ClassSession;
-      enrollmentRepo: CoreRepositories.Enrollment;
       attendanceCommand: AttendanceCommand.Service;
       attendanceQueryService: AttendanceQuery.Service;
       classSessionQuery: Core.Services.ClassSessionQuery.Service;
       enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
       classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
     }) {
-      this._attendanceRecordRepo = args.attendanceRecordRepo;
-      this._classSessionRepo = args.classSessionRepo;
-      this._enrollmentRepo = args.enrollmentRepo;
       this._attendanceCommand = args.attendanceCommand;
       this._attendanceQueryService = args.attendanceQueryService;
       this._classSessionQueryService = args.classSessionQuery;
