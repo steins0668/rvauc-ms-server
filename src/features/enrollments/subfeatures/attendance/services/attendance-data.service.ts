@@ -26,6 +26,9 @@ export namespace AttendanceData {
     const classQueryService = new Core.Services.ClassQuery.Service({
       classRepo,
     });
+    const enrollmentQueryService = new Core.Services.EnrollmentQuery.Service({
+      enrollmentRepo,
+    });
     return new Service({
       attendanceRecordRepo,
       classRepo,
@@ -36,6 +39,7 @@ export namespace AttendanceData {
       studentRepo,
       attendanceQueryService,
       classQueryService,
+      enrollmentQueryService,
     });
   }
 
@@ -49,6 +53,7 @@ export namespace AttendanceData {
     private readonly _studentRepo: Auth.Repositories.Student;
     private readonly _attendanceQueryService: AttendanceQuery.Service;
     private readonly _classQueryService: Core.Services.ClassQuery.Service;
+    private readonly _enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
     private readonly EMPTY_ATTENDANCE_RESULT = {
       records: [],
       summary: {
@@ -70,6 +75,7 @@ export namespace AttendanceData {
       studentRepo: Auth.Repositories.Student;
       attendanceQueryService: AttendanceQuery.Service;
       classQueryService: Core.Services.ClassQuery.Service;
+      enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
       this._classRepo = args.classRepo;
@@ -80,6 +86,7 @@ export namespace AttendanceData {
       this._studentRepo = args.studentRepo;
       this._attendanceQueryService = args.attendanceQueryService;
       this._classQueryService = args.classQueryService;
+      this._enrollmentQueryService = args.enrollmentQueryService;
     }
 
     async getAttendance(
@@ -140,10 +147,23 @@ export namespace AttendanceData {
         };
 
         session = await this.getSessionDetails(args);
-        classEnrollments = await this.getEnrollmentsForClass({
-          values: { classId: session.class.id },
-          constraints,
-        });
+
+        const { enrollments: e, users: u } = Schema;
+        const { eq } = RepositoryUtil.filters;
+        const { asc } = RepositoryUtil.orderOperators;
+
+        classEnrollments =
+          await this._enrollmentQueryService.getEnrollmentsWithStudentDetails({
+            constraints: args.constraints,
+            where: eq(e.classId, session.class.id),
+            orderBy: [
+              asc(u.surname),
+              asc(u.firstName),
+              asc(u.middleName),
+              asc(u.id),
+            ],
+            dbOrTx: args.dbOrTx,
+          });
 
         const { enrollments } = classEnrollments;
 
@@ -204,10 +224,13 @@ export namespace AttendanceData {
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
-        enrollment = await this.getEnrollmentForClassAndStudent({
-          values: { classId, studentId },
-          dbOrTx: args.dbOrTx,
-        });
+        enrollment =
+          await this._enrollmentQueryService.ensureEnrollmentForClassAndStudent(
+            {
+              values: { classId, studentId },
+              dbOrTx: args.dbOrTx,
+            },
+          );
 
         recordsAndSummary =
           await this._attendanceQueryService.fetchRecordsAndSummary({
@@ -264,7 +287,11 @@ export namespace AttendanceData {
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
-        enrollment = await this.getEnrollmentWithStudentDetails(args);
+        enrollment =
+          await this._enrollmentQueryService.ensureEnrollmentsWithStudentGraph({
+            where: (e, { eq }) => eq(e.id, args.values.enrollmentId),
+            dbOrTx: args.dbOrTx,
+          });
         cls = await this._classQueryService.ensureClassWithCourse({
           where: (c, { eq }) => eq(c.id, args.values.classId),
           orderBy: (c, { asc }) => asc(c.id), //  ! should be user input eventually
@@ -319,7 +346,11 @@ export namespace AttendanceData {
           ReturnType<CoreRepositories.ClassSession["getWithClassAndOffering"]>
         >[number]
       >,
-      classEnrollments: Awaited<ReturnType<typeof this.getEnrollmentsForClass>>,
+      classEnrollments: Awaited<
+        ReturnType<
+          Core.Services.EnrollmentQuery.Service["getEnrollmentsWithStudentDetails"]
+        >
+      >,
       recordsAndSummary: Awaited<
         ReturnType<AttendanceQuery.Service["fetchRecordsAndSummary"]>
       >,
@@ -512,130 +543,6 @@ export namespace AttendanceData {
         });
 
       return session;
-    }
-
-    //  todo: move to enrollments data fetcher
-    private async getEnrollmentsForClass(args: {
-      values: { classId: number };
-      constraints?: BaseRepositoryType.QueryConstraints;
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { enrollments: e, users: u } = Schema;
-      const { eq } = RepositoryUtil.filters;
-      const { asc } = RepositoryUtil.orderOperators;
-
-      const where = eq(e.classId, args.values.classId);
-
-      let enrollments;
-
-      try {
-        enrollments = await this._enrollmentRepo.selectStudentsFromEnrollments({
-          constraints: args.constraints,
-          where,
-          orderBy: [
-            asc(u.surname),
-            asc(u.firstName),
-            asc(u.middleName),
-            asc(u.id),
-          ],
-          dbOrTx: args.dbOrTx,
-        });
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed retrieving enrollments for class.",
-          err,
-        });
-      }
-
-      let totalEnrollments;
-
-      try {
-        totalEnrollments = await this._enrollmentRepo.countEnrollments({
-          where,
-          dbOrTx: args.dbOrTx,
-        });
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed counting enrollments for class.",
-          err,
-        });
-      }
-
-      return { enrollments: [...enrollments], totalEnrollments };
-    }
-
-    //  todo: move to enrollments data fetcher
-    private async getEnrollmentForClassAndStudent(args: {
-      values: {
-        classId: number;
-        studentId: number;
-      };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { classId, studentId } = args.values;
-
-      let enrollment;
-
-      try {
-        enrollment = await this._enrollmentRepo.execQuery({
-          dbOrTx: args.dbOrTx,
-          fn: async (query) =>
-            query.findFirst({
-              where: (e, { and, eq }) =>
-                and(eq(e.studentId, studentId), eq(e.classId, classId)),
-            }),
-        });
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `enrollments` table.",
-          err,
-        });
-      }
-
-      if (!enrollment)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
-          message: "This student is not enrolled in this class.",
-        });
-
-      return enrollment;
-    }
-
-    //  todo: move to enrollments data fetcher
-    private async getEnrollmentWithStudentDetails(args: {
-      values: { enrollmentId: number };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { values, dbOrTx } = args;
-
-      let enrollment;
-
-      try {
-        enrollment = await this._enrollmentRepo
-          .queryWithStudentDetails({
-            where: (e, { eq }) => eq(e.id, values.enrollmentId),
-            constraints: { limit: 1 },
-            dbOrTx,
-          })
-          .then((r) => r[0]);
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `enrollments` table.",
-          err,
-        });
-      }
-
-      if (!enrollment)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
-          message: "The specified enrollment was not found.",
-        });
-
-      return enrollment;
     }
   }
 

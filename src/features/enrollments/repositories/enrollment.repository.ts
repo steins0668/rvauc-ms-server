@@ -72,7 +72,7 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
   /**
    * @description Selects a student linked to the current enrollment/s.
    */
-  async selectStudentsFromEnrollments(args: {
+  async getEnrollmentStudentListView(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?: SQL;
     orderBy?: Parameters<

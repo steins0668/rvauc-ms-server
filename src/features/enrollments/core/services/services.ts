@@ -4,4 +4,5 @@ export * from "./class-schedule.service";
 export * from "./class-session-data.service";
 export * from "./class-session-runtime.service";
 export * from "./class-session-scheduler.service";
+export * from "./enrollment-query.service";
 export * from "./term-data.service";
