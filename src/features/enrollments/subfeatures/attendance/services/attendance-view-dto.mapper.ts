@@ -4,7 +4,7 @@ import { Data } from "../data";
 import { Schemas } from "../schemas";
 import { AttendanceQuery } from "./attendance-query.service";
 
-export namespace AttendanceQueryDto {
+export namespace AttendanceViewDto {
   export namespace Mapper {
     export function toClassAttendanceProfessorViewDto(
       session: NonNullable<
