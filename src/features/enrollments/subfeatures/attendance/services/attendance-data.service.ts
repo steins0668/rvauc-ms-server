@@ -1,62 +1,38 @@
 import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { Schema } from "../../../../../models";
-import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
-import { BaseRepositoryType } from "../../../../../types";
+import { RepositoryUtil, ResultBuilder } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Repositories as CoreRepositories } from "../../../repositories";
-import { Data } from "../data";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
-import { AttendanceQuery } from "./attendance-query.service";
 import { AttendanceDto } from "./attendance-dto.mapper";
+import { AttendanceQuery } from "./attendance-query.service";
 
 export namespace AttendanceData {
   export async function create() {
     const context = await createContext();
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
     const classRepo = new CoreRepositories.Class(context);
-    const classOfferingRepo = new CoreRepositories.ClassOffering(context);
     const classSessionRepo = new CoreRepositories.ClassSession(context);
     const enrollmentRepo = new CoreRepositories.Enrollment(context);
-    const professorRepo = new Auth.Repositories.Professor(context);
-    const studentRepo = new Auth.Repositories.Student(context);
-    const attendanceQueryService = new AttendanceQuery.Service({
-      attendanceRecordRepo,
-    });
-    const classQueryService = new Core.Services.ClassQuery.Service({
-      classRepo,
-    });
-    const classSessionQueryService =
-      new Core.Services.ClassSessionQuery.Service({
-        classSessionRepo,
-      });
-    const enrollmentQueryService = new Core.Services.EnrollmentQuery.Service({
-      enrollmentRepo,
-    });
     return new Service({
-      attendanceRecordRepo,
-      classRepo,
-      classOfferingRepo,
-      classSessionRepo,
-      enrollmentRepo,
-      professorRepo,
-      studentRepo,
-      attendanceQueryService,
-      classQueryService,
-      classSessionQueryService,
-      enrollmentQueryService,
+      attendanceQueryService: new AttendanceQuery.Service({
+        attendanceRecordRepo,
+      }),
+      classQueryService: new Core.Services.ClassQuery.Service({
+        classRepo,
+      }),
+      classSessionQueryService: new Core.Services.ClassSessionQuery.Service({
+        classSessionRepo,
+      }),
+      enrollmentQueryService: new Core.Services.EnrollmentQuery.Service({
+        enrollmentRepo,
+      }),
     });
   }
 
   export class Service {
-    private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
-    private readonly _classRepo: CoreRepositories.Class;
-    private readonly _classOfferingRepo: CoreRepositories.ClassOffering;
-    private readonly _classSessionRepo: CoreRepositories.ClassSession;
-    private readonly _enrollmentRepo: CoreRepositories.Enrollment;
-    private readonly _professorRepo: Auth.Repositories.Professor;
-    private readonly _studentRepo: Auth.Repositories.Student;
     private readonly _attendanceQueryService: AttendanceQuery.Service;
     private readonly _classQueryService: Core.Services.ClassQuery.Service;
     private readonly _classSessionQueryService: Core.Services.ClassSessionQuery.Service;
@@ -73,25 +49,11 @@ export namespace AttendanceData {
     };
 
     constructor(args: {
-      attendanceRecordRepo: Repositories.AttendanceRecord;
-      classRepo: CoreRepositories.Class;
-      classOfferingRepo: CoreRepositories.ClassOffering;
-      classSessionRepo: CoreRepositories.ClassSession;
-      enrollmentRepo: CoreRepositories.Enrollment;
-      professorRepo: Auth.Repositories.Professor;
-      studentRepo: Auth.Repositories.Student;
       attendanceQueryService: AttendanceQuery.Service;
       classQueryService: Core.Services.ClassQuery.Service;
       classSessionQueryService: Core.Services.ClassSessionQuery.Service;
       enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
     }) {
-      this._attendanceRecordRepo = args.attendanceRecordRepo;
-      this._classRepo = args.classRepo;
-      this._classOfferingRepo = args.classOfferingRepo;
-      this._classSessionRepo = args.classSessionRepo;
-      this._enrollmentRepo = args.enrollmentRepo;
-      this._professorRepo = args.professorRepo;
-      this._studentRepo = args.studentRepo;
       this._attendanceQueryService = args.attendanceQueryService;
       this._classQueryService = args.classQueryService;
       this._classSessionQueryService = args.classSessionQueryService;
