@@ -18,6 +18,7 @@ import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
 import { Types } from "../types";
 import { Utils } from "../utils";
+import { AttendanceCommand } from "./attendance-command.service";
 import { AttendanceQuery } from "./attendance-query.service";
 
 export namespace AttendanceRegistration {
@@ -40,6 +41,9 @@ export namespace AttendanceRegistration {
       attendanceRecordRepo,
       classSessionRepo,
       enrollmentRepo,
+      attendanceCommand: new AttendanceCommand.Service({
+        attendanceRecordRepo,
+      }),
       attendanceQueryService: new AttendanceQuery.Service({
         attendanceRecordRepo,
       }),
@@ -57,6 +61,7 @@ export namespace AttendanceRegistration {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
     private readonly _classSessionRepo: CoreRepositories.ClassSession;
     private readonly _enrollmentRepo: CoreRepositories.Enrollment;
+    private readonly _attendanceCommand: AttendanceCommand.Service;
     private readonly _attendanceQueryService: AttendanceQuery.Service;
     private readonly _classSessionQueryService: Core.Services.ClassSessionQuery.Service;
     private readonly _enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
@@ -66,6 +71,7 @@ export namespace AttendanceRegistration {
       attendanceRecordRepo: Repositories.AttendanceRecord;
       classSessionRepo: CoreRepositories.ClassSession;
       enrollmentRepo: CoreRepositories.Enrollment;
+      attendanceCommand: AttendanceCommand.Service;
       attendanceQueryService: AttendanceQuery.Service;
       classSessionQuery: Core.Services.ClassSessionQuery.Service;
       enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
@@ -74,6 +80,7 @@ export namespace AttendanceRegistration {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
       this._classSessionRepo = args.classSessionRepo;
       this._enrollmentRepo = args.enrollmentRepo;
+      this._attendanceCommand = args.attendanceCommand;
       this._attendanceQueryService = args.attendanceQueryService;
       this._classSessionQueryService = args.classSessionQuery;
       this._enrollmentQueryService = args.enrollmentQueryService;
@@ -94,6 +101,7 @@ export namespace AttendanceRegistration {
       dbOrTx?: DbOrTx | undefined;
     }) {
       const { values, dbOrTx } = args;
+      const datePh = TimeUtil.toPhDate(values.date);
 
       const uniqueRecords = new Map<number, (typeof values.records)[number]>();
 
@@ -172,10 +180,11 @@ export namespace AttendanceRegistration {
           );
 
           const updated = organizedRecords.updates.length
-            ? await this.updateRecords({
-                dbOrTx: tx,
+            ? await this._attendanceCommand.updateClassSessionRecords({
+                tx,
                 values: {
                   classSessionId: session.id,
+                  datePh,
                   updatedAt: createdOrUpdatedAt,
                   updatedByUserId: values.professorId,
                   records: organizedRecords.updates,
@@ -184,8 +193,8 @@ export namespace AttendanceRegistration {
             : [];
 
           const inserted = organizedRecords.inserts.length
-            ? await this.insertRecords({
-                dbOrTx: tx,
+            ? await this._attendanceCommand.persistRecords({
+                tx,
                 onConflict: "doNothing",
                 values: organizedRecords.inserts.map((r) => {
                   return {
@@ -263,15 +272,18 @@ export namespace AttendanceRegistration {
           schedEndTime: clsRuntime.offering.endTime,
         });
 
-        const inserted = await this.persistSessionAttendance({
-          values: {
-            clsRuntime,
-            status,
-            enrollmentId: enrollment.id,
-            recordedDate,
+        const inserted = await this._attendanceCommand.persistSessionAttendance(
+          {
+            values: {
+              classId: clsRuntime.offering.class.id,
+              classSessionId: clsRuntime.session.id,
+              status,
+              enrollmentId: enrollment.id,
+              recordedDate,
+            },
+            tx,
           },
-          tx,
-        });
+        );
 
         return { clsRuntime, inserted };
       }, args.tx);
@@ -310,8 +322,12 @@ export namespace AttendanceRegistration {
     }
 
     private toAttendanceRecordMutationResultDto(
-      updated: Awaited<ReturnType<typeof this.updateRecords>>,
-      inserted: Awaited<ReturnType<typeof this.insertRecords>>,
+      updated: Awaited<
+        ReturnType<AttendanceCommand.Service["updateClassSessionRecords"]>
+      >,
+      inserted: Awaited<
+        ReturnType<AttendanceCommand.Service["persistRecords"]>
+      >,
       rejected: Schemas.Dto.ClassAttendance.NormalizedRecords,
     ): Schemas.Dto.ClassAttendance.MutationResult {
       const updatedDto = updated.map((r) => {
@@ -342,7 +358,7 @@ export namespace AttendanceRegistration {
         ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
       >,
       attendance: NonNullable<
-        Awaited<ReturnType<typeof this.insertRecords>>[number]
+        Awaited<ReturnType<AttendanceCommand.Service["persistRecords"]>>[number]
       >,
     ): Schemas.Dto.ClassAttendance.SessionAttendanceResult {
       const { offering: co, session: cs } = classRuntime;
@@ -388,149 +404,6 @@ export namespace AttendanceRegistration {
           isNew: attendance.recordCount === 1,
         },
       };
-    }
-
-    private async persistSessionAttendance(args: {
-      values: {
-        clsRuntime: Awaited<
-          ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
-        >;
-        enrollmentId: number;
-        status: string;
-        recordedDate: Date;
-      };
-      tx?: TxContext | undefined;
-    }) {
-      const { tx } = args;
-      const { clsRuntime, enrollmentId, status, recordedDate } = args.values;
-
-      const { offering, session } = clsRuntime;
-      const { class: cls } = offering;
-
-      const nowIso = Clock.now().toISOString();
-      const recordedDateIso = recordedDate.toISOString();
-      const recordedDateMs = recordedDate.getTime();
-
-      const inserted = await this.insertRecords({
-        dbOrTx: tx,
-        onConflict: "doUpdate",
-        values: [
-          {
-            enrollmentId,
-            classId: cls.id,
-            classSessionId: session.id,
-            status,
-            createdAt: nowIso,
-            recordedAt: recordedDateIso,
-            recordedMs: recordedDateMs,
-            updatedAt: nowIso,
-            datePh: TimeUtil.toPhDate(recordedDate),
-          },
-        ],
-      }).then((r) => r[0]);
-
-      if (inserted === undefined)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_STORE_ERROR",
-          message: "Failed storing attendance record.",
-        });
-
-      return inserted;
-    }
-
-    private async insertRecords(args: {
-      dbOrTx?: DbOrTx | undefined;
-      onConflict?: "doNothing" | "doUpdate" | undefined;
-      values: Types.InsertModels.AttendanceRecord[];
-    }) {
-      const { dbOrTx, onConflict = "doNothing", values } = args;
-      const insert = this._attendanceRecordRepo.execInsert({
-        dbOrTx,
-        fn: async ({ table: ar, insert, sql }) => {
-          let insertion = insert.values(values);
-
-          const targets = [
-            sql`enrollment_id`,
-            sql`class_session_id`,
-            sql`date_ph`,
-          ];
-
-          insertion =
-            onConflict === "doNothing"
-              ? insertion.onConflictDoNothing({ target: targets })
-              : insertion.onConflictDoUpdate({
-                  target: [ar.enrollmentId, ar.classSessionId, ar.datePh],
-                  set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
-                });
-
-          return insertion.returning();
-        },
-      });
-
-      try {
-        return await insert;
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_STORE_ERROR",
-          message: "Failed inserting into `attendance_records` table.",
-          err,
-        });
-      }
-    }
-
-    private async updateRecords(args: {
-      values: {
-        classSessionId: number;
-        updatedByUserId?: number | undefined;
-        updatedAt: string;
-        records: {
-          datePh: string;
-          recordedAt: string;
-          recordedMs: number;
-          enrollmentId: number;
-          status: keyof typeof Data.attendanceStatus;
-        }[];
-      };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { values } = args;
-      const { attendanceRecords: ar } = Schema;
-      const { and, eq } = RepositoryUtil.filters;
-
-      const updated = [];
-
-      for (const r of args.values.records) {
-        const res = await this._attendanceRecordRepo.execUpdate({
-          dbOrTx: args.dbOrTx,
-          fn: async (update) =>
-            update
-              .set({
-                recordedAt: r.recordedAt,
-                recordedMs: r.recordedMs,
-                status: r.status,
-                updatedAt: values.updatedAt,
-                updatedByUserId: values.updatedByUserId,
-              })
-              .where(
-                and(
-                  eq(ar.enrollmentId, r.enrollmentId),
-                  eq(ar.classSessionId, values.classSessionId),
-                  eq(ar.datePh, r.datePh),
-                ),
-              )
-              .returning(),
-        });
-
-        if (res.length === 0)
-          throw new Core.Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_UPDATE_ERROR",
-            message: `Attendance record with for session, student in date: ${r.datePh} not found.`,
-          });
-
-        updated.push(...res);
-      }
-
-      return updated;
     }
   }
 }
