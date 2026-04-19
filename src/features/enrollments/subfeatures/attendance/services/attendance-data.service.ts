@@ -6,7 +6,7 @@ import { Core } from "../../../core";
 import { Repositories as CoreRepositories } from "../../../repositories";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
-import { AttendanceDto } from "./attendance-dto.mapper";
+import { AttendanceQueryDto } from "./attendance-query-dto.mapper";
 import { AttendanceQuery } from "./attendance-query.service";
 
 export namespace AttendanceData {
@@ -162,7 +162,7 @@ export namespace AttendanceData {
 
       try {
         return ResultBuilder.success(
-          AttendanceDto.Mapper.toClassAttendanceProfessorViewDto(
+          AttendanceQueryDto.Mapper.toClassAttendanceProfessorViewDto(
             session,
             classEnrollments,
             recordsAndSummary,
@@ -227,7 +227,7 @@ export namespace AttendanceData {
 
       try {
         const dto =
-          AttendanceDto.Mapper.toClassAttendanceStudentViewDto(
+          AttendanceQueryDto.Mapper.toClassAttendanceStudentViewDto(
             recordsAndSummary,
           );
         return ResultBuilder.success(dto);
@@ -293,7 +293,7 @@ export namespace AttendanceData {
 
       try {
         return ResultBuilder.success(
-          AttendanceDto.Mapper.toStudentAttendanceProfessorViewDto(
+          AttendanceQueryDto.Mapper.toStudentAttendanceProfessorViewDto(
             cls,
             enrollment,
             recordsAndSummary,
