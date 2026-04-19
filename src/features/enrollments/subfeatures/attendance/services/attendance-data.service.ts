@@ -26,6 +26,10 @@ export namespace AttendanceData {
     const classQueryService = new Core.Services.ClassQuery.Service({
       classRepo,
     });
+    const classSessionQueryService =
+      new Core.Services.ClassSessionQuery.Service({
+        classSessionRepo,
+      });
     const enrollmentQueryService = new Core.Services.EnrollmentQuery.Service({
       enrollmentRepo,
     });
@@ -39,6 +43,7 @@ export namespace AttendanceData {
       studentRepo,
       attendanceQueryService,
       classQueryService,
+      classSessionQueryService,
       enrollmentQueryService,
     });
   }
@@ -53,6 +58,7 @@ export namespace AttendanceData {
     private readonly _studentRepo: Auth.Repositories.Student;
     private readonly _attendanceQueryService: AttendanceQuery.Service;
     private readonly _classQueryService: Core.Services.ClassQuery.Service;
+    private readonly _classSessionQueryService: Core.Services.ClassSessionQuery.Service;
     private readonly _enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
     private readonly EMPTY_ATTENDANCE_RESULT = {
       records: [],
@@ -75,6 +81,7 @@ export namespace AttendanceData {
       studentRepo: Auth.Repositories.Student;
       attendanceQueryService: AttendanceQuery.Service;
       classQueryService: Core.Services.ClassQuery.Service;
+      classSessionQueryService: Core.Services.ClassSessionQuery.Service;
       enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
     }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;
@@ -86,6 +93,7 @@ export namespace AttendanceData {
       this._studentRepo = args.studentRepo;
       this._attendanceQueryService = args.attendanceQueryService;
       this._classQueryService = args.classQueryService;
+      this._classSessionQueryService = args.classSessionQueryService;
       this._enrollmentQueryService = args.enrollmentQueryService;
     }
 
@@ -146,7 +154,7 @@ export namespace AttendanceData {
           offset: RepositoryUtil.resolveOffset(args.constraints),
         };
 
-        session = await this.getSessionDetails(args);
+        session = await this.ensureSessionForProfessor(args);
 
         const { enrollments: e, users: u } = Schema;
         const { eq } = RepositoryUtil.filters;
@@ -503,43 +511,24 @@ export namespace AttendanceData {
       };
     }
 
-    private async getSessionDetails(args: {
+    private async ensureSessionForProfessor(args: {
       values: { classSessionId: number; professorId: number };
       dbOrTx?: DbOrTx | undefined;
     }) {
       const { classSessionId, professorId } = args.values;
 
-      let session;
-
-      //  * get session info w/ class and offering details
-      try {
-        session = await this._classSessionRepo
-          .getWithClassAndOffering({
-            where: (cs, { eq }) => eq(cs.id, classSessionId),
-            constraints: { limit: 1 },
-            dbOrTx: args.dbOrTx,
-          })
-          .then((result) => result[0]);
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `class_offerings` table.",
-          err,
-        });
-      }
-
-      if (!session)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-          message:
-            "Provided class has no ongoing session at the provided date.",
-        });
+      let session = await this._classSessionQueryService.ensureWithClassContext(
+        {
+          where: (cs, { eq }) => eq(cs.id, classSessionId),
+          dbOrTx: args.dbOrTx,
+        },
+      );
 
       if (session.class.professorId !== professorId)
         throw new Core.Errors.EnrollmentData.ErrorClass({
           name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
           message:
-            "This professor does not have a class associated with this class_id.",
+            "This professor is not associated with the specified class or class session.",
         });
 
       return session;

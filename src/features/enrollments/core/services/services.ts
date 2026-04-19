@@ -2,6 +2,7 @@ export * from "./class-query.service";
 export * from "./class-runtime-resolver";
 export * from "./class-schedule.service";
 export * from "./class-session-data.service";
+export * from "./class-session-query.service";
 export * from "./class-session-runtime.service";
 export * from "./class-session-scheduler.service";
 export * from "./enrollment-query.service";
