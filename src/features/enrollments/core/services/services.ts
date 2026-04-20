@@ -8,3 +8,4 @@ export * from "./class-session-runtime.service";
 export * from "./class-session-scheduler.service";
 export * from "./enrollment-query.service";
 export * from "./term-data.service";
+export * from "./term-resolver.service";

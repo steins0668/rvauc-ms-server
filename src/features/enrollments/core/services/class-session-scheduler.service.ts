@@ -8,20 +8,26 @@ import { Repositories } from "../../repositories";
 import { Types } from "../../types";
 import { Data } from "../data";
 import { Errors } from "../errors";
+import { ClassOfferingQuery } from "./class-offering-query.service";
+import { ClassSessionQuery } from "./class-session-query.service";
 import { ClassSessionRecorder } from "./class-session-recorder";
+import { TermResolver } from "./term-resolver.service";
 
 export namespace ClassSessionScheduler {
   export async function create() {
     const context = await createContext();
     const classOfferingRepo = new Repositories.ClassOffering(context);
     const classSessionRepo = new Repositories.ClassSession(context);
-    const classSessionRecorder = new ClassSessionRecorder.Service({
-      classOfferingRepo,
-      classSessionRepo,
-    });
+    const termRepo = new Repositories.Term(context);
     return new Service({
-      classSessionRepo,
-      classSessionRecorder,
+      classSessionQuery: new ClassSessionQuery.Service({ classSessionRepo }),
+      classSessionRecorder: new ClassSessionRecorder.Service({
+        classSessionRepo,
+        classOfferingQuery: new ClassOfferingQuery.Service({
+          classOfferingRepo,
+        }),
+      }),
+      termResolver: new TermResolver.Service(termRepo),
     });
   }
 
@@ -32,15 +38,18 @@ export namespace ClassSessionScheduler {
   };
 
   export class Service {
-    private readonly _classSessionRepo: Repositories.ClassSession;
+    private readonly _classSessionQuery: ClassSessionQuery.Service;
     private readonly _classSessionRecorder: ClassSessionRecorder.Service;
+    private readonly _termResolver: TermResolver.Service;
 
     constructor(args: {
-      classSessionRepo: Repositories.ClassSession;
+      classSessionQuery: ClassSessionQuery.Service;
       classSessionRecorder: ClassSessionRecorder.Service;
+      termResolver: TermResolver.Service;
     }) {
-      this._classSessionRepo = args.classSessionRepo;
+      this._classSessionQuery = args.classSessionQuery;
       this._classSessionRecorder = args.classSessionRecorder;
+      this._termResolver = args.termResolver;
     }
 
     async recordMissingSessions(args: {
@@ -98,6 +107,8 @@ export namespace ClassSessionScheduler {
       };
 
       const txPromise = execTransaction(async (tx) => {
+        const term = await this._termResolver.resolveCurrentTerm({ tx });
+
         const total: Generated = {
           attempted: [],
           inserted: [],
@@ -109,7 +120,7 @@ export namespace ClassSessionScheduler {
 
           const generated =
             await this._classSessionRecorder.ensureSessionsForDate({
-              date: current,
+              values: { date: current, termId: term.id },
               tx,
             });
 
@@ -147,8 +158,12 @@ export namespace ClassSessionScheduler {
     async recordAllForDay(args: { date: Date; tx?: TxContext | undefined }) {
       try {
         this.ensureValidDateRange({ startDate: args.date, endDate: args.date });
+        const term = await this._termResolver.resolveCurrentTerm(args);
         const generated =
-          await this._classSessionRecorder.ensureSessionsForDate(args);
+          await this._classSessionRecorder.ensureSessionsForDate({
+            values: { date: args.date, termId: term.id },
+            tx: args.tx,
+          });
 
         return ResultBuilder.success({ generated });
       } catch (err) {
@@ -169,7 +184,7 @@ export namespace ClassSessionScheduler {
       const startTimeMs =
         args.startDate?.getTime() ??
         //  * database fallback in case no provided input
-        (await this._classSessionRepo
+        (await this._classSessionQuery
           .getLatest({ dbOrTx: args.tx })
           .then((r) => r?.startTimeMs)) ??
         //  * env config fallback incase no stored sessions (time is always 00:00:00)

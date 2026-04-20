@@ -3,6 +3,7 @@ import { DbAccess } from "../../../../error";
 import { Clock, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Types } from "../../types";
+import { ClassOfferingQuery } from "./class-offering-query.service";
 
 export namespace ClassSessionRecorder {
   type Generated = {
@@ -12,25 +13,38 @@ export namespace ClassSessionRecorder {
   };
 
   export class Service {
-    private readonly _classOfferingRepo: Repositories.ClassOffering;
     private readonly _classSessionRepo: Repositories.ClassSession;
+    private readonly _classOfferingQuery: ClassOfferingQuery.Service;
 
     constructor(args: {
-      classOfferingRepo: Repositories.ClassOffering;
       classSessionRepo: Repositories.ClassSession;
+      classOfferingQuery: ClassOfferingQuery.Service;
     }) {
-      this._classOfferingRepo = args.classOfferingRepo;
       this._classSessionRepo = args.classSessionRepo;
+      this._classOfferingQuery = args.classOfferingQuery;
     }
 
     async ensureSessionsForDate(args: {
-      date: Date;
+      values: { date: Date; termId: number };
       tx?: TxContext | undefined;
     }) {
+      const { values } = args;
+
       return await execTransaction(async (tx) => {
+        const offerings =
+          await this._classOfferingQuery.getMinimalShapesForWeekday({
+            values: {
+              weekDay: TimeUtil.toPhDay(values.date),
+              termId: values.termId,
+            },
+            tx,
+          });
+
         const sessions = await this.generateSessionsForDate({
-          date: args.date,
-          tx,
+          values: {
+            date: values.date,
+            offerings,
+          },
         });
 
         const generated: Generated = {
@@ -44,7 +58,7 @@ export namespace ClassSessionRecorder {
         let dayInsertedCount = 0;
         const chunkSize = 30;
 
-        //    record sessions for each
+        //  chunk the insert
         for (let i = 0; i < sessions.length; i += chunkSize) {
           const inserted = await this.insert({
             values: { sessions: sessions.slice(i, i + chunkSize) },
@@ -63,21 +77,19 @@ export namespace ClassSessionRecorder {
     }
 
     private async generateSessionsForDate(args: {
-      date: Date;
-      tx?: TxContext | undefined;
+      values: {
+        offerings: Awaited<
+          ReturnType<ClassOfferingQuery.Service["getMinimalShapesForWeekday"]>
+        >;
+        date: Date;
+      };
     }) {
-      const { date, tx } = args;
+      const { date, offerings } = args.values;
 
       const sessions: Types.InsertModels.ClassSession[] = [];
 
-      const weekDay = TimeUtil.toPhDay(date);
       const datePh = TimeUtil.toPhDate(date);
       const nowISO = Clock.now().toISOString();
-      //    get all offerings in current day
-      const offerings = await this.getOfferings({
-        values: { weekDay },
-        tx,
-      });
 
       for (const o of offerings) {
         const { startTimeMs, endTimeMs } = TimeUtil.getPhTimeRange(
@@ -98,35 +110,6 @@ export namespace ClassSessionRecorder {
       }
 
       return sessions;
-    }
-
-    private async getOfferings(args: {
-      values: { weekDay: string };
-      tx?: TxContext | undefined;
-    }) {
-      const { values, tx } = args;
-
-      try {
-        return await this._classOfferingRepo.execQuery({
-          dbOrTx: tx,
-          fn: async (query) =>
-            query.findMany({
-              where: (co, { eq }) => eq(co.weekDay, values.weekDay),
-              columns: {
-                id: true,
-                classId: true,
-                startTime: true,
-                endTime: true,
-              },
-            }),
-        });
-      } catch (err) {
-        throw DbAccess.normalizeError({
-          name: "DB_ACCESS_QUERY_ERROR",
-          message: "Failed querying class_offerings table.",
-          err,
-        });
-      }
     }
 
     private async insert(args: {

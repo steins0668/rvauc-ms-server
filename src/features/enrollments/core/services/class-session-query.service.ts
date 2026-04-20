@@ -12,6 +12,24 @@ export namespace ClassSessionQuery {
 
     /**
      * @description
+     * Retrieves the first class session from the table arranged by start time ms in descending order.
+     */
+    async getLatest(
+      args: Parameters<Repositories.ClassSession["getLatest"]>[0],
+    ) {
+      try {
+        return await this._classSessionRepo.getLatest(args);
+      } catch (err) {
+        throw Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed querying `class_sessions` table.",
+          err,
+        });
+      }
+    }
+
+    /**
+     * @description
      * Retrieves the current active session based on two modes:
      * 1. `now` - The session must be ongoing.
      * 2. `now-or-next` - The session must be ongoing OR is scheduled next for the current day.

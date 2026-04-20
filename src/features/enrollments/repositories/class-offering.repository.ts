@@ -52,6 +52,32 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     }).then((r) => r[0]);
   }
 
+  async getMinimalShapesForWeekday(args: {
+    values: { weekDay: string; termId: number };
+    tx?: TxContext | undefined;
+  }) {
+    const { values, tx } = args;
+
+    return await (args.tx ?? this._dbContext).query.classOfferings.findMany({
+      where: (co, { and, eq, exists }) =>
+        and(
+          eq(co.weekDay, values.weekDay),
+          exists(
+            this.getClassSubquery({
+              values: { classId: co.classId, termId: values.termId },
+              tx,
+            }),
+          ),
+        ),
+      columns: {
+        id: true,
+        classId: true,
+        startTime: true,
+        endTime: true,
+      },
+    });
+  }
+
   async queryWithClass(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:
@@ -241,24 +267,6 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
 
     const context = args.tx ?? this._dbContext;
 
-    const subqueryC = (args: {
-      classId: SQLiteColumn;
-      termId: number;
-      professorId?: number | undefined;
-    }) => {
-      const { classId, termId, professorId } = args;
-      const conditions = [eq(c.id, classId), eq(c.termId, termId)];
-
-      //  ! used when querying class offerings for professors
-      if (professorId !== undefined)
-        conditions.push(eq(c.professorId, professorId));
-
-      return context
-        .select({ id: c.id })
-        .from(c)
-        .where(and(...conditions));
-    };
-
     const subqueryE = (args: { classId: SQLiteColumn; studentId: number }) =>
       context
         .select({ id: e.id })
@@ -274,10 +282,13 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
       const conditions: (SQLWrapper | undefined)[] = [
         eq(co.weekDay, weekDay),
         exists(
-          subqueryC({
-            classId: co.classId,
-            termId,
-            professorId: role === "professor" ? userId : undefined,
+          this.getClassSubquery({
+            values: {
+              classId: co.classId,
+              termId,
+              professorId: role === "professor" ? userId : undefined,
+            },
+            tx,
           }),
         ),
       ];
@@ -308,5 +319,29 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
           return conditions.length ? and(...conditions) : undefined;
       }
     };
+  }
+
+  private getClassSubquery(args: {
+    values: {
+      classId: SQLiteColumn;
+      termId: number;
+      professorId?: number | undefined;
+    };
+    tx?: TxContext | undefined;
+  }) {
+    const { classId, termId, professorId } = args.values;
+    const { classes: c } = Schema;
+
+    const context = args.tx ?? this._dbContext;
+    const conditions = [eq(c.id, classId), eq(c.termId, termId)];
+
+    //  ! used when querying class offerings for professors
+    if (professorId !== undefined)
+      conditions.push(eq(c.professorId, professorId));
+
+    return context
+      .select({ id: c.id })
+      .from(c)
+      .where(and(...conditions));
   }
 }
