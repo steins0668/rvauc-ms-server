@@ -53,7 +53,6 @@ export namespace Policy {
       return {
         enrollmentId: record.enrollmentId,
         status: record.status,
-        recordedDate: finalDate,
         recordedAt: finalDate.toISOString(),
         recordedMs: finalDate.getTime(),
       };
@@ -69,12 +68,12 @@ export namespace Policy {
       for (const r of records) {
         const normalized = normalizeRecord(r, session);
 
-        const isSameDate =
-          TimeUtil.toPhDate(normalized.recordedDate) === session.datePh;
+        const recordedDate = new Date(normalized.recordedAt);
+
+        const isSameDate = TimeUtil.toPhDate(recordedDate) === session.datePh;
 
         const isReject =
-          !isSameDate ||
-          !Attendance.isWithinSchedule(normalized.recordedDate, session);
+          !isSameDate || !Attendance.isWithinSchedule(recordedDate, session);
 
         isReject ? rejects.push(normalized) : upserts.push(normalized);
       }

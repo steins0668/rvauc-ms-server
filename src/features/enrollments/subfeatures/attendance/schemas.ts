@@ -136,7 +136,6 @@ export namespace Schemas {
         .strictObject({
           enrollmentId: z.number(),
           status: z.enum(Data.attendanceStatus),
-          recordedDate: z.date(),
           recordedAt: z.string(),
           recordedMs: z.number(),
         })
