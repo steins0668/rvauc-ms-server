@@ -7,10 +7,10 @@ import { Clock, ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
 import { Repositories as CoreRepositories } from "../../../repositories";
 import { Repositories } from "../repositories";
+import { DtoMappers } from "../dto-mappers";
 import { Schemas } from "../schemas";
 import { Utils } from "../utils";
 import { AttendanceCommand } from "./attendance-command.service";
-import { AttendanceMutationDto } from "./attendance-mutation-dto.mapper";
 
 export namespace AttendanceRegistration {
   export async function create() {
@@ -129,7 +129,7 @@ export namespace AttendanceRegistration {
         const result = await txPromise;
 
         return ResultBuilder.success(
-          AttendanceMutationDto.Mapper.toSessionRecordsMutationResult(
+          DtoMappers.Mutation.sessionRecordsMutationResult(
             result.updated,
             result.inserted,
             result.rejected,
@@ -219,7 +219,7 @@ export namespace AttendanceRegistration {
       }
 
       try {
-        const dto = AttendanceMutationDto.Mapper.toSessionAttendanceResultDto(
+        const dto = DtoMappers.Mutation.sessionAttendanceResult(
           txResult.clsRuntime,
           txResult.inserted,
         );
