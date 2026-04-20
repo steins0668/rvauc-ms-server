@@ -41,8 +41,7 @@ export namespace EnrollmentQuery {
         enrollments =
           await this._enrollmentRepo.getEnrollmentStudentListView(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
+        throw Service.normalizeQueryError({
           message: "Failed retrieving enrollments for class.",
           err,
         });
@@ -56,8 +55,7 @@ export namespace EnrollmentQuery {
           dbOrTx: args.dbOrTx,
         });
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
+        throw Service.normalizeQueryError({
           message: "Failed counting enrollments for class.",
           err,
         });
@@ -97,18 +95,10 @@ export namespace EnrollmentQuery {
             }),
         });
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `enrollments` table.",
-          err,
-        });
+        throw Service.normalizeQueryError({ err });
       }
 
-      if (!enrollment)
-        throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
-          message: "This student is not enrolled in this class.",
-        });
+      if (!enrollment) throw Service.enrollmentNotFoundError();
 
       return enrollment;
     }
@@ -137,11 +127,7 @@ export namespace EnrollmentQuery {
         constraints: { limit: 1 },
       }).then((r) => r[0]);
 
-      if (!enrollment)
-        throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
-          message: "The specified enrollment was not found.",
-        });
+      if (!enrollment) throw Service.enrollmentNotFoundError();
 
       return enrollment;
     }
@@ -172,12 +158,30 @@ export namespace EnrollmentQuery {
       try {
         return await this._enrollmentRepo.queryWithStudentDetails(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `enrollments` table.",
-          err,
-        });
+        throw Service.normalizeQueryError({ err });
       }
+    }
+
+    private static enrollmentNotFoundError(msg?: string) {
+      const message = msg ?? "The specified enrollment was not found.";
+
+      return new Errors.EnrollmentData.ErrorClass({
+        name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
+        message,
+      });
+    }
+
+    private static normalizeQueryError(args: {
+      message?: string;
+      err: unknown;
+    }) {
+      const message = args.message ?? "Failed querying `enrollments` table.";
+
+      return Errors.EnrollmentData.normalizeError({
+        name: "ENROLLMENT_DATA_QUERY_ERROR",
+        message,
+        err: args.err,
+      });
     }
   }
 }

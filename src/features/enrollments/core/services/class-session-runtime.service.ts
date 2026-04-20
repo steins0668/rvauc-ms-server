@@ -65,7 +65,7 @@ export namespace ClassSessionRuntime {
           session,
         );
 
-        return ResultBuilder.success({ ...parsed });
+        return ResultBuilder.success({ class: parsed });
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
@@ -113,7 +113,7 @@ export namespace ClassSessionRuntime {
           session,
         );
 
-        return ResultBuilder.success({ ...parsed });
+        return ResultBuilder.success({ class: parsed });
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({

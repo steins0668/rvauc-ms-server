@@ -20,11 +20,7 @@ export namespace ClassSessionQuery {
       try {
         return await this._classSessionRepo.getLatest(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `class_sessions` table.",
-          err,
-        });
+        throw Service.normalizeQueryError(err);
       }
     }
 
@@ -38,11 +34,7 @@ export namespace ClassSessionQuery {
       try {
         return await this._classSessionRepo.getAllUntilDate(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `class_sessions` table.",
-          err,
-        });
+        throw Service.normalizeQueryError(err);
       }
     }
 
@@ -84,11 +76,7 @@ export namespace ClassSessionQuery {
     ) {
       const session = await this.getOfferingActiveSession(args);
 
-      if (!session)
-        throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_SESSION_NOT_FOUND_ERROR",
-          message: "The specified class session does not exist.",
-        });
+      if (!session) throw Service.sessionNotFoundError();
 
       return session;
     }
@@ -107,11 +95,7 @@ export namespace ClassSessionQuery {
       try {
         return await this._classSessionRepo.getOfferingActiveSession(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `class_sessions` table.",
-          err,
-        });
+        throw Service.normalizeQueryError(err);
       }
     }
 
@@ -133,11 +117,7 @@ export namespace ClassSessionQuery {
         ...args,
       }).then((r) => r[0]);
 
-      if (!session)
-        throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_SESSION_NOT_FOUND_ERROR",
-          message: "The specified class session does not exist.",
-        });
+      if (!session) throw Service.sessionNotFoundError();
 
       return session;
     }
@@ -154,11 +134,7 @@ export namespace ClassSessionQuery {
       try {
         return await this._classSessionRepo.getWithClassAndOffering(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `class_sessions` table.",
-          err,
-        });
+        throw Service.normalizeQueryError(err);
       }
     }
 
@@ -180,11 +156,7 @@ export namespace ClassSessionQuery {
         constraints: { limit: 1 },
       }).then((r) => r[0]);
 
-      if (!session)
-        throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_SESSION_NOT_FOUND_ERROR",
-          message: "Could not find the specified class session.",
-        });
+      if (!session) throw Service.sessionNotFoundError();
 
       return session;
     }
@@ -201,12 +173,25 @@ export namespace ClassSessionQuery {
       try {
         return await this._classSessionRepo.getMinimalShape(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `class_sessions` table.",
-          err,
-        });
+        throw Service.normalizeQueryError(err);
       }
+    }
+
+    private static sessionNotFoundError(msg?: string) {
+      const message = msg ?? "The specified class session was not found.";
+
+      return new Errors.EnrollmentData.ErrorClass({
+        name: "ENROLLMENT_DATA_CLASS_SESSION_NOT_FOUND_ERROR",
+        message,
+      });
+    }
+
+    private static normalizeQueryError(err: unknown) {
+      return Errors.EnrollmentData.normalizeError({
+        name: "ENROLLMENT_DATA_QUERY_ERROR",
+        message: "Failed querying `class_sessions` table.",
+        err,
+      });
     }
   }
 }

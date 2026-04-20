@@ -18,6 +18,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
       fn: async (query) =>
         query.findFirst({
           orderBy: (cs, { desc }) => desc(cs.startTimeMs),
+          columns: { startTimeMs: true },
         }),
     });
   }
