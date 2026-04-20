@@ -125,7 +125,7 @@ export namespace AttendanceData {
 
         classEnrollments =
           await this._enrollmentQueryService.getEnrollmentsWithStudentDetails({
-            constraints: args.constraints,
+            constraints,
             where: eq(e.classId, session.class.id),
             orderBy: [
               asc(u.surname),
@@ -144,9 +144,9 @@ export namespace AttendanceData {
 
           recordsAndSummary =
             await this._attendanceQueryService.fetchRecordsAndSummary({
-              ...args,
               values: { classSessionId, enrollmentIds },
               constraints,
+              dbOrTx: args.dbOrTx,
             });
         }
       } catch (err) {
@@ -205,7 +205,6 @@ export namespace AttendanceData {
 
         recordsAndSummary =
           await this._attendanceQueryService.fetchRecordsAndSummary({
-            ...args,
             values: {
               classId,
               enrollmentIds: [enrollment.id],
@@ -214,6 +213,7 @@ export namespace AttendanceData {
               limit: RepositoryUtil.resolveLimit(args.constraints),
               offset: RepositoryUtil.resolveOffset(args.constraints),
             },
+            dbOrTx: args.dbOrTx,
           });
       } catch (err) {
         return ResultBuilder.fail(
@@ -278,6 +278,7 @@ export namespace AttendanceData {
                 classId: cls.id,
                 enrollmentIds: [enrollment.id],
               },
+              dbOrTx: args.dbOrTx,
             },
           );
       } catch (err) {
