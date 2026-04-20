@@ -1,17 +1,17 @@
-import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { createContext, TxContext } from "../../../../db/create-context";
-import { DbAccess } from "../../../../error";
-import { ResultBuilder } from "../../../../utils";
+import { RepositoryUtil, ResultBuilder } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
+import { ClassSessionQuery } from "./class-session-query.service";
 
 export namespace ClassSessionData {
   export async function create() {
     const context = await createContext();
-    const classRepo = new Repositories.Class(context);
     const classSessionRepo = new Repositories.ClassSession(context);
-    return new Service({ classRepo, classSessionRepo });
+    return new Service({
+      classSessionQuery: new ClassSessionQuery.Service({ classSessionRepo }),
+    });
   }
 
   type Constraints = { limit: number; page: number };
@@ -21,42 +21,31 @@ export namespace ClassSessionData {
   };
 
   export class Service {
-    private readonly _classRepo: Repositories.Class;
-    private readonly _classSessionRepo: Repositories.ClassSession;
+    private readonly _classSessionQuery: ClassSessionQuery.Service;
 
-    constructor(args: {
-      classRepo: Repositories.Class;
-      classSessionRepo: Repositories.ClassSession;
-    }) {
-      this._classRepo = args.classRepo;
-      this._classSessionRepo = args.classSessionRepo;
+    constructor(args: { classSessionQuery: ClassSessionQuery.Service }) {
+      this._classSessionQuery = args.classSessionQuery;
     }
 
-    async getProfessorView(
+    async getAllSessionsUntilDate(
       args: {
-        values: { date: Date; classId: number; termId: number };
+        values: {
+          date: Date;
+          classId: number;
+          professorId: number;
+          termId: number;
+        };
       } & QueryArgs,
     ) {
-      const { date, classId, termId } = args.values;
-      const { limit = 6, page = 1 } = args.constraints ?? {};
-
-      const subqueryC = (args: {
-        classId: SQLiteColumn;
-        termId: number;
-        tx?: TxContext | undefined;
-      }) => this._classRepo.existsForContext({ ...args, dbOrTx: args.tx });
-
+      const { constraints } = args;
       try {
-        const result = await this.querySessions({
-          dbOrTx: args.tx,
-          constraints: { limit, offset: (page - 1) * limit },
-          orderBy: (cs, { desc }) => desc(cs.startTimeMs),
-          where: (cs, { and, eq, exists, lte }) =>
-            and(
-              exists(subqueryC({ classId: cs.classId, termId, tx: args.tx })),
-              eq(cs.classId, classId),
-              lte(cs.startTimeMs, date.getTime()),
-            ),
+        const result = await this._classSessionQuery.getAllUntilDate({
+          values: args.values,
+          constraints: {
+            limit: RepositoryUtil.resolveLimit(constraints),
+            offset: RepositoryUtil.resolveOffsetFromPage(constraints),
+          },
+          tx: args.tx,
         });
 
         const dto: Schemas.Dto.ClassSession[] = result;
@@ -70,20 +59,6 @@ export namespace ClassSessionData {
             err,
           }),
         );
-      }
-    }
-
-    private async querySessions(
-      args: Parameters<Repositories.ClassSession["getMinimalShape"]>[0],
-    ) {
-      try {
-        return await this._classSessionRepo.getMinimalShape(args);
-      } catch (err) {
-        throw DbAccess.normalizeError({
-          name: "DB_ACCESS_QUERY_ERROR",
-          message: "Failed querying `class_sessions` table.",
-          err,
-        });
       }
     }
   }

@@ -1,6 +1,7 @@
 import { sql, SQL, SQLWrapper } from "drizzle-orm";
+import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx, TxContext } from "../../../db/create-context";
-import { classSessions } from "../../../models";
+import { classSessions, Schema } from "../../../models";
 import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
 import { RepositoryUtil } from "../../../utils";
@@ -129,6 +130,52 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
             },
           },
         }),
+    });
+  }
+
+  async getAllUntilDate(args: {
+    values: {
+      date: Date;
+      classId: number;
+      professorId: number;
+      termId: number;
+    };
+    constraints?: BaseRepositoryType.QueryConstraints;
+    tx?: TxContext | undefined;
+  }) {
+    const { date, classId, professorId, termId } = args.values;
+
+    const context = args.tx ?? this._dbContext;
+
+    const { classes: c } = Schema;
+    const { and, eq } = RepositoryUtil.filters;
+
+    const classSubquery = (args: {
+      id: SQLiteColumn;
+      professorId: number;
+      termId: number;
+    }) =>
+      context
+        .select({ id: c.id })
+        .from(c)
+        .where(
+          and(
+            eq(c.id, args.id),
+            eq(c.professorId, args.professorId),
+            eq(c.termId, args.termId),
+          ),
+        );
+
+    return await this.getMinimalShape({
+      where: (cs, { and, eq, exists, lte }) =>
+        and(
+          eq(cs.classId, classId),
+          lte(cs.startTimeMs, date.getTime()),
+          exists(classSubquery({ id: cs.classId, professorId, termId })),
+        ),
+      orderBy: (cs, { desc }) => desc(cs.startTimeMs),
+      constraints: args.constraints,
+      dbOrTx: args.tx,
     });
   }
 
