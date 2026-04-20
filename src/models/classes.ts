@@ -4,6 +4,7 @@ import {
   integer,
   text,
   uniqueIndex,
+  index,
 } from "drizzle-orm/sqlite-core";
 import { classOfferings, courses, professors, terms } from "./schema";
 
@@ -32,6 +33,7 @@ export const classes = sqliteTable(
     classNumber: text("class_number").notNull(),
   },
   (t) => [
+    index("idx_classes_term_id").on(t.termId),
     uniqueIndex("uidx_classes_professor_id_term_id_course_id_class_number").on(
       t.professorId,
       t.termId,
