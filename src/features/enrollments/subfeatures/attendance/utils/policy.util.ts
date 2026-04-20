@@ -1,9 +1,9 @@
-import { TimeUtil } from "../../../../utils";
-import { Data } from "./data";
-import { Schemas } from "./schemas";
+import { TimeUtil } from "../../../../../utils";
+import { Data } from "../data";
+import { Schemas } from "../schemas";
 
-export namespace Utils {
-  export namespace AttendancePolicy {
+export namespace Policy {
+  export namespace Attendance {
     export function isWithinSchedule(
       recordedDate: Date,
       session: { startTimeMs: number; endTimeMs: number },
@@ -40,7 +40,7 @@ export namespace Utils {
     }
   }
 
-  export namespace AttendanceSubmissionPolicy {
+  export namespace AttendanceSumbission {
     export const normalizeRecord = (
       record: Schemas.RequestBody.RecordSubmission["records"][number],
       session: { endTimeMs: number },
@@ -74,10 +74,7 @@ export namespace Utils {
 
         const isReject =
           !isSameDate ||
-          !Utils.AttendancePolicy.isWithinSchedule(
-            normalized.recordedDate,
-            session,
-          );
+          !Attendance.isWithinSchedule(normalized.recordedDate, session);
 
         isReject ? rejects.push(normalized) : upserts.push(normalized);
       }

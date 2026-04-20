@@ -3,10 +3,9 @@ import {
   execTransaction,
   TxContext,
 } from "../../../../../db/create-context";
-import { Clock, ResultBuilder, TimeUtil } from "../../../../../utils";
+import { Clock, ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
 import { Repositories as CoreRepositories } from "../../../repositories";
-import { Data } from "../data";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
 import { Utils } from "../utils";
@@ -87,7 +86,7 @@ export namespace AttendanceRegistration {
 
         //  * organize records
         const organizedRecords =
-          Utils.AttendanceSubmissionPolicy.organizeRecords(
+          Utils.Policy.AttendanceSumbission.organizeRecords(
             values.records,
             session,
           );
@@ -166,7 +165,7 @@ export namespace AttendanceRegistration {
             },
           );
 
-        const status = Utils.AttendancePolicy.getAttendanceStatus({
+        const status = Utils.Policy.Attendance.getAttendanceStatus({
           attendanceDate: recordedDate,
           schedStartTime: clsRuntime.offering.startTime,
           schedEndTime: clsRuntime.offering.endTime,
