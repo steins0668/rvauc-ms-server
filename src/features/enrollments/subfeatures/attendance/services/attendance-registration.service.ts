@@ -57,13 +57,24 @@ export namespace AttendanceRegistration {
       this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
-    //  todo: clean up flow
-    async mutateClassSessionRecords(args: {
+    /**
+     * @description
+     * Performs a transactional mutation of attendance records for a class session.
+     *
+     * The process includes:
+     *
+     * 1. Deduplicates incoming records by enrollment ID.
+     * 2. Retrieves minimal class session metadata for validation and normalization.
+     * 3. Validates and classifies records into upserts and rejects based on attendance policy rules.
+     * 4. Executes a bulk upsert for valid records, updating or inserting attendance status and timestamps.
+     * 5. Separates inserted vs updated records based on creation/update timestamps.
+     * 6. Returns a normalized DTO containing updated, inserted, and rejected records.
+     */
+    async mutateSessionRecords(args: {
       values: {
         classSessionId: number;
         professorId?: number | undefined;
-        records: Schemas.RequestBody.RecordSubmission;
-      };
+      } & Schemas.RequestBody.RecordSubmission;
       tx?: TxContext | undefined;
     }) {
       const { values, tx } = args;
@@ -76,7 +87,7 @@ export namespace AttendanceRegistration {
       values.records = Array.from(uniqueRecords.values());
 
       const txPromise = execTransaction(async (tx) => {
-        //  * ensure session is valid
+        //  * fetch session details
         const session = await this._classSessionQueryService.ensureMinimalShape(
           {
             where: (cs, { eq }) => eq(cs.id, values.classSessionId),
@@ -84,7 +95,6 @@ export namespace AttendanceRegistration {
           },
         );
 
-        //  * organize records
         const organizedRecords =
           Utils.Policy.AttendanceSumbission.organizeRecords(
             values.records,
@@ -94,7 +104,6 @@ export namespace AttendanceRegistration {
         //  * auditing field
         const createdOrUpdatedAt = Clock.now().toISOString();
 
-        //  * execute upsert
         const upserted = organizedRecords.upserts.length
           ? await this._attendanceCommand.upsertStatusAndRecordDateTime({
               tx,
@@ -120,7 +129,7 @@ export namespace AttendanceRegistration {
         const result = await txPromise;
 
         return ResultBuilder.success(
-          AttendanceMutationDto.Mapper.toAttendanceRecordMutationResultDto(
+          AttendanceMutationDto.Mapper.toSessionRecordsMutationResult(
             result.updated,
             result.inserted,
             result.rejected,

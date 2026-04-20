@@ -42,7 +42,7 @@ export namespace Policy {
 
   export namespace AttendanceSumbission {
     export const normalizeRecord = (
-      record: Schemas.RequestBody.RecordSubmission[number],
+      record: Schemas.RequestBody.RecordSubmission["records"][number],
       session: { endTimeMs: number },
     ): Schemas.Dto.ClassAttendance.NormalizedRecord => {
       const finalDate =
@@ -60,7 +60,7 @@ export namespace Policy {
     };
 
     export const organizeRecords = (
-      records: Schemas.RequestBody.RecordSubmission,
+      records: Schemas.RequestBody.RecordSubmission["records"],
       session: { datePh: string; startTimeMs: number; endTimeMs: number },
     ) => {
       let upserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];

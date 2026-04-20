@@ -5,7 +5,7 @@ import { AttendanceCommand } from "./attendance-command.service";
 
 export namespace AttendanceMutationDto {
   export namespace Mapper {
-    export function toAttendanceRecordMutationResultDto(
+    export function toSessionRecordsMutationResult(
       updated: Awaited<
         ReturnType<AttendanceCommand.Service["updateClassSessionRecords"]>
       >,

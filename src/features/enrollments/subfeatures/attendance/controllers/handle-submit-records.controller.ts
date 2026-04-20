@@ -54,10 +54,9 @@ export async function handleSubmitRecords(req: Request, res: Response) {
   }
 
   logger.log("debug", "Attempting to update records...");
-  const tx = await attendanceRegistrationService.mutateClassSessionRecords({
+  const tx = await attendanceRegistrationService.mutateSessionRecords({
     values: {
       classSessionId: params.classSessionId,
-      date: body.date,
       professorId: auth.payload.id,
       records: body.records,
     },

@@ -15,15 +15,19 @@ export namespace Schemas {
 
     export type NewRecord = z.infer<typeof newRecord>;
 
-    export const recordSubmission = z.array(
-      z
-        .strictObject({
-          recordedDate: z.coerce.date(),
-          enrollmentId: z.number(),
-          status: z.enum(Data.attendanceStatus),
-        })
-        .strip(),
-    );
+    export const recordSubmission = z
+      .strictObject({
+        records: z.array(
+          z
+            .strictObject({
+              recordedDate: z.coerce.date(),
+              enrollmentId: z.number(),
+              status: z.enum(Data.attendanceStatus),
+            })
+            .strip(),
+        ),
+      })
+      .strip();
 
     export type RecordSubmission = z.infer<typeof recordSubmission>;
   }
