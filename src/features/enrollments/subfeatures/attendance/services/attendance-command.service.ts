@@ -83,6 +83,72 @@ export namespace AttendanceCommand {
       }
     }
 
+    async upsertStatusAndRecordDateTime(args: {
+      values: {
+        classId: number;
+        classSessionId: number;
+        datePh: string;
+        createdAt: string;
+        updatedAt: string;
+        updatedByUserId?: number | undefined;
+        records: {
+          recordedAt: string;
+          recordedMs: number;
+          enrollmentId: number;
+          status: keyof typeof Data.attendanceStatus;
+        }[];
+      };
+      tx?: TxContext | undefined;
+    }) {
+      const { tx, values } = args;
+
+      const upserts: Types.InsertModels.AttendanceRecord[] = values.records.map(
+        (r) => {
+          return {
+            enrollmentId: r.enrollmentId,
+            classId: values.classId,
+            classSessionId: values.classSessionId,
+            status: r.status,
+            datePh: values.datePh,
+            createdAt: values.createdAt,
+            recordedAt: r.recordedAt,
+            recordedMs: r.recordedMs,
+            updatedAt: values.updatedAt,
+            updatedByUserId: values.updatedByUserId,
+          };
+        },
+      );
+
+      const insert = this._attendanceRecordRepo.execInsert({
+        dbOrTx: tx,
+        fn: async ({ table: ar, insert, sql }) => {
+          return insert
+            .values(upserts)
+            .onConflictDoUpdate({
+              target: [ar.enrollmentId, ar.classSessionId, ar.datePh],
+              set: {
+                status: sql`excluded.status`,
+                recordedAt: sql`excluded.recorded_at`,
+                recordedMs: sql`excluded.recorded_ms`,
+                updatedAt: sql`excluded.updated_at`,
+                updatedByUserId: sql`excluded.updated_by_user_id`,
+              },
+            })
+            .returning();
+        },
+      });
+
+      try {
+        return await insert;
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_STORE_ERROR",
+          message: "Failed upserting into `attendance_records` table.",
+          err,
+        });
+      }
+    }
+
     async persistRecords(args: {
       tx?: TxContext | undefined;
       onConflict?: "doNothing" | "doUpdate" | undefined;
