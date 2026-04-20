@@ -259,6 +259,7 @@ export namespace ClassRuntimeResolver {
       };
     }
 
+    //  todo: fix this wtf
     private whereClassSession(args: {
       values: { classOfferingId: number; date: Date };
       mode: "now" | "now-or-next";

@@ -141,13 +141,13 @@ describe("Attendance Test Suite", () => {
     Schemas.Dto.ClassAttendance.professorView.parse(res.body.result);
   });
 
+  //  * For date: 2025-12-03T07:00:00+08:00
   it(`POST records/class/offering/session/${sessionId}`, async () => {
     const url = `/enrollments/attendance/records/class/offering/session/${sessionId}`;
     const res = await request(app)
       .post(url)
       .set("Authorization", `Bearer ${tokens.professor}`)
       .send({
-        date: "2025-12-03T07:00:00+08:00",
         records: [
           {
             //  * student id 7

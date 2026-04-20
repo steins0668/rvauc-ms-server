@@ -58,11 +58,12 @@ export namespace AttendanceRegistration {
     }
 
     //  todo: clean up flow
-    async mutateRecords(args: {
+    async mutateClassSessionRecords(args: {
       values: {
         classSessionId: number;
         professorId?: number | undefined;
-      } & Schemas.RequestBody.RecordSubmission;
+        records: Schemas.RequestBody.RecordSubmission;
+      };
       tx?: TxContext | undefined;
     }) {
       const { values, tx } = args;
@@ -74,7 +75,6 @@ export namespace AttendanceRegistration {
 
       values.records = Array.from(uniqueRecords.values());
 
-      //  * begin transaction
       const txPromise = execTransaction(async (tx) => {
         //  * ensure session is valid
         const session = await this._classSessionQueryService.ensureMinimalShape(
