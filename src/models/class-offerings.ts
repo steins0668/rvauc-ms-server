@@ -23,6 +23,7 @@ export const classOfferings = sqliteTable(
     endTimeText: text("end_time_text").notNull(),
   },
   (t) => [
+    index("idx_class_offerings_week_day_class_id").on(t.weekDay, t.classId),
     index("idx_class_offerings_week_day_start_time_end_time").on(
       t.weekDay,
       t.startTime,
