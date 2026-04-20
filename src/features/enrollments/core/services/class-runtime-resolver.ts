@@ -259,47 +259,18 @@ export namespace ClassRuntimeResolver {
       };
     }
 
-    //  todo: fix this wtf
     private whereClassSession(args: {
       values: { classOfferingId: number; date: Date };
       mode: "now" | "now-or-next";
     }): Types.Repository.WhereBuilders.ClassSession {
       const { mode } = args;
       const { classOfferingId, date } = args.values;
-      const ms = date.getTime();
 
-      return (cs, { and, or, eq, lte, gt }) => {
+      return (cs, { and, eq }) => {
         const conditions: (SQLWrapper | undefined)[] = [
           eq(cs.classOfferingId, classOfferingId),
+          this._classSessionRepo.getTimeFilters({ date, mode }),
         ];
-
-        if (mode === "now") {
-          //  ! for allowing attendance 30 minutes before class
-          const offsetDate = new Date(date);
-          offsetDate.setMinutes(offsetDate.getMinutes() + 30);
-          const offsetMs = offsetDate.getTime();
-
-          conditions.push(
-            or(
-              //  ! class currently in session
-              and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms)),
-              //  ! class starts in 30 minutes
-              and(gt(cs.startTimeMs, ms), lte(cs.startTimeMs, offsetMs)),
-            ),
-          );
-        }
-
-        if (mode === "now-or-next") {
-          conditions.push(
-            or(
-              //  ! class currently in sesion
-              and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms)),
-              //  ! next class
-              gt(cs.startTimeMs, ms),
-            ),
-          );
-        }
-
         return conditions.length ? and(...conditions) : undefined;
       };
     }

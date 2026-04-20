@@ -3,12 +3,36 @@ import { DbContext, DbOrTx } from "../../../db/create-context";
 import { classSessions } from "../../../models";
 import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
-import { RepositoryUtil } from "../../../utils";
+import { RepositoryUtil, TimeUtil } from "../../../utils";
 import { Types } from "../types";
 
 export class ClassSession extends Repository<Types.Tables.ClassSession> {
   public constructor(context: DbContext) {
     super(context, classSessions);
+  }
+
+  getTimeFilters(args: { date: Date; mode: "now" | "now-or-next" }) {
+    const { date, mode } = args;
+
+    const cs = classSessions;
+    const { or, and, lte, gt } = RepositoryUtil.filters;
+
+    const ms = date.getTime();
+
+    switch (mode) {
+      case "now":
+        //  ! class currently in session
+        return and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms));
+      case "now-or-next":
+        return or(
+          //  ! class currently in sesion
+          and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms)),
+          //  ! next class
+          gt(cs.startTimeMs, ms),
+        );
+      default:
+        return undefined;
+    }
   }
 
   async getLatest(args?: { dbOrTx?: DbOrTx | undefined }) {
