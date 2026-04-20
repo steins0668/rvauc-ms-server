@@ -75,52 +75,6 @@ export namespace AttendanceRegistration {
 
       values.records = Array.from(uniqueRecords.values());
 
-      //  * normalize records helper
-      const normalizeRecord = (
-        record: (typeof values.records)[number],
-        session: { endTimeMs: number },
-      ): Schemas.Dto.ClassAttendance.NormalizedRecord => {
-        const finalDate =
-          record.status === "absent"
-            ? new Date(session.endTimeMs)
-            : record.recordedDate;
-
-        return {
-          enrollmentId: record.enrollmentId,
-          status: record.status,
-          recordedDate: finalDate,
-          recordedAt: finalDate.toISOString(),
-          recordedMs: finalDate.getTime(),
-        };
-      };
-
-      //  * organize records into upserts, rejects
-      const organizeRecords = (
-        records: typeof values.records,
-        session: { datePh: string; startTimeMs: number; endTimeMs: number },
-      ) => {
-        let upserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
-        let rejects: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
-
-        for (const r of records) {
-          const normalized = normalizeRecord(r, session);
-
-          const isSameDate =
-            TimeUtil.toPhDate(normalized.recordedDate) === session.datePh;
-
-          const isReject =
-            !isSameDate ||
-            !Utils.AttendancePolicy.isWithinSchedule(
-              normalized.recordedDate,
-              session,
-            );
-
-          isReject ? rejects.push(normalized) : upserts.push(normalized);
-        }
-
-        return { upserts, rejects };
-      };
-
       //  * begin transaction
       const txPromise = execTransaction(async (tx) => {
         //  * ensure session is valid
@@ -132,7 +86,11 @@ export namespace AttendanceRegistration {
         );
 
         //  * organize records
-        const organizedRecords = organizeRecords(values.records, session);
+        const organizedRecords =
+          Utils.AttendanceSubmissionPolicy.organizeRecords(
+            values.records,
+            session,
+          );
 
         //  * auditing field
         const createdOrUpdatedAt = Clock.now().toISOString();

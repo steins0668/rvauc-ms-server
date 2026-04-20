@@ -1,5 +1,6 @@
 import { TimeUtil } from "../../../../utils";
 import { Data } from "./data";
+import { Schemas } from "./schemas";
 
 export namespace Utils {
   export namespace AttendancePolicy {
@@ -37,5 +38,51 @@ export namespace Utils {
           ? Data.attendanceStatus.late
           : Data.attendanceStatus.present;
     }
+  }
+
+  export namespace AttendanceSubmissionPolicy {
+    export const normalizeRecord = (
+      record: Schemas.RequestBody.RecordSubmission["records"][number],
+      session: { endTimeMs: number },
+    ): Schemas.Dto.ClassAttendance.NormalizedRecord => {
+      const finalDate =
+        record.status === "absent"
+          ? new Date(session.endTimeMs)
+          : record.recordedDate;
+
+      return {
+        enrollmentId: record.enrollmentId,
+        status: record.status,
+        recordedDate: finalDate,
+        recordedAt: finalDate.toISOString(),
+        recordedMs: finalDate.getTime(),
+      };
+    };
+
+    export const organizeRecords = (
+      records: Schemas.RequestBody.RecordSubmission["records"],
+      session: { datePh: string; startTimeMs: number; endTimeMs: number },
+    ) => {
+      let upserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
+      let rejects: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
+
+      for (const r of records) {
+        const normalized = normalizeRecord(r, session);
+
+        const isSameDate =
+          TimeUtil.toPhDate(normalized.recordedDate) === session.datePh;
+
+        const isReject =
+          !isSameDate ||
+          !Utils.AttendancePolicy.isWithinSchedule(
+            normalized.recordedDate,
+            session,
+          );
+
+        isReject ? rejects.push(normalized) : upserts.push(normalized);
+      }
+
+      return { upserts, rejects };
+    };
   }
 }
