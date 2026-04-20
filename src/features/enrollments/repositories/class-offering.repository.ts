@@ -1,11 +1,13 @@
-import { and, eq, or, sql, SQL } from "drizzle-orm";
+import { and, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
 import { SQLiteColumn } from "drizzle-orm/sqlite-core";
-import { DbContext, DbOrTx } from "../../../db/create-context";
+import { DbContext, DbOrTx, TxContext } from "../../../db/create-context";
+import { Enums } from "../../../data";
 import { classOfferings, Schema } from "../../../models";
 import { Repository } from "../../../services";
 import { RepositoryUtil, TimeUtil } from "../../../utils";
-import { Types } from "../types";
 import { BaseRepositoryType } from "../../../types";
+import { Auth } from "../../auth";
+import { Types } from "../types";
 
 export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
   public constructor(context: DbContext) {
@@ -34,6 +36,20 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
       default:
         return undefined;
     }
+  }
+
+  async getActiveOffering(args: {
+    values: { date: Date; termId: number; userId: number };
+    role: keyof typeof Auth.Core.Data.Records.roles;
+    mode: "now" | "now-or-next";
+    tx?: TxContext | undefined;
+  }) {
+    return await this.queryWithClassAndProfessor({
+      constraints: { limit: 1 },
+      where: this.getActiveOfferingWhereClause(args),
+      orderBy: (co, { asc }) => asc(co.startTime),
+      dbOrTx: args.tx,
+    }).then((r) => r[0]);
   }
 
   async queryWithClass(args: {
@@ -235,5 +251,85 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     builder: Types.Repository.OrderBuilders.ClassOffering,
   ) {
     return builder(classOfferings, RepositoryUtil.orderOperators);
+  }
+
+  private getActiveOfferingWhereClause(
+    args: Parameters<typeof this.getActiveOffering>[0],
+  ): Types.Repository.WhereBuilders.ClassOffering {
+    const { tx, role, mode } = args;
+    const { date, userId, termId } = args.values;
+
+    const { classes: c, enrollments: e } = Schema;
+    const { eq, and } = RepositoryUtil.filters;
+
+    const context = args.tx ?? this._dbContext;
+
+    const subqueryC = (args: {
+      classId: SQLiteColumn;
+      termId: number;
+      professorId?: number | undefined;
+    }) => {
+      const { classId, termId, professorId } = args;
+      const conditions = [eq(c.id, classId), eq(c.termId, termId)];
+
+      //  ! used when querying class offerings for professors
+      if (professorId !== undefined)
+        conditions.push(eq(c.professorId, professorId));
+
+      return context
+        .select({ id: c.id })
+        .from(c)
+        .where(and(...conditions));
+    };
+
+    const subqueryE = (args: { classId: SQLiteColumn; studentId: number }) =>
+      context
+        .select({ id: e.id })
+        .from(e)
+        .where(
+          and(eq(e.classId, args.classId), eq(e.studentId, args.studentId)),
+        );
+
+    return (co, { and, eq, exists, gt, lte }) => {
+      const day = Enums.Days[date.getDay()] as string;
+      const weekDay = day.substring(0, 3);
+
+      const conditions: (SQLWrapper | undefined)[] = [
+        eq(co.weekDay, weekDay),
+        exists(
+          subqueryC({
+            classId: co.classId,
+            termId,
+            professorId: role === "professor" ? userId : undefined,
+          }),
+        ),
+      ];
+
+      if (role === "student")
+        conditions.push(
+          exists(subqueryE({ classId: co.classId, studentId: userId })),
+        ); //  ! professors don't need enrollments subquery
+
+      const seconds = TimeUtil.secondsSinceMidnightPh(date);
+
+      switch (mode) {
+        case "now":
+          //  ! class currently in session
+          conditions.push(
+            and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
+          );
+        case "now-or-next":
+          conditions.push(
+            or(
+              //  ! class currently in sesion
+              and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
+              //  ! next class
+              gt(co.startTime, seconds),
+            ),
+          );
+
+          return conditions.length ? and(...conditions) : undefined;
+      }
+    };
   }
 }

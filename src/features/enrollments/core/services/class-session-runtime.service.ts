@@ -4,21 +4,19 @@ import { Auth } from "../../../auth";
 import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
+import { ClassOfferingQuery } from "./class-offering-query.service";
 import { ClassRuntimeResolver } from "./class-runtime-resolver";
+import { ClassSessionQuery } from "./class-session-query.service";
 
 export namespace ClassSessionRuntime {
   const { roles } = Auth.Core.Data.Records;
   export async function create() {
     const context = await createContext();
-    const classRepo = new Repositories.Class(context);
     const classOfferingRepo = new Repositories.ClassOffering(context);
     const classSessionRepo = new Repositories.ClassSession(context);
-    const enrollmentRepo = new Repositories.Enrollment(context);
     const classRuntimeResolver = new ClassRuntimeResolver.Service({
-      classRepo,
-      classOfferingRepo,
-      classSessionRepo,
-      enrollmentRepo,
+      classOfferingQuery: new ClassOfferingQuery.Service({ classOfferingRepo }),
+      classSessionQuery: new ClassSessionQuery.Service({ classSessionRepo }),
     });
     return new Service({ classRuntimeResolver });
   }
@@ -59,14 +57,6 @@ export namespace ClassSessionRuntime {
           }),
         );
       }
-
-      if (!session)
-        return ResultBuilder.fail(
-          new Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
-            message: `Failed ensuring existence of class session for ${JSON.stringify(offering)}`,
-          }),
-        );
 
       try {
         const parsed = this.toDto(offering, session);
@@ -135,7 +125,7 @@ export namespace ClassSessionRuntime {
         >[0]
       >,
       cs: NonNullable<
-        Awaited<ReturnType<Repositories.ClassSession["queryMinimalShape"]>>[0]
+        Awaited<ReturnType<Repositories.ClassSession["getMinimalShape"]>>[0]
       >,
     ): {
       class: Schemas.Dto.Class_ & {

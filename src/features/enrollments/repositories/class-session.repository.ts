@@ -1,38 +1,14 @@
-import { sql, SQL } from "drizzle-orm";
-import { DbContext, DbOrTx } from "../../../db/create-context";
+import { sql, SQL, SQLWrapper } from "drizzle-orm";
+import { DbContext, DbOrTx, TxContext } from "../../../db/create-context";
 import { classSessions } from "../../../models";
 import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
-import { RepositoryUtil, TimeUtil } from "../../../utils";
+import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
 
 export class ClassSession extends Repository<Types.Tables.ClassSession> {
   public constructor(context: DbContext) {
     super(context, classSessions);
-  }
-
-  getTimeFilters(args: { date: Date; mode: "now" | "now-or-next" }) {
-    const { date, mode } = args;
-
-    const cs = classSessions;
-    const { or, and, lte, gt } = RepositoryUtil.filters;
-
-    const ms = date.getTime();
-
-    switch (mode) {
-      case "now":
-        //  ! class currently in session
-        return and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms));
-      case "now-or-next":
-        return or(
-          //  ! class currently in sesion
-          and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms)),
-          //  ! next class
-          gt(cs.startTimeMs, ms),
-        );
-      default:
-        return undefined;
-    }
   }
 
   async getLatest(args?: { dbOrTx?: DbOrTx | undefined }) {
@@ -43,6 +19,45 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
           orderBy: (cs, { desc }) => desc(cs.startTimeMs),
         }),
     });
+  }
+
+  async getOfferingActiveSession(args: {
+    values: { classOfferingId: number; date: Date };
+    mode: "now" | "now-or-next";
+    tx?: TxContext | undefined;
+  }) {
+    const { mode } = args;
+    const { classOfferingId, date } = args.values;
+
+    return await this.getMinimalShape({
+      constraints: { limit: 1 },
+      where: (cs, { and, eq, gt, lte, or }) => {
+        const conditions: (SQLWrapper | undefined)[] = [
+          eq(cs.classOfferingId, classOfferingId),
+        ];
+
+        const ms = date.getTime();
+
+        switch (mode) {
+          case "now":
+            //  ! class currently in session
+            conditions.push(and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms)));
+          case "now-or-next":
+            conditions.push(
+              or(
+                //  ! class currently in sesion
+                and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms)),
+                //  ! next class
+                gt(cs.startTimeMs, ms),
+              ),
+            );
+        }
+
+        return and(...conditions);
+      },
+      orderBy: (cs, { asc }) => asc(cs.startTimeMs),
+      dbOrTx: args.tx,
+    }).then((r) => r[0]);
   }
 
   async getWithClassAndOffering(args: {

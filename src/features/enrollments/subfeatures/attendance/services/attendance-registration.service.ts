@@ -31,10 +31,12 @@ export namespace AttendanceRegistration {
         enrollmentRepo,
       }),
       classRuntimeResolver: new Core.Services.ClassRuntimeResolver.Service({
-        classRepo,
-        classOfferingRepo,
-        classSessionRepo,
-        enrollmentRepo,
+        classOfferingQuery: new Core.Services.ClassOfferingQuery.Service({
+          classOfferingRepo,
+        }),
+        classSessionQuery: new Core.Services.ClassSessionQuery.Service({
+          classSessionRepo,
+        }),
       }),
     });
   }
