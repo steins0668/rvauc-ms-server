@@ -146,29 +146,6 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     });
   }
 
-  existsForContext(args: {
-    dbOrTx?: DbOrTx | undefined;
-    values: { classOfferingId: SQLiteColumn; classId: number };
-  }) {
-    const { dbOrTx } = args;
-    const { classOfferingId, classId } = args.values;
-    return this.getContext({
-      dbOrTx,
-      fn: ({ table: co, context }) => {
-        const { eq, and } = RepositoryUtil.filters;
-
-        const conditions = [
-          eq(co.id, classOfferingId),
-          eq(co.classId, classId),
-        ];
-
-        return context
-          .select({ id: co.id })
-          .from(co)
-          .where(and(...conditions));
-      },
-    });
-  }
   public getContext<T>(args: Types.Repository.ContextArgs.ClassOffering<T>) {
     const context = args.dbOrTx ?? this._dbContext;
 
