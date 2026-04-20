@@ -1,0 +1,1 @@
+CREATE INDEX `idx_attendance_records_recordedMs` ON `attendance_records` (`recorded_ms`);

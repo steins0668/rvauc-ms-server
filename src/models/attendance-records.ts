@@ -40,6 +40,7 @@ export const attendanceRecords = sqliteTable(
     datePh: text("date_ph").notNull(), //  ! Ph date (yyyy-mm-dd)
   },
   (t) => [
+    index("idx_attendance_records_recordedMs").on(t.recordedMs),
     index("idx_attendance_records_enrollment_id_class_id").on(
       t.enrollmentId,
       t.classId,
