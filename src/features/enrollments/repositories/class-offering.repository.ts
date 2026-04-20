@@ -14,30 +14,6 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     super(context, classOfferings);
   }
 
-  getTimeFilters(args: { date: Date; mode: "now" | "now-or-next" }) {
-    const { date, mode } = args;
-
-    const { classOfferings: co } = Schema;
-    const { or, and, lte, gt } = RepositoryUtil.filters;
-
-    const seconds = TimeUtil.secondsSinceMidnightPh(date);
-
-    switch (mode) {
-      case "now":
-        //  ! class currently in session
-        return and(lte(co.startTime, seconds), gt(co.endTime, seconds));
-      case "now-or-next":
-        return or(
-          //  ! class currently in sesion
-          and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
-          //  ! next class
-          gt(co.startTime, seconds),
-        );
-      default:
-        return undefined;
-    }
-  }
-
   async getActiveOffering(args: {
     values: { date: Date; termId: number; userId: number };
     role: keyof typeof Auth.Core.Data.Records.roles;
@@ -50,6 +26,19 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
       orderBy: (co, { asc }) => asc(co.startTime),
       dbOrTx: args.tx,
     }).then((r) => r[0]);
+  }
+
+  async getScheduledOfferings(args: {
+    values: { date: Date; termId: number; userId: number };
+    role: keyof typeof Auth.Core.Data.Records.roles;
+    scope: "today" | "term";
+    tx?: TxContext | undefined;
+  }) {
+    return await this.queryWithClassAndProfessor({
+      where: this.getScheduledOfferingsWhereClause(args),
+      orderBy: (co, { asc }) => asc(co.startTime),
+      dbOrTx: args.tx,
+    });
   }
 
   async getMinimalShapesForWeekday(args: {
@@ -306,6 +295,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
           conditions.push(
             and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
           );
+          break;
         case "now-or-next":
           conditions.push(
             or(
@@ -315,9 +305,57 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
               gt(co.startTime, seconds),
             ),
           );
-
-          return conditions.length ? and(...conditions) : undefined;
+          break;
       }
+
+      return conditions.length ? and(...conditions) : undefined;
+    };
+  }
+
+  private getScheduledOfferingsWhereClause(
+    args: Parameters<typeof this.getScheduledOfferings>[0],
+  ): Types.Repository.WhereBuilders.ClassOffering {
+    const { tx, role, scope } = args;
+    const { date, userId, termId } = args.values;
+
+    const { classes: c, enrollments: e } = Schema;
+    const { eq, and } = RepositoryUtil.filters;
+
+    const context = args.tx ?? this._dbContext;
+
+    const subqueryE = (args: { classId: SQLiteColumn; studentId: number }) =>
+      context
+        .select({ id: e.id })
+        .from(e)
+        .where(
+          and(eq(e.classId, args.classId), eq(e.studentId, args.studentId)),
+        );
+
+    return (co, { and, eq, exists }) => {
+      const day = Enums.Days[date.getDay()] as string;
+      const weekDay = day.substring(0, 3);
+
+      const conditions: (SQLWrapper | undefined)[] = [
+        exists(
+          this.getClassSubquery({
+            values: {
+              classId: co.classId,
+              termId,
+              professorId: role === "professor" ? userId : undefined,
+            },
+            tx,
+          }),
+        ),
+      ];
+
+      if (role === "student")
+        conditions.push(
+          exists(subqueryE({ classId: co.classId, studentId: userId })),
+        ); //  ! professors don't need enrollments subquery
+
+      if (scope === "today") eq(co.weekDay, weekDay);
+
+      return conditions.length ? and(...conditions) : undefined;
     };
   }
 

@@ -1,152 +1,30 @@
-import { SQLWrapper } from "drizzle-orm";
-import { SQLiteColumn } from "drizzle-orm/sqlite-core";
-import { Enums } from "../../../../data";
 import { createContext, DbOrTx } from "../../../../db/create-context";
 import { ResultBuilder } from "../../../../utils";
 import { Auth } from "../../../auth";
 import { Repositories } from "../../repositories";
-import { Types } from "../../types";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
+import { ClassOfferingQuery } from "./class-offering-query.service";
 
 export namespace ClassSchedule {
   const { roles } = Auth.Core.Data.Records;
 
   export async function createService() {
     const context = await createContext();
-    const classRepo = new Repositories.Class(context);
     const classOfferingRepo = new Repositories.ClassOffering(context);
-    const enrollmentRepo = new Repositories.Enrollment(context);
 
-    return new Service({ classRepo, classOfferingRepo, enrollmentRepo });
+    return new Service({
+      classOfferingQuery: new ClassOfferingQuery.Service({ classOfferingRepo }),
+    });
   }
 
   export class Service {
-    private readonly _classRepo: Repositories.Class;
-    private readonly _classOfferingRepo: Repositories.ClassOffering;
-    private readonly _enrollmentRepo: Repositories.Enrollment;
+    private readonly _classOfferingQuery: ClassOfferingQuery.Service;
 
     public constructor(args: {
-      classRepo: Repositories.Class;
-      classOfferingRepo: Repositories.ClassOffering;
-      enrollmentRepo: Repositories.Enrollment;
+      classOfferingQuery: ClassOfferingQuery.Service;
     }) {
-      this._classRepo = args.classRepo;
-      this._classOfferingRepo = args.classOfferingRepo;
-      this._enrollmentRepo = args.enrollmentRepo;
-    }
-
-    public async getForNow(args: {
-      values: {
-        date: Date;
-        termId: number;
-        userId: number;
-      };
-      role: keyof typeof roles;
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      let result;
-      try {
-        result = await this._classOfferingRepo
-          .queryWithClassAndProfessor({
-            where: this.whereClassOffering({
-              ...args,
-              scope: "today",
-              mode: "now",
-            }),
-            orderBy: (co, { asc }) => asc(co.startTime),
-            constraints: { limit: 1 },
-            dbOrTx: args.dbOrTx,
-          })
-          .then((result) => result[0]);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying the `enrollments` table.",
-            err,
-          }),
-        );
-      }
-
-      if (!result)
-        return ResultBuilder.fail(
-          new Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-            message: `This ${args.role} has neither an ongoing class or a class that starts in 30 minutes.`,
-          }),
-        );
-
-      try {
-        const parsed = this.toDto(result);
-        return ResultBuilder.success({
-          ...parsed,
-          sessionDate: args.values.date,
-        });
-      } catch (err) {
-        return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw query data into enrollment DTO",
-            err,
-          }),
-        );
-      }
-    }
-
-    public async getForNowOrNext(args: {
-      values: {
-        date: Date;
-        termId: number;
-        userId: number;
-      };
-      role: keyof typeof roles;
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      let result;
-      try {
-        result = await this._classOfferingRepo
-          .queryWithClassAndProfessor({
-            where: this.whereClassOffering({
-              ...args,
-              scope: "today",
-              mode: "now-or-next",
-            }),
-            orderBy: (co, { asc }) => asc(co.startTime),
-            constraints: { limit: 1 },
-            dbOrTx: args.dbOrTx,
-          })
-          .then((result) => result[0]);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying the `enrollments` table.",
-            err,
-          }),
-        );
-      }
-
-      if (!result)
-        return ResultBuilder.fail(
-          new Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR",
-            message: `This ${args.role} does not have any more classes for today.`,
-          }),
-        );
-
-      try {
-        const parsed = this.toDto(result);
-        return ResultBuilder.success(parsed);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw query data into enrollment DTO",
-            err,
-          }),
-        );
-      }
+      this._classOfferingQuery = args.classOfferingQuery;
     }
 
     public async getForToday(args: {
@@ -158,13 +36,11 @@ export namespace ClassSchedule {
       };
       role: keyof typeof roles;
     }) {
-      let result;
+      let offerings;
       try {
-        result = await this._classOfferingRepo.queryWithClassAndProfessor({
-          where: this.whereClassOffering({ ...args, scope: "today" }),
-          orderBy: (co, { asc }) => asc(co.startTime),
-          constraints: { limit: 50 },
-          dbOrTx: args.dbOrTx,
+        offerings = await this._classOfferingQuery.getScheduledOfferings({
+          ...args,
+          scope: "today",
         });
       } catch (err) {
         return ResultBuilder.fail(
@@ -176,16 +52,10 @@ export namespace ClassSchedule {
         );
       }
 
-      if (result.length === 0)
-        return ResultBuilder.fail(
-          new Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR",
-            message: `This ${args.role} has no classes for today.`,
-          }),
-        );
+      if (offerings.length === 0) return ResultBuilder.success([]);
 
       try {
-        const parsed = result.map((row) => this.toDto(row));
+        const parsed = offerings.map((row) => this.toDto(row));
         return ResultBuilder.success(parsed);
       } catch (err) {
         return ResultBuilder.fail(
@@ -207,13 +77,11 @@ export namespace ClassSchedule {
       role: keyof typeof roles;
       dbOrTx?: DbOrTx | undefined;
     }) {
-      let result;
+      let offerings;
       try {
-        result = await this._classOfferingRepo.queryWithClassAndProfessor({
-          where: this.whereClassOffering({ ...args, scope: "term" }),
-          orderBy: (co, { asc }) => asc(co.startTime),
-          constraints: { limit: 50 },
-          dbOrTx: args.dbOrTx,
+        offerings = await this._classOfferingQuery.getScheduledOfferings({
+          ...args,
+          scope: "term",
         });
       } catch (err) {
         return ResultBuilder.fail(
@@ -225,17 +93,13 @@ export namespace ClassSchedule {
         );
       }
 
-      if (result.length === 0)
-        return ResultBuilder.fail(
-          new Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR",
-            message: `This ${args.role} has no classes for this term.`,
-          }),
-        );
+      if (offerings.length === 0) return ResultBuilder.success([]);
 
       try {
         const distinctClasses = Array.from(
-          new Map(result.map((row) => [row.class.classNumber, row])).values(),
+          new Map(
+            offerings.map((row) => [row.class.classNumber, row]),
+          ).values(),
         );
 
         const parsed = distinctClasses.map((row) => this.toDto(row));
@@ -249,72 +113,6 @@ export namespace ClassSchedule {
           }),
         );
       }
-    }
-
-    /**
-     * ! when using this method, select queries MUST be ordered ascending by startTime. otherwise the time filtering gets messed up.
-     * @param args
-     * @returns
-     */
-    private whereClassOffering(args: {
-      values: {
-        date: Date;
-        termId: number;
-        userId: number;
-      };
-      role: keyof typeof roles;
-      scope: "term" | "today";
-      mode?: "now" | "now-or-next" | undefined;
-      dbOrTx?: DbOrTx | undefined;
-    }): Types.Repository.WhereBuilders.ClassOffering {
-      const { dbOrTx, role, scope, mode } = args;
-      const { date, userId, termId } = args.values;
-
-      const allowedRoles = [roles.professor, roles.student] as const;
-
-      if (!allowedRoles.includes(role))
-        throw new Auth.Core.Errors.Authentication.ErrorClass({
-          name: "AUTHENTICATION_FORBIDDEN_ROLE_ERROR",
-          message: `Unsupported role for schedule query: ${role}.`,
-        });
-
-      const subqueryC = (classId: SQLiteColumn) =>
-        this._classRepo.existsForContext({
-          dbOrTx,
-          classId,
-          termId,
-          professorId: role === "professor" ? userId : undefined,
-        });
-      const subqueryE = (classId: SQLiteColumn) =>
-        this._enrollmentRepo.existsForClassAndStudent({
-          dbOrTx,
-          classId,
-          studentId: userId,
-        });
-
-      return (co, { eq, and, exists }) => {
-        const conditions: (SQLWrapper | undefined)[] = [];
-
-        conditions.push(exists(subqueryC(co.classId)));
-
-        if (role === "student") conditions.push(exists(subqueryE(co.classId))); //  ! professors don't need enrollments subquery
-
-        if (scope === "today") {
-          const day = Enums.Days[date.getDay()] as string;
-          const weekDay = day.substring(0, 3);
-          conditions.push(eq(co.weekDay, weekDay));
-        }
-
-        if (mode !== undefined)
-          conditions.push(
-            this._classOfferingRepo.getTimeFilters({
-              date,
-              mode,
-            }),
-          );
-
-        return conditions.length ? and(...conditions) : undefined;
-      };
     }
 
     private toDto(

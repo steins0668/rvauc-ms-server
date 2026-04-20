@@ -11,6 +11,31 @@ export namespace ClassOfferingQuery {
 
     /**
      * @description
+     * Fetches scheduled class offerings (with class + professor) for a user.
+     *
+     * Filters by date, term, role, and scope:
+     * - "today": offerings on the given date
+     * - "term": all offerings in the term
+     *
+     * Results are ordered by start time (ascending).
+     * Uses provided transaction if available.
+     */
+    async getScheduledOfferings(
+      args: Parameters<Repositories.ClassOffering["getScheduledOfferings"]>[0],
+    ) {
+      try {
+        return await this._classOfferingRepo.getScheduledOfferings(args);
+      } catch (err) {
+        throw Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed querying `class_offerings` table.",
+          err,
+        });
+      }
+    }
+
+    /**
+     * @description
      * Retrieves the current class offering for a provided date, term id, and user id.
      *
      * Executes varying behaviors depending on role and mode.

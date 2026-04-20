@@ -42,6 +42,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
           case "now":
             //  ! class currently in session
             conditions.push(and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms)));
+            break;
           case "now-or-next":
             conditions.push(
               or(
@@ -51,6 +52,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
                 gt(cs.startTimeMs, ms),
               ),
             );
+            break;
         }
 
         return and(...conditions);
