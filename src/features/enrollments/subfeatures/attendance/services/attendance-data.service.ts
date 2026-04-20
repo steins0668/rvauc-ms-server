@@ -114,7 +114,7 @@ export namespace AttendanceData {
       try {
         const constraints = {
           limit: RepositoryUtil.resolveLimit(args.constraints),
-          offset: RepositoryUtil.resolveOffset(args.constraints),
+          offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
         };
 
         session = await this.ensureSessionForProfessor(args);
@@ -208,7 +208,7 @@ export namespace AttendanceData {
           },
           constraints: {
             limit: RepositoryUtil.resolveLimit(args.constraints),
-            offset: RepositoryUtil.resolveOffset(args.constraints),
+            offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
           },
           dbOrTx: args.dbOrTx,
         });

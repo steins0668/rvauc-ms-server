@@ -52,6 +52,13 @@ export namespace RepositoryUtil {
 
   export const orderOperators = { asc, desc } as const;
 
+  export function resolveOffsetFromPage(
+    c?: Partial<{ limit: number; page: number }> | undefined,
+  ) {
+    const limit = resolveLimit(c) ?? 6;
+    return (c?.page ?? 1 - 1) * limit;
+  }
+
   export function resolveLimit(
     c?: BaseRepositoryType.QueryConstraints,
     defaultLimit = 6,
