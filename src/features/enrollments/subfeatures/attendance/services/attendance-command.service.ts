@@ -30,22 +30,19 @@ export namespace AttendanceCommand {
       const recordedDateIso = values.recordedDate.toISOString();
       const recordedDateMs = values.recordedDate.getTime();
 
-      const inserted = await this.persistRecords({
+      const inserted = await this.upsertRecordCount({
         tx,
-        onConflict: "doUpdate",
-        values: [
-          {
-            enrollmentId: values.enrollmentId,
-            classId: values.classId,
-            classSessionId: values.classSessionId,
-            status: values.status,
-            createdAt: nowIso,
-            recordedAt: recordedDateIso,
-            recordedMs: recordedDateMs,
-            updatedAt: nowIso,
-            datePh: TimeUtil.toPhDate(values.recordedDate),
-          },
-        ],
+        values: {
+          enrollmentId: values.enrollmentId,
+          classId: values.classId,
+          classSessionId: values.classSessionId,
+          status: values.status,
+          createdAt: nowIso,
+          recordedAt: recordedDateIso,
+          recordedMs: recordedDateMs,
+          updatedAt: nowIso,
+          datePh: TimeUtil.toPhDate(values.recordedDate),
+        },
       }).then((r) => r[0]);
 
       if (inserted === undefined)
@@ -55,6 +52,35 @@ export namespace AttendanceCommand {
         });
 
       return inserted;
+    }
+
+    async upsertRecordCount(args: {
+      tx?: TxContext | undefined;
+      values: Types.InsertModels.AttendanceRecord;
+    }) {
+      const { tx: dbOrTx, values } = args;
+      const insert = this._attendanceRecordRepo.execInsert({
+        dbOrTx,
+        fn: async ({ table: ar, insert, sql }) => {
+          return insert
+            .values(values)
+            .onConflictDoUpdate({
+              target: [ar.enrollmentId, ar.classSessionId, ar.datePh],
+              set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
+            })
+            .returning();
+        },
+      });
+
+      try {
+        return await insert;
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_STORE_ERROR",
+          message: "Failed upserting into `attendance_records` table.",
+          err,
+        });
+      }
     }
 
     async persistRecords(args: {
