@@ -147,7 +147,17 @@ export namespace AttendanceRegistration {
       }
     }
 
-    //  todo: clean up flow
+    /**
+     * @description
+     * Performs a transactional submission of an attendance records for a student.
+     *
+     * The process includes:
+     *
+     * 1. Retrieves class, class offering, class session, and enrollment data.
+     * 2. Infers attendance status based on the recorded date and the class offering schedule.
+     * 3. Persists the record into the database.
+     * 4. Maps the result into a DTO.
+     */
     async recordSessionAttendance(args: {
       values: {
         termId: number;
