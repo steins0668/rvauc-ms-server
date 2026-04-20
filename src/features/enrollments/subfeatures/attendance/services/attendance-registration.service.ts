@@ -62,14 +62,8 @@ export namespace AttendanceRegistration {
     async mutateRecords(args: {
       values: {
         classSessionId: number;
-        date: Date;
         professorId?: number | undefined;
-        records: {
-          recordedDate: Date;
-          enrollmentId: number;
-          status: keyof typeof Data.attendanceStatus;
-        }[];
-      };
+      } & Schemas.RequestBody.RecordSubmission;
       tx?: TxContext | undefined;
     }) {
       const { values, tx } = args;
