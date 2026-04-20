@@ -12,7 +12,6 @@ import { Schemas } from "../schemas";
 import { Utils } from "../utils";
 import { AttendanceCommand } from "./attendance-command.service";
 import { AttendanceMutationDto } from "./attendance-mutation-dto.mapper";
-import { AttendanceQuery } from "./attendance-query.service";
 
 export namespace AttendanceRegistration {
   export async function create() {
@@ -24,9 +23,6 @@ export namespace AttendanceRegistration {
     const enrollmentRepo = new CoreRepositories.Enrollment(context);
     return new Service({
       attendanceCommand: new AttendanceCommand.Service({
-        attendanceRecordRepo,
-      }),
-      attendanceQueryService: new AttendanceQuery.Service({
         attendanceRecordRepo,
       }),
       classSessionQuery: new Core.Services.ClassSessionQuery.Service({
@@ -46,25 +42,23 @@ export namespace AttendanceRegistration {
 
   export class Service {
     private readonly _attendanceCommand: AttendanceCommand.Service;
-    private readonly _attendanceQueryService: AttendanceQuery.Service;
     private readonly _classSessionQueryService: Core.Services.ClassSessionQuery.Service;
     private readonly _enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
     private readonly _classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
 
     public constructor(args: {
       attendanceCommand: AttendanceCommand.Service;
-      attendanceQueryService: AttendanceQuery.Service;
       classSessionQuery: Core.Services.ClassSessionQuery.Service;
       enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
       classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
     }) {
       this._attendanceCommand = args.attendanceCommand;
-      this._attendanceQueryService = args.attendanceQueryService;
       this._classSessionQueryService = args.classSessionQuery;
       this._enrollmentQueryService = args.enrollmentQueryService;
       this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
+    //  todo: clean up flow
     async mutateRecords(args: {
       values: {
         classSessionId: number;
@@ -79,59 +73,63 @@ export namespace AttendanceRegistration {
       tx?: TxContext | undefined;
     }) {
       const { values, tx } = args;
-      const datePh = TimeUtil.toPhDate(values.date);
 
+      //  * remove duplicate records
       const uniqueRecords = new Map<number, (typeof values.records)[number]>();
 
       for (const r of values.records) uniqueRecords.set(r.enrollmentId, r);
 
       values.records = Array.from(uniqueRecords.values());
 
-      const normalizeRecord = (r: (typeof values.records)[number]) => {
-        //  todo: automate setting recordedAt to end of class time when status = absent
+      //  * normalize records helper
+      const normalizeRecord = (
+        record: (typeof values.records)[number],
+        session: { endTimeMs: number },
+      ): Schemas.Dto.ClassAttendance.NormalizedRecord => {
+        const finalDate =
+          record.status === "absent"
+            ? new Date(session.endTimeMs)
+            : record.recordedDate;
+
         return {
-          ...r,
-          recordedAt: r.recordedDate.toISOString(),
-          recordedMs: r.recordedDate.getTime(),
-          datePh: TimeUtil.toPhDate(r.recordedDate),
+          enrollmentId: record.enrollmentId,
+          status: record.status,
+          recordedDate: finalDate,
+          recordedAt: finalDate.toISOString(),
+          recordedMs: finalDate.getTime(),
         };
       };
 
+      //  * organize records into upserts, rejects
       const organizeRecords = (
-        existingEnrollmentIds: Set<number>,
+        records: typeof values.records,
         session: { datePh: string; startTimeMs: number; endTimeMs: number },
       ) => {
-        let updates: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
-        let inserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
+        let upserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
         let rejects: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
 
-        for (const r of values.records) {
-          const normalized = normalizeRecord(r);
+        for (const r of records) {
+          const normalized = normalizeRecord(r, session);
 
-          const exists = existingEnrollmentIds.has(normalized.enrollmentId);
+          const isSameDate =
+            TimeUtil.toPhDate(normalized.recordedDate) === session.datePh;
 
-          const isSameDate = normalized.datePh === session.datePh;
-
-          if (
+          const isReject =
             !isSameDate ||
             !Utils.AttendancePolicy.isWithinSchedule(
               normalized.recordedDate,
               session,
-            )
-          ) {
-            rejects.push(normalized);
-            continue;
-          }
+            );
 
-          exists ? updates.push(normalized) : inserts.push(normalized);
+          isReject ? rejects.push(normalized) : upserts.push(normalized);
         }
 
-        return { updates, inserts, rejects };
+        return { upserts, rejects };
       };
 
-      const createdOrUpdatedAt = Clock.now().toISOString();
-
+      //  * begin transaction
       const txPromise = execTransaction(async (tx) => {
+        //  * ensure session is valid
         const session = await this._classSessionQueryService.ensureMinimalShape(
           {
             where: (cs, { eq }) => eq(cs.id, values.classSessionId),
@@ -139,57 +137,30 @@ export namespace AttendanceRegistration {
           },
         );
 
-        const enrollmentIds = values.records.map((r) => r.enrollmentId);
+        //  * organize records
+        const organizedRecords = organizeRecords(values.records, session);
 
-        const existingRecords =
-          await this._attendanceQueryService.fetchMinimalRecordsForSessionEnrollments(
-            {
-              values: {
-                classSessionId: session.id,
-                enrollmentIds,
-              },
-              dbOrTx: tx,
-            },
-          );
+        //  * auditing field
+        const createdOrUpdatedAt = Clock.now().toISOString();
 
-        const organizedRecords = organizeRecords(
-          new Set(existingRecords.map((r) => r.enrollmentId)),
-          session,
-        );
-
-        const updated = organizedRecords.updates.length
-          ? await this._attendanceCommand.updateClassSessionRecords({
+        //  * execute upsert
+        const upserted = organizedRecords.upserts.length
+          ? await this._attendanceCommand.upsertStatusAndRecordDateTime({
               tx,
               values: {
+                classId: session.classId,
                 classSessionId: session.id,
-                datePh,
+                datePh: session.datePh,
+                createdAt: createdOrUpdatedAt,
                 updatedAt: createdOrUpdatedAt,
                 updatedByUserId: values.professorId,
-                records: organizedRecords.updates,
+                records: organizedRecords.upserts,
               },
             })
           : [];
 
-        const inserted = organizedRecords.inserts.length
-          ? await this._attendanceCommand.persistRecords({
-              tx,
-              onConflict: "doNothing",
-              values: organizedRecords.inserts.map((r) => {
-                return {
-                  classId: session.classId,
-                  classSessionId: session.id,
-                  enrollmentId: r.enrollmentId,
-                  status: r.status,
-                  createdAt: createdOrUpdatedAt,
-                  recordedAt: r.recordedAt,
-                  recordedMs: r.recordedMs,
-                  updatedAt: createdOrUpdatedAt,
-                  updatedByUserId: values.professorId ?? null,
-                  datePh: r.datePh,
-                };
-              }),
-            })
-          : [];
+        const inserted = upserted.filter((r) => r.createdAt === r.updatedAt);
+        const updated = upserted.filter((r) => r.createdAt !== r.updatedAt);
 
         return { updated, inserted, rejected: organizedRecords.rejects };
       }, tx);
@@ -216,6 +187,7 @@ export namespace AttendanceRegistration {
       }
     }
 
+    //  todo: clean up flow
     async recordSessionAttendance(args: {
       values: {
         termId: number;

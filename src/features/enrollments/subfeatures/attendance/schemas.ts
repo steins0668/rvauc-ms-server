@@ -135,12 +135,11 @@ export namespace Schemas {
       //  ! `AttendanceRegistration` service helpers ONLY
       export const normalizedRecord = z
         .strictObject({
-          recordedAt: z.string(),
-          recordedMs: z.number(),
-          datePh: z.string(),
-          recordedDate: z.date(),
           enrollmentId: z.number(),
           status: z.enum(Data.attendanceStatus),
+          recordedDate: z.date(),
+          recordedAt: z.string(),
+          recordedMs: z.number(),
         })
         .strip();
       export type NormalizedRecord = z.infer<typeof normalizedRecord>;
