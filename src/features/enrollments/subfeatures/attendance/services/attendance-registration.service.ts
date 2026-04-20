@@ -41,8 +41,8 @@ export namespace AttendanceRegistration {
 
   export class Service {
     private readonly _attendanceCommand: AttendanceCommand.Service;
-    private readonly _classSessionQueryService: Core.Services.ClassSessionQuery.Service;
-    private readonly _enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
+    private readonly _classSessionQuery: Core.Services.ClassSessionQuery.Service;
+    private readonly _enrollmentQuery: Core.Services.EnrollmentQuery.Service;
     private readonly _classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
 
     public constructor(args: {
@@ -52,8 +52,8 @@ export namespace AttendanceRegistration {
       classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
     }) {
       this._attendanceCommand = args.attendanceCommand;
-      this._classSessionQueryService = args.classSessionQuery;
-      this._enrollmentQueryService = args.enrollmentQueryService;
+      this._classSessionQuery = args.classSessionQuery;
+      this._enrollmentQuery = args.enrollmentQueryService;
       this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
@@ -88,12 +88,10 @@ export namespace AttendanceRegistration {
 
       const txPromise = execTransaction(async (tx) => {
         //  * fetch session details
-        const session = await this._classSessionQueryService.ensureMinimalShape(
-          {
-            where: (cs, { eq }) => eq(cs.id, values.classSessionId),
-            dbOrTx: args.tx,
-          },
-        );
+        const session = await this._classSessionQuery.ensureMinimalShape({
+          where: (cs, { eq }) => eq(cs.id, values.classSessionId),
+          dbOrTx: args.tx,
+        });
 
         const organizedRecords =
           Utils.Policy.AttendanceSumbission.organizeRecords(
@@ -177,12 +175,10 @@ export namespace AttendanceRegistration {
         });
 
         const enrollment =
-          await this._enrollmentQueryService.ensureEnrollmentForClassAndStudent(
-            {
-              values: { studentId, classId: clsRuntime.offering.class.id },
-              dbOrTx: tx,
-            },
-          );
+          await this._enrollmentQuery.ensureEnrollmentForClassAndStudent({
+            values: { studentId, classId: clsRuntime.offering.class.id },
+            dbOrTx: tx,
+          });
 
         const status = Utils.Policy.Attendance.getAttendanceStatus({
           attendanceDate: recordedDate,

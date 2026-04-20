@@ -33,10 +33,10 @@ export namespace AttendanceData {
   }
 
   export class Service {
-    private readonly _attendanceQueryService: AttendanceQuery.Service;
-    private readonly _classQueryService: Core.Services.ClassQuery.Service;
-    private readonly _classSessionQueryService: Core.Services.ClassSessionQuery.Service;
-    private readonly _enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
+    private readonly _attendanceQuery: AttendanceQuery.Service;
+    private readonly _classQuery: Core.Services.ClassQuery.Service;
+    private readonly _classSessionQuery: Core.Services.ClassSessionQuery.Service;
+    private readonly _enrollmentQuery: Core.Services.EnrollmentQuery.Service;
     private readonly EMPTY_ATTENDANCE_RESULT = {
       records: [],
       summary: {
@@ -54,10 +54,10 @@ export namespace AttendanceData {
       classSessionQueryService: Core.Services.ClassSessionQuery.Service;
       enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
     }) {
-      this._attendanceQueryService = args.attendanceQueryService;
-      this._classQueryService = args.classQueryService;
-      this._classSessionQueryService = args.classSessionQueryService;
-      this._enrollmentQueryService = args.enrollmentQueryService;
+      this._attendanceQuery = args.attendanceQueryService;
+      this._classQuery = args.classQueryService;
+      this._classSessionQuery = args.classSessionQueryService;
+      this._enrollmentQuery = args.enrollmentQueryService;
     }
 
     async getAttendance(
@@ -124,7 +124,7 @@ export namespace AttendanceData {
         const { asc } = RepositoryUtil.orderOperators;
 
         classEnrollments =
-          await this._enrollmentQueryService.getEnrollmentsWithStudentDetails({
+          await this._enrollmentQuery.getEnrollmentsWithStudentDetails({
             constraints,
             where: eq(e.classId, session.class.id),
             orderBy: [
@@ -143,7 +143,7 @@ export namespace AttendanceData {
           const enrollmentIds = enrollments.map((e) => e.id);
 
           recordsAndSummary =
-            await this._attendanceQueryService.fetchRecordsAndSummary({
+            await this._attendanceQuery.fetchRecordsAndSummary({
               values: { classSessionId, enrollmentIds },
               constraints,
               dbOrTx: args.dbOrTx,
@@ -196,25 +196,22 @@ export namespace AttendanceData {
 
       try {
         enrollment =
-          await this._enrollmentQueryService.ensureEnrollmentForClassAndStudent(
-            {
-              values: { classId, studentId },
-              dbOrTx: args.dbOrTx,
-            },
-          );
-
-        recordsAndSummary =
-          await this._attendanceQueryService.fetchRecordsAndSummary({
-            values: {
-              classId,
-              enrollmentIds: [enrollment.id],
-            },
-            constraints: {
-              limit: RepositoryUtil.resolveLimit(args.constraints),
-              offset: RepositoryUtil.resolveOffset(args.constraints),
-            },
+          await this._enrollmentQuery.ensureEnrollmentForClassAndStudent({
+            values: { classId, studentId },
             dbOrTx: args.dbOrTx,
           });
+
+        recordsAndSummary = await this._attendanceQuery.fetchRecordsAndSummary({
+          values: {
+            classId,
+            enrollmentIds: [enrollment.id],
+          },
+          constraints: {
+            limit: RepositoryUtil.resolveLimit(args.constraints),
+            offset: RepositoryUtil.resolveOffset(args.constraints),
+          },
+          dbOrTx: args.dbOrTx,
+        });
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
@@ -262,17 +259,17 @@ export namespace AttendanceData {
 
       try {
         enrollment =
-          await this._enrollmentQueryService.ensureEnrollmentsWithStudentGraph({
+          await this._enrollmentQuery.ensureEnrollmentsWithStudentGraph({
             where: (e, { eq }) => eq(e.id, args.values.enrollmentId),
             dbOrTx: args.dbOrTx,
           });
-        cls = await this._classQueryService.ensureClassWithCourse({
+        cls = await this._classQuery.ensureClassWithCourse({
           where: (c, { eq }) => eq(c.id, args.values.classId),
           orderBy: (c, { asc }) => asc(c.id), //  ! should be user input eventually
           dbOrTx: args.dbOrTx,
         });
         recordsAndSummary =
-          await this._attendanceQueryService.fetchRecordsAndSummaryWithSessionAndOffering(
+          await this._attendanceQuery.fetchRecordsAndSummaryWithSessionAndOffering(
             {
               values: {
                 classId: cls.id,
@@ -317,12 +314,10 @@ export namespace AttendanceData {
     }) {
       const { classSessionId, professorId } = args.values;
 
-      let session = await this._classSessionQueryService.ensureWithClassContext(
-        {
-          where: (cs, { eq }) => eq(cs.id, classSessionId),
-          dbOrTx: args.dbOrTx,
-        },
-      );
+      let session = await this._classSessionQuery.ensureWithClassContext({
+        where: (cs, { eq }) => eq(cs.id, classSessionId),
+        dbOrTx: args.dbOrTx,
+      });
 
       if (session.class.professorId !== professorId)
         throw new Core.Errors.EnrollmentData.ErrorClass({
