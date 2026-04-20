@@ -1,4 +1,6 @@
+import { ResultSet } from "@libsql/client/.";
 import { and, eq, or, sql, SQL } from "drizzle-orm";
+import { SQLiteColumn, SQLiteSelectBase } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx } from "../../../db/create-context";
 import { Schema } from "../../../models";
 import { enrollments } from "../../../models";
@@ -6,8 +8,6 @@ import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
 import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
-import { ResultSet } from "@libsql/client/.";
-import { SQLiteSelectBase } from "drizzle-orm/sqlite-core";
 
 export class Enrollment extends Repository<Types.Tables.Enrollment> {
   public constructor(context: DbContext) {
@@ -25,10 +25,54 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     return await (dbOrTx ?? this._dbContext).$count(enrollments, where);
   }
 
+  async queryWithStudentDetails(args: {
+    constraints?: BaseRepositoryType.QueryConstraints;
+    where?:
+      | NonNullable<
+          Parameters<DbContext["query"]["enrollments"]["findMany"]>[0]
+        >["where"]
+      | undefined;
+    orderBy?:
+      | NonNullable<
+          Parameters<DbContext["query"]["enrollments"]["findMany"]>[0]
+        >["orderBy"]
+      | undefined;
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { where, orderBy, dbOrTx } = args;
+
+    return await (dbOrTx ?? this._dbContext).query.enrollments.findMany({
+      where,
+      orderBy,
+      limit: RepositoryUtil.resolveLimit(args.constraints),
+      offset: RepositoryUtil.resolveOffset(args.constraints),
+      columns: { id: true, status: true },
+      with: {
+        student: {
+          columns: { studentNumber: true, yearLevel: true, block: true },
+          with: {
+            user: {
+              columns: {
+                surname: true,
+                firstName: true,
+                middleName: true,
+                gender: true,
+              },
+            },
+            department: {
+              columns: { name: true },
+              with: { college: { columns: { name: true } } },
+            },
+          },
+        },
+      },
+    });
+  }
+
   /**
    * @description Selects a student linked to the current enrollment/s.
    */
-  public async selectStudentsFromEnrollments(args: {
+  async getEnrollmentStudentListView(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?: SQL;
     orderBy?: Parameters<
@@ -49,6 +93,8 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
 
     const query = (args.dbOrTx ?? this._dbContext)
       .select({
+        id: enrollments.id,
+        status: enrollments.status,
         student: {
           id: students.id,
           studentNumber: students.studentNumber,
@@ -77,13 +123,47 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     return await query;
   }
 
-  public async execInsert<T>(args: Types.Repository.InsertArgs.Enrollment<T>) {
-    const insert = (args.dbOrTx ?? this._dbContext).insert(enrollments);
-    return await args.fn({
-      table: enrollments,
-      insert,
-      converter: Enrollment.buildWhereClause,
-      sql,
+  existsForStudent(args: {
+    dbOrTx?: DbOrTx | undefined;
+    enrollmentId: SQLiteColumn;
+    studentId: number;
+  }) {
+    const { dbOrTx, enrollmentId, studentId } = args;
+    return this.getContext({
+      dbOrTx,
+      fn: ({ table: e, context, converter }) =>
+        context
+          .select({ id: e.id })
+          .from(e)
+          .where(
+            converter({
+              custom: (e, { eq, and }) => [
+                and(eq(e.id, enrollmentId), eq(e.studentId, studentId)),
+              ],
+            }),
+          ),
+    });
+  }
+
+  existsForClassAndStudent(args: {
+    dbOrTx?: DbOrTx | undefined;
+    classId: SQLiteColumn;
+    studentId: number;
+  }) {
+    const { dbOrTx, classId, studentId } = args;
+    return this.getContext({
+      dbOrTx,
+      fn: ({ table: e, context, converter }) =>
+        context
+          .select({ id: e.id })
+          .from(e)
+          .where(
+            converter({
+              custom: (e, { eq, and }) => [
+                and(eq(e.classId, classId), eq(e.studentId, studentId)),
+              ],
+            }),
+          ),
     });
   }
 
@@ -112,6 +192,16 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     });
   }
 
+  public async execInsert<T>(args: Types.Repository.InsertArgs.Enrollment<T>) {
+    const insert = (args.dbOrTx ?? this._dbContext).insert(enrollments);
+    return await args.fn({
+      table: enrollments,
+      insert,
+      converter: Enrollment.buildWhereClause,
+      sql,
+    });
+  }
+
   public async execQuery<T>(args: Types.Repository.QueryArgs.Enrollment<T>) {
     const query = (args.dbOrTx ?? this._dbContext).query.enrollments;
     return await args.fn(query, Enrollment.buildWhereClause);
@@ -127,35 +217,15 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     return await args.fn(deleteBase, Enrollment.buildWhereClause);
   }
 
+  /**
+   * @deprecated
+   * ! DO NOT USE!!
+   * @param filter
+   * @returns
+   */
   public static buildWhereClause(
     filter?: Types.Repository.QueryFilters.Enrollment,
   ): SQL | undefined {
-    const conditions = [];
-
-    if (filter) {
-      const {
-        filterType = "or",
-        id,
-        studentId,
-        classOfferingId,
-        status,
-        custom,
-      } = filter;
-
-      if (id !== undefined) conditions.push(eq(enrollments.id, id));
-      if (studentId !== undefined)
-        conditions.push(eq(enrollments.studentId, studentId));
-      if (classOfferingId !== undefined)
-        conditions.push(eq(enrollments.classOfferingId, classOfferingId));
-      if (status && status.trim())
-        conditions.push(eq(enrollments.status, status));
-      if (custom)
-        conditions.push(...custom(enrollments, RepositoryUtil.filters));
-
-      if (conditions.length > 0)
-        return filterType === "or" ? or(...conditions) : and(...conditions);
-    }
-
     return undefined;
   }
 

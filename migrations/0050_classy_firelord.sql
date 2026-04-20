@@ -1,0 +1,1 @@
+ALTER TABLE `attendance_records` ADD `enrollment_id` integer NOT NULL REFERENCES enrollments(id);

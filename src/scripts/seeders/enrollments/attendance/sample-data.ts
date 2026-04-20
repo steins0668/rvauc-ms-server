@@ -1,7 +1,7 @@
 import { randomInt } from "crypto";
-import { DbOrTx } from "../../../../db/create-context";
 import { TimeUtil } from "../../../../utils";
-import { SampleData as Enrollments } from "../sample-data";
+import { Enrollments as EnrollmentsFeature } from "../../../../features/enrollments";
+import { Attendance } from "../../../../features/enrollments/subfeatures/attendance";
 
 export namespace SampleData {
   type Status = "present" | "late" | "absent";
@@ -56,30 +56,36 @@ export namespace SampleData {
   export const generateAttendanceRecords = (args: {
     startDate: string; //  yy-mm-dd
     endDate: string; //  yy-mm-dd
-    // classOfferings: any[];
-    // enrollments: any[];
-    // classes: any[];
+    classes: EnrollmentsFeature.Types.ViewModels.Class[];
+    classSessions: EnrollmentsFeature.Types.ViewModels.ClassSession[];
+    classOfferings: EnrollmentsFeature.Types.ViewModels.ClassOffering[];
+    enrollments: EnrollmentsFeature.Types.ViewModels.Enrollment[];
   }) => {
-    const results = [];
+    const {
+      startDate,
+      endDate,
+      classes,
+      classSessions,
+      classOfferings,
+      enrollments,
+    } = args;
+    const results: Attendance.Types.InsertModels.AttendanceRecord[] = [];
     let id = 1;
 
-    const current = new Date(args.startDate);
-    const end = new Date(args.endDate);
+    const current = new Date(startDate);
+    const end = new Date(endDate);
 
     while (current <= end) {
       const datePh = TimeUtil.toPhDate(current);
-      const weekDay = TimeUtil.toPhDay(current);
 
-      const offeringsToday = Enrollments.classOfferings.filter(
-        (e) => e.weekDay === weekDay && e.roomId !== undefined,
-      );
+      const sessionsToday = classSessions.filter((cs) => cs.datePh === datePh);
 
-      for (const o of offeringsToday) {
-        const cls = Enrollments.classes.find((c) => c.id === o.classId);
+      for (const s of sessionsToday) {
+        const cls = classes.find((c) => c.id === s.classId);
+        const o = classOfferings.find((c) => c.id === s.classOfferingId);
+        const enrollees = enrollments.filter((e) => e.classId === s.classId);
 
-        const enrollees = Enrollments.enrollments.filter(
-          (e) => e.classOfferingId === o.id,
-        );
+        if (!o) throw new Error("Expected a class offering.");
 
         for (const e of enrollees) {
           const status = pickStatus();
@@ -96,9 +102,9 @@ export namespace SampleData {
 
           results.push({
             id: id++,
-            studentId: e.studentId,
             classId: o.classId,
-            classOfferingId: o.id,
+            classSessionId: s.id,
+            enrollmentId: e.id,
             status,
             createdAt: iso,
             recordedAt: iso,

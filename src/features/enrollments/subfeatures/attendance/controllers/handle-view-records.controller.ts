@@ -88,8 +88,8 @@ export function handleViewRecords<
       });
     }
 
-    const serverDate = Clock.now();
-    const clientDate = new Date(query.date);
+    const clientDate = new Date(query.timeMs);
+    const serverDate = Clock.now(clientDate);
 
     const MAX_DRIFT_MS = 30 * 1000; //  30 seconds max time drift
     const drift = Math.abs(serverDate.getTime() - clientDate.getTime());
@@ -152,7 +152,7 @@ export function handleViewRecords<
           ...extractInput(req),
           ...roleScopeValues,
           termId: term.id,
-          date: finalDate,
+          date: new Date(query.timeMs),
         },
       },
     );

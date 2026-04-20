@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
 import { StrictValidatedRequest } from "../../../../../interfaces";
-import { Clock } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Schemas } from "../schemas";
-import { Core } from "../../../core";
 
 const internalErrMessage = "Something went wrong. Please try again later.";
 
@@ -11,12 +9,11 @@ export async function handleSubmitRecords(req: Request, res: Response) {
   const {
     auth,
     validated: { params, body },
-    classSchedService,
     attendanceRegistrationService,
     termDataService,
     requestLogger: logger,
   } = req as StrictValidatedRequest<
-    Schemas.RequestParams.ClassId & Schemas.RequestParams.ClassOfferingId,
+    Schemas.RequestParams.ClassSessionId,
     {},
     Schemas.RequestBody.RecordSubmission,
     {}
@@ -56,36 +53,10 @@ export async function handleSubmitRecords(req: Request, res: Response) {
     });
   }
 
-  const classQuery = await classSchedService.getForNow({
-    date: body.date,
-    role: auth.payload.role,
-    termId: term.id,
-    userId: auth.payload.id,
-  });
-
-  if (!classQuery.success) {
-    const { error } = classQuery;
-
-    logger.log("error", "Failed querying classes.", error);
-
-    const message =
-      error.name === "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR"
-        ? `The ${auth.payload.role} does not have any active classes for this date.`
-        : internalErrMessage;
-
-    return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
-      success: false,
-      message,
-    });
-  }
-
   logger.log("debug", "Attempting to update records...");
-  const tx = await attendanceRegistrationService.mutateRecords({
-    classDto: classQuery.result,
+  const tx = await attendanceRegistrationService.mutateSessionRecords({
     values: {
-      classId: params.classId,
-      classOfferingId: params.classOfferingId,
-      currentDate: Clock.now(),
+      classSessionId: params.classSessionId,
       professorId: auth.payload.id,
       records: body.records,
     },

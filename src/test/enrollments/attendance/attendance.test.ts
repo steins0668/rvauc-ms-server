@@ -11,7 +11,7 @@ import { Schemas as CoreSchemas } from "../../../features/enrollments/core/schem
 
 const classId = 6;
 const classOfferingId = 7;
-const studentId = 7;
+const enrollmentId = 6;
 
 describe("Attendance Test Suite", () => {
   const tokens = {
@@ -88,27 +88,32 @@ describe("Attendance Test Suite", () => {
     minimalTokens.student = await getToken(credentials[1], "minimal");
   });
 
+  const params = new URLSearchParams({
+    timeMs: new Date("2025-12-03T11:00:00+08:00").getTime().toString(),
+  });
+  const reqQuery = params.toString();
+
   it(`GET records/class/${classId}`, async () => {
     const res = await request(app)
       .get(`/enrollments/attendance/records/class/${classId}`)
-      .set("Authorization", `Bearer ${tokens.professor}`);
+      .set("Authorization", `Bearer ${tokens.student}`);
 
-    console.debug(JSON.stringify(res.body));
+    console.debug(JSON.stringify(res.body, null, 2));
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(true);
 
-    Schemas.Dto.ClassAttendance.professorView.parse(res.body.result);
+    Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
   });
 
-  it(`GET records/class/${classId}/student/${studentId}`, async () => {
-    const url = `/enrollments/attendance/records/class/${classId}/student/${studentId}`;
+  it(`GET records/class/${classId}/enrollment/${enrollmentId}`, async () => {
+    const url = `/enrollments/attendance/records/class/${classId}/enrollment/${enrollmentId}`;
     const res = await request(app)
       .get(url)
       .set("Authorization", `Bearer ${tokens.professor}`);
 
-    console.debug(JSON.stringify(res.body));
+    console.debug(JSON.stringify(res.body, null, 2));
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
@@ -118,33 +123,54 @@ describe("Attendance Test Suite", () => {
     Schemas.Dto.StudentAttendance.professorView.parse(res.body.result);
   });
 
-  it(`POST records/class/${classId}/class-offering/${classOfferingId}`, async () => {
-    const url = `/enrollments/attendance/records/class/${classId}/class-offering/${classOfferingId}`;
+  const sessionId = 157;
+
+  it(`GET records/class/offering/session/${sessionId}`, async () => {
+    const url = `/enrollments/attendance/records/class/offering/session/${sessionId}`;
+    const res = await request(app)
+      .get(url)
+      .set("Authorization", `Bearer ${tokens.professor}`);
+
+    console.debug(JSON.stringify(res.body, null, 2));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(true);
+    expect(res.body).toHaveProperty("result");
+
+    Schemas.Dto.ClassAttendance.professorView.parse(res.body.result);
+  });
+
+  //  * For date: 2025-12-03T07:00:00+08:00
+  it(`POST records/class/offering/session/${sessionId}`, async () => {
+    const url = `/enrollments/attendance/records/class/offering/session/${sessionId}`;
     const res = await request(app)
       .post(url)
       .set("Authorization", `Bearer ${tokens.professor}`)
       .send({
-        date: "2026-04-08T07:00:00+08:00",
         records: [
           {
-            recordedDate: "2026-04-08T07:40:00+08:00",
-            studentId: 7,
+            //  * student id 7
+            recordedDate: "2025-12-03T07:40:00+08:00",
+            enrollmentId: 6,
             status: "late",
           },
           {
-            recordedDate: "2026-04-08T07:35:00+08:00",
-            studentId: 8,
+            //  * student id 8
+            recordedDate: "2025-12-03T07:35:00+08:00",
+            enrollmentId: 12,
             status: "late",
           },
           {
-            recordedDate: "2026-04-08T07:00:00+08:00",
-            studentId: 9,
+            //  * student id 9
+            recordedDate: "2025-12-03T07:00:00+08:00",
+            enrollmentId: 18,
             status: "absent",
           },
         ],
       });
 
-    console.debug(JSON.stringify(res.body));
+    console.debug(JSON.stringify(res.body, null, 2));
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
@@ -158,30 +184,16 @@ describe("Attendance Test Suite", () => {
     Schemas.Dto.ClassAttendance.mutationResult.parse(res.body.result.records);
   });
 
-  it(`GET records/class/${classId}`, async () => {
-    const res = await request(app)
-      .get(`/enrollments/attendance/records/class/${classId}`)
-      .set("Authorization", `Bearer ${tokens.student}`);
-
-    console.debug(JSON.stringify(res.body));
-
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("success");
-    expect(res.body.success).toBe(true);
-
-    Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
-  });
-
   it(`POST new-rfid-scan`, async () => {
     const res = await request(app)
       .post("/enrollments/attendance/new-rfid-scan")
       .set("Authorization", `Bearer ${minimalTokens.student}`)
       .send({
         date: "2025-12-01T09:00:00+08:00",
-        room: "309",
+        room: "406",
       });
 
-    console.debug(JSON.stringify(res.body));
+    console.debug(JSON.stringify(res.body, null, 2));
 
     expect([200, 201]).toContain(res.status);
     expect(res.body).toHaveProperty("success");
@@ -189,7 +201,7 @@ describe("Attendance Test Suite", () => {
 
     const { result } = res.body;
 
-    CoreSchemas.Dto.class_.parse(result.enrollment);
+    CoreSchemas.Dto.class_.parse(result.class);
     Schemas.Dto.insertedAttendance.parse(result.attendance);
   });
 });

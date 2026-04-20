@@ -1,91 +1,28 @@
-import { Clock, TimeUtil } from "../../../../utils";
-import { Core } from "../../core";
+import { TimeUtil } from "../../../../utils";
 import { Services } from "./services";
-import { Types } from "./types";
 
 export namespace Jobs {
   export async function markAbsent() {
-    const classEndDetection = await Core.Services.ClassEndDetection.create();
-    const attendanceRegistration =
-      await Services.AttendanceRegistration.create();
-    const termData = await Core.Services.TermData.create();
-
-    const termQ = await termData.getCurrentTerm();
-
-    if (!termQ.success) {
-      console.error(termQ.error);
-      return;
-    }
-
-    const { result: term } = termQ;
+    const absenceAutomation =
+      await Services.AttendanceAbsenceAutomation.create();
 
     const date = new Date();
-    const dateIso = date.toISOString();
-    const timePh = TimeUtil.toPhTime(date);
     const datePh = TimeUtil.toPhDate(date);
+    const timePh = TimeUtil.toPhTime(date);
 
-    const endedClassesQ = await classEndDetection.getForToday({
-      date: date,
-      termId: term.id,
+    const automation = await absenceAutomation.markMissingForDate({
+      date,
     });
 
-    if (!endedClassesQ.success) {
-      console.error(endedClassesQ.error);
+    if (!automation.success) {
+      console.error(automation.error);
       return;
     }
 
-    const { result: endedClasses } = endedClassesQ;
+    const { inserted } = automation.result.generated;
 
-    console.log("ended classes: ", endedClasses.length);
-
-    if (endedClasses.length === 0) return;
-
-    const attendanceRecords: Types.InsertModels.AttendanceRecord[] = [];
-
-    for (const class_ of endedClasses) {
-      const { enrollments } = class_;
-      const { offering } = class_.class;
-
-      const base = new Date(date);
-      base.setHours(0, 0, 0, 0);
-
-      const recordedMs = base.getTime() + offering.endTime;
-      const recordedDate = new Date(recordedMs);
-
-      const records: Types.InsertModels.AttendanceRecord[] = enrollments.map(
-        (e) => ({
-          studentId: e.studentId,
-          classId: class_.class.id,
-          classOfferingId: class_.class.offering.id,
-          status: "absent",
-          createdAt: dateIso,
-          recordedAt: recordedDate.toISOString(),
-          recordedMs: recordedDate.getTime(),
-          updatedAt: dateIso,
-          datePh: datePh,
-        }),
-      );
-
-      attendanceRecords.push(...records);
-    }
-
-    console.log("attendance records: ", attendanceRecords.length);
-
-    if (attendanceRecords.length === 0) return;
-
-    console.log("recording...");
-    const recorded = await attendanceRegistration.newRecords({
-      values: attendanceRecords,
-      onConflict: "doNothing",
-    });
-
-    if (!recorded.success) {
-      console.error(recorded.error);
-      return;
-    }
-
-    const { result } = recorded;
-
-    console.log(`Recorded ${result.length} absentees at ${datePh} ${timePh}.`);
+    console.log(
+      `Recorded ${inserted.length} absentees at ${datePh} ${timePh}.`,
+    );
   }
 }

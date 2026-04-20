@@ -337,6 +337,76 @@
       "when": 1776258935173,
       "tag": "0047_peaceful_the_hunter",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "6",
+      "when": 1776304861437,
+      "tag": "0048_melted_nighthawk",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "6",
+      "when": 1776343779840,
+      "tag": "0049_reflective_silhouette",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "6",
+      "when": 1776437468197,
+      "tag": "0050_classy_firelord",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "6",
+      "when": 1776503069307,
+      "tag": "0051_giant_maggott",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "6",
+      "when": 1776506468174,
+      "tag": "0052_spotty_khan",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "6",
+      "when": 1776515850463,
+      "tag": "0053_organic_vulture",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "6",
+      "when": 1776520179447,
+      "tag": "0054_wandering_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "6",
+      "when": 1776520211718,
+      "tag": "0055_careful_inertia",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "6",
+      "when": 1776523928627,
+      "tag": "0056_tearful_lord_tyger",
+      "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "6",
+      "when": 1776651576631,
+      "tag": "0057_petite_moondragon",
+      "breakpoints": true
     }
   ]
 }

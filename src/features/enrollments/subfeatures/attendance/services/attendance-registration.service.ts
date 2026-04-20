@@ -1,168 +1,135 @@
-import { createContext, DbOrTx } from "../../../../../db/create-context";
-import { Schema } from "../../../../../models";
-import { RepositoryUtil, ResultBuilder, TimeUtil } from "../../../../../utils";
+import {
+  createContext,
+  execTransaction,
+  TxContext,
+} from "../../../../../db/create-context";
+import { Clock, ResultBuilder } from "../../../../../utils";
 import { Core } from "../../../core";
-import { Data } from "../data";
+import { Repositories as CoreRepositories } from "../../../repositories";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
-import { Types } from "../types";
+import { Utils } from "../utils";
+import { AttendanceCommand } from "./attendance-command.service";
+import { AttendanceMutationDto } from "./attendance-mutation-dto.mapper";
 
 export namespace AttendanceRegistration {
   export async function create() {
     const context = await createContext();
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
-    return new Service({ attendanceRecordRepo });
+    const classRepo = new CoreRepositories.Class(context);
+    const classOfferingRepo = new CoreRepositories.ClassOffering(context);
+    const classSessionRepo = new CoreRepositories.ClassSession(context);
+    const enrollmentRepo = new CoreRepositories.Enrollment(context);
+    return new Service({
+      attendanceCommand: new AttendanceCommand.Service({
+        attendanceRecordRepo,
+      }),
+      classSessionQuery: new Core.Services.ClassSessionQuery.Service({
+        classSessionRepo,
+      }),
+      enrollmentQueryService: new Core.Services.EnrollmentQuery.Service({
+        enrollmentRepo,
+      }),
+      classRuntimeResolver: new Core.Services.ClassRuntimeResolver.Service({
+        classOfferingQuery: new Core.Services.ClassOfferingQuery.Service({
+          classOfferingRepo,
+        }),
+        classSessionQuery: new Core.Services.ClassSessionQuery.Service({
+          classSessionRepo,
+        }),
+      }),
+    });
   }
 
   export class Service {
-    private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
+    private readonly _attendanceCommand: AttendanceCommand.Service;
+    private readonly _classSessionQuery: Core.Services.ClassSessionQuery.Service;
+    private readonly _enrollmentQuery: Core.Services.EnrollmentQuery.Service;
+    private readonly _classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
 
     public constructor(args: {
-      attendanceRecordRepo: Repositories.AttendanceRecord;
+      attendanceCommand: AttendanceCommand.Service;
+      classSessionQuery: Core.Services.ClassSessionQuery.Service;
+      enrollmentQueryService: Core.Services.EnrollmentQuery.Service;
+      classRuntimeResolver: Core.Services.ClassRuntimeResolver.Service;
     }) {
-      this._attendanceRecordRepo = args.attendanceRecordRepo;
+      this._attendanceCommand = args.attendanceCommand;
+      this._classSessionQuery = args.classSessionQuery;
+      this._enrollmentQuery = args.enrollmentQueryService;
+      this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
-    public async mutateRecords(args: {
-      classDto: (Awaited<
-        ReturnType<Core.Services.ClassSchedule.Service["getForNow"]>
-      > & { success: true })["result"];
+    /**
+     * @description
+     * Performs a transactional mutation of attendance records for a class session.
+     *
+     * The process includes:
+     *
+     * 1. Deduplicates incoming records by enrollment ID.
+     * 2. Retrieves minimal class session metadata for validation and normalization.
+     * 3. Validates and classifies records into upserts and rejects based on attendance policy rules.
+     * 4. Executes a bulk upsert for valid records, updating or inserting attendance status and timestamps.
+     * 5. Separates inserted vs updated records based on creation/update timestamps.
+     * 6. Returns a normalized DTO containing updated, inserted, and rejected records.
+     */
+    async mutateSessionRecords(args: {
       values: {
-        classId: number;
-        classOfferingId: number;
-        currentDate: Date;
+        classSessionId: number;
         professorId?: number | undefined;
-        records: {
-          recordedDate: Date;
-          studentId: number;
-          status: keyof typeof Data.attendanceStatus;
-        }[];
-      };
-      dbOrTx?: DbOrTx | undefined;
+      } & Schemas.RequestBody.RecordSubmission;
+      tx?: TxContext | undefined;
     }) {
-      const { classDto, values, dbOrTx } = args;
+      const { values, tx } = args;
 
-      const { class: class_, sessionDate } = classDto;
-
+      //  * remove duplicate records
       const uniqueRecords = new Map<number, (typeof values.records)[number]>();
 
-      for (const r of values.records) uniqueRecords.set(r.studentId, r);
+      for (const r of values.records) uniqueRecords.set(r.enrollmentId, r);
 
       values.records = Array.from(uniqueRecords.values());
 
-      const isWithinSchedule = (recordedDate: Date) => {
-        //  add start time and end time to midnight to get schedule
-        const { startTimeMs, endTimeMs } = TimeUtil.getPhTimeRange(
-          recordedDate,
-          class_.offering.startTime,
-          class_.offering.endTime,
-        );
+      const txPromise = execTransaction(async (tx) => {
+        //  * fetch session details
+        const session = await this._classSessionQuery.ensureMinimalShape({
+          where: (cs, { eq }) => eq(cs.id, values.classSessionId),
+          dbOrTx: args.tx,
+        });
 
-        const offsetMs = startTimeMs - 30 * 60; // ! accepting attendance 30 mins before class
-        const recordedMs = recordedDate.getTime();
+        const organizedRecords =
+          Utils.Policy.AttendanceSumbission.organizeRecords(
+            values.records,
+            session,
+          );
 
-        return offsetMs <= recordedMs && recordedMs < endTimeMs;
-      };
+        //  * auditing field
+        const createdOrUpdatedAt = Clock.now().toISOString();
 
-      const normalizeRecord = (r: (typeof values.records)[number]) => {
-        //  todo: automate setting recordedAt to end of class time when status = absent
-        return {
-          ...r,
-          recordedAt: r.recordedDate.toISOString(),
-          recordedMs: r.recordedDate.getTime(),
-          datePh: TimeUtil.toPhDate(r.recordedDate),
-        };
-      };
+        const upserted = organizedRecords.upserts.length
+          ? await this._attendanceCommand.upsertStatusAndRecordDateTime({
+              tx,
+              values: {
+                classId: session.classId,
+                classSessionId: session.id,
+                datePh: session.datePh,
+                createdAt: createdOrUpdatedAt,
+                updatedAt: createdOrUpdatedAt,
+                updatedByUserId: values.professorId,
+                records: organizedRecords.upserts,
+              },
+            })
+          : [];
 
-      const organizeRecords = (
-        existingStudentIds: Set<number>,
-        datePh: string,
-      ) => {
-        let updates: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
-        let inserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
-        let rejects: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
+        const inserted = upserted.filter((r) => r.createdAt === r.updatedAt);
+        const updated = upserted.filter((r) => r.createdAt !== r.updatedAt);
 
-        for (const r of values.records) {
-          const normalized = normalizeRecord(r);
-
-          const exists = existingStudentIds.has(normalized.studentId);
-
-          const isSameDate = normalized.datePh === datePh;
-
-          if (!isSameDate || !isWithinSchedule(normalized.recordedDate)) {
-            rejects.push(normalized);
-            continue;
-          }
-
-          exists ? updates.push(normalized) : inserts.push(normalized);
-        }
-
-        return { updates, inserts, rejects };
-      };
-
-      const createdOrUpdatedAt = values.currentDate.toISOString();
-      const datePh = TimeUtil.toPhDate(sessionDate);
-
-      const txPromise = this._attendanceRecordRepo.execTransaction(
-        async (tx) => {
-          const studentIds = values.records.map((r) => r.studentId);
-
-          const existingStudentIds = await this.getExistingRecords({
-            values: {
-              classId: values.classId,
-              classOfferingId: values.classOfferingId,
-              datePh,
-              studentIds,
-            },
-            dbOrTx: tx,
-          });
-
-          const organizedRecords = organizeRecords(existingStudentIds, datePh);
-
-          const updated = organizedRecords.updates.length
-            ? await this.updateRecords({
-                dbOrTx: tx,
-                values: {
-                  classId: values.classId,
-                  classOfferingId: values.classOfferingId,
-                  updatedAt: createdOrUpdatedAt,
-                  updatedByUserId: values.professorId,
-                  records: organizedRecords.updates,
-                },
-              })
-            : [];
-
-          const inserted = organizedRecords.inserts.length
-            ? await this.insertRecords({
-                dbOrTx: tx,
-                onConflict: "doNothing",
-                values: organizedRecords.inserts.map((r) => {
-                  return {
-                    classId: values.classId,
-                    classOfferingId: values.classOfferingId,
-                    studentId: r.studentId,
-                    status: r.status,
-                    createdAt: createdOrUpdatedAt,
-                    recordedAt: r.recordedAt,
-                    recordedMs: r.recordedMs,
-                    updatedAt: createdOrUpdatedAt,
-                    updatedByUserId: values.professorId ?? null,
-                    datePh: r.datePh,
-                  };
-                }),
-              })
-            : [];
-
-          return { updated, inserted, rejected: organizedRecords.rejects };
-        },
-        dbOrTx,
-      );
+        return { updated, inserted, rejected: organizedRecords.rejects };
+      }, tx);
 
       try {
         const result = await txPromise;
 
         return ResultBuilder.success(
-          this.toAttendanceRecordMutationResultDto(
+          AttendanceMutationDto.Mapper.toSessionRecordsMutationResult(
             result.updated,
             result.inserted,
             result.rejected,
@@ -180,216 +147,94 @@ export namespace AttendanceRegistration {
       }
     }
 
-    public async newRecord(args: {
-      dbOrTx?: DbOrTx | undefined;
-      onConflict?: "doNothing" | "doUpdate" | undefined;
-      value: Types.InsertModels.AttendanceRecord;
+    /**
+     * @description
+     * Performs a transactional submission of an attendance records for a student.
+     *
+     * The process includes:
+     *
+     * 1. Retrieves class, class offering, class session, and enrollment data.
+     * 2. Infers attendance status based on the recorded date and the class offering schedule.
+     * 3. Persists the record into the database.
+     * 4. Maps the result into a DTO.
+     */
+    async recordSessionAttendance(args: {
+      values: {
+        termId: number;
+        studentId: number;
+        recordedDate: Date;
+      };
+      tx?: TxContext | undefined;
     }) {
-      const stored = await this.newRecords({
-        ...args,
-        values: [args.value],
-      });
+      const { termId, studentId, recordedDate } = args.values;
+      const txPromise = execTransaction(async (tx) => {
+        const clsRuntime = await this._classRuntimeResolver.resolve({
+          values: { termId, userId: studentId, date: recordedDate },
+          role: "student",
+          mode: "now",
+          sessionPolicy: "strict-scheduled",
+          tx,
+        });
 
-      return stored.success
-        ? ResultBuilder.success(stored.result[0])
-        : ResultBuilder.fail(stored.error);
-    }
+        const enrollment =
+          await this._enrollmentQuery.ensureEnrollmentForClassAndStudent({
+            values: { studentId, classId: clsRuntime.offering.class.id },
+            dbOrTx: tx,
+          });
 
-    public async newRecords(args: {
-      dbOrTx?: DbOrTx | undefined;
-      onConflict?: "doNothing" | "doUpdate" | undefined;
-      values: Types.InsertModels.AttendanceRecord[];
-    }) {
-      let inserted;
+        const status = Utils.Policy.Attendance.getAttendanceStatus({
+          attendanceDate: recordedDate,
+          schedStartTime: clsRuntime.offering.startTime,
+          schedEndTime: clsRuntime.offering.endTime,
+        });
+
+        const inserted = await this._attendanceCommand.persistSessionAttendance(
+          {
+            values: {
+              classId: clsRuntime.offering.class.id,
+              classSessionId: clsRuntime.session.id,
+              status,
+              enrollmentId: enrollment.id,
+              recordedDate,
+            },
+            tx,
+          },
+        );
+
+        return { clsRuntime, inserted };
+      }, args.tx);
+
+      let txResult;
 
       try {
-        inserted = await this.insertRecords(args);
+        txResult = await txPromise;
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_STORE_ERROR",
-            message: `Failed storing ${args.values.length} new attendance records`,
+            name: "ENROLLMENT_DATA_TRANSACTION_ERROR",
+            message: "Failed storing attendance record from scan.",
             err,
           }),
         );
       }
 
       try {
-        const dtoList = inserted.map((raw) => this.toNewRecordDto(raw));
-        return ResultBuilder.success(dtoList);
+        const dto = AttendanceMutationDto.Mapper.toSessionAttendanceResultDto(
+          txResult.clsRuntime,
+          txResult.inserted,
+        );
+
+        return ResultBuilder.success(dto);
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
             name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw attendance to dto",
+            message:
+              "Failed to convert scan attendance registration result to dto",
             err,
           }),
         );
       }
-    }
-
-    private toNewRecordDto(
-      raw: NonNullable<Awaited<ReturnType<typeof this.insertRecords>>[number]>,
-    ) {
-      const dto = {
-        id: raw.id,
-        status: raw.status,
-        date: raw.datePh,
-        time: TimeUtil.toPhTime(new Date(raw.recordedAt)),
-        isNew: raw.recordCount === 1,
-      };
-
-      return Schemas.Dto.insertedAttendance.parse(dto);
-    }
-
-    private toAttendanceRecordMutationResultDto(
-      updated: Awaited<ReturnType<typeof this.updateRecords>>,
-      inserted: Awaited<ReturnType<typeof this.insertRecords>>,
-      rejected: Schemas.Dto.ClassAttendance.NormalizedRecords,
-    ): Schemas.Dto.ClassAttendance.MutationResult {
-      const updatedDto = updated.map((r) => {
-        return {
-          id: r.id,
-          status: r.status,
-          date: r.datePh,
-          time: TimeUtil.toPhTime(new Date(r.recordedAt)),
-          isNew: r.recordCount === 1,
-        };
-      });
-
-      const insertedDto = inserted.map((r) => {
-        return {
-          id: r.id,
-          status: r.status,
-          date: r.datePh,
-          time: TimeUtil.toPhTime(new Date(r.recordedAt)),
-          isNew: r.recordCount === 1,
-        };
-      });
-
-      return { updated: updatedDto, inserted: insertedDto, rejected };
-    }
-
-    private async insertRecords(args: {
-      dbOrTx?: DbOrTx | undefined;
-      onConflict?: "doNothing" | "doUpdate" | undefined;
-      values: Types.InsertModels.AttendanceRecord[];
-    }) {
-      const { dbOrTx, onConflict = "doNothing", values } = args;
-      return await this._attendanceRecordRepo.execInsert({
-        dbOrTx,
-        fn: async ({ table: ar, insert, sql }) => {
-          let insertion = insert.values(values);
-
-          const targets = [
-            sql`student_id`,
-            sql`class_id`,
-            sql`class_offering_id`,
-            sql`date_ph`,
-          ];
-
-          insertion =
-            onConflict === "doNothing"
-              ? insertion.onConflictDoNothing({ target: targets })
-              : insertion.onConflictDoUpdate({
-                  target: [
-                    ar.studentId,
-                    ar.classId,
-                    ar.classOfferingId,
-                    ar.datePh,
-                  ],
-                  set: { recordCount: sql`${ar.recordCount} + 1` }, //  ! increase record count on conflict
-                });
-
-          return insertion.returning();
-        },
-      });
-    }
-
-    private async getExistingRecords(args: {
-      values: {
-        classId: number;
-        classOfferingId: number;
-        datePh: string;
-        studentIds: number[];
-      };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { values, dbOrTx } = args;
-
-      return await this._attendanceRecordRepo
-        .execQuery({
-          dbOrTx,
-          fn: async (query) =>
-            query.findMany({
-              where: (ar, { and, eq, inArray }) =>
-                and(
-                  inArray(ar.studentId, values.studentIds),
-                  eq(ar.classId, values.classId),
-                  eq(ar.classOfferingId, values.classOfferingId),
-                  eq(ar.datePh, values.datePh),
-                ),
-              columns: { studentId: true },
-            }),
-        })
-        .then((r) => new Set(r.map((r) => r.studentId)));
-    }
-
-    private async updateRecords(args: {
-      values: {
-        classId: number;
-        classOfferingId: number;
-        updatedByUserId?: number | undefined;
-        updatedAt: string;
-        records: {
-          datePh: string;
-          recordedAt: string;
-          recordedMs: number;
-          studentId: number;
-          status: keyof typeof Data.attendanceStatus;
-        }[];
-      };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { values } = args;
-      const { attendanceRecords: ar } = Schema;
-      const { and, eq } = RepositoryUtil.filters;
-
-      const updated = [];
-
-      for (const r of args.values.records) {
-        const res = await this._attendanceRecordRepo.execUpdate({
-          dbOrTx: args.dbOrTx,
-          fn: async (update) =>
-            update
-              .set({
-                recordedAt: r.recordedAt,
-                recordedMs: r.recordedMs,
-                status: r.status,
-                updatedAt: values.updatedAt,
-                updatedByUserId: values.updatedByUserId,
-              })
-              .where(
-                and(
-                  eq(ar.studentId, r.studentId),
-                  eq(ar.classId, values.classId),
-                  eq(ar.classOfferingId, values.classOfferingId),
-                  eq(ar.datePh, r.datePh),
-                ),
-              )
-              .returning(),
-        });
-
-        if (res.length === 0)
-          throw new Core.Errors.EnrollmentData.ErrorClass({
-            name: "ENROLLMENT_DATA_UPDATE_ERROR",
-            message: `Attendance record with class_id: ${values.classId}, class_offering_id: ${values.classOfferingId}, and student_id: ${r.studentId} for date: ${r.datePh} not found.`,
-          });
-
-        updated.push(...res);
-      }
-
-      return updated;
     }
   }
 }

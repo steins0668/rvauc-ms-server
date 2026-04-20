@@ -4,16 +4,17 @@ import {
   text,
   sqliteTable,
   uniqueIndex,
+  index,
 } from "drizzle-orm/sqlite-core";
-import { classes, classOfferings, students, users } from "./schema";
+import { classes, classSessions, enrollments, students, users } from "./schema";
 
 export const attendanceRecords = sqliteTable(
   "attendance_records",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    studentId: integer("student_id")
+    enrollmentId: integer("enrollment_id")
       .notNull()
-      .references(() => students.id, {
+      .references(() => enrollments.id, {
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
@@ -23,12 +24,9 @@ export const attendanceRecords = sqliteTable(
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
-    classOfferingId: integer("class_offering_id")
+    classSessionId: integer("class_session_id")
       .notNull()
-      .references(() => classOfferings.id, {
-        onDelete: "restrict",
-        onUpdate: "cascade",
-      }),
+      .references(() => classSessions.id, { onDelete: "restrict" }),
     status: text("status").notNull(),
     createdAt: text("created_at").notNull(),
     recordCount: integer("record_count").notNull().default(1),
@@ -42,26 +40,31 @@ export const attendanceRecords = sqliteTable(
     datePh: text("date_ph").notNull(), //  ! Ph date (yyyy-mm-dd)
   },
   (t) => [
+    index("idx_attendance_records_recordedMs").on(t.recordedMs),
+    index("idx_attendance_records_enrollment_id_class_id").on(
+      t.enrollmentId,
+      t.classId,
+    ),
     uniqueIndex(
-      "uidx_attendance_records_student_id_class_id_class_offering_id_date_ph",
-    ).on(t.studentId, t.classId, t.classOfferingId, t.datePh),
+      "uidx_attendance_records_enrollment_id_class_session_id_date_ph",
+    ).on(t.enrollmentId, t.classSessionId, t.datePh),
   ],
 );
 
 export const attendanceRecordsRelations = relations(
   attendanceRecords,
   ({ one }) => ({
-    student: one(students, {
-      fields: [attendanceRecords.studentId],
-      references: [students.id],
+    enrollment: one(enrollments, {
+      fields: [attendanceRecords.enrollmentId],
+      references: [enrollments.id],
     }),
     class: one(classes, {
       fields: [attendanceRecords.classId],
       references: [classes.id],
     }),
-    classOffering: one(classOfferings, {
-      fields: [attendanceRecords.classOfferingId],
-      references: [classOfferings.id],
+    classSession: one(classSessions, {
+      fields: [attendanceRecords.classSessionId],
+      references: [classSessions.id],
     }),
     updatedByUser: one(users, {
       fields: [attendanceRecords.updatedByUserId],

@@ -6,8 +6,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
-import { classes } from "./classes";
-import { classOfferings } from "./class-offerings";
+import { classes, classOfferings, attendanceRecords } from "./schema";
 
 export const classSessions = sqliteTable(
   "class_sessions",
@@ -25,6 +24,7 @@ export const classSessions = sqliteTable(
         onDelete: "restrict",
         onUpdate: "cascade",
       }),
+    status: text("status").notNull().default("scheduled"),
     datePh: text("date_ph").notNull(), //  * Ph timezone date (yyyy-mm-dd)
     startTimeMs: integer("start_ms").notNull(), //  * UTC ms (in ph timezone) of when the schedule starts
     endTimeMs: integer("end_ms").notNull(), //  * UTC ms (in ph timezone) of when the schedule ends
@@ -32,7 +32,11 @@ export const classSessions = sqliteTable(
     updatedAt: text("updated_at").notNull(), //  * UTC ISO Date (when the record was updated)
   },
   (t) => [
-    index("idx_class_sessions_date_ph").on(t.datePh),
+    index("idx_class_sessions_date_ph_status").on(t.datePh, t.status),
+    index("idx_class_sessions_class_id_start_time_ms").on(
+      t.classId,
+      t.startTimeMs,
+    ),
     uniqueIndex("uidx_class_sessions_class_offering_id_date_ph").on(
       t.classOfferingId,
       t.datePh,
@@ -40,13 +44,17 @@ export const classSessions = sqliteTable(
   ],
 );
 
-export const classSessionsRelations = relations(classSessions, ({ one }) => ({
-  class: one(classes, {
-    fields: [classSessions.classId],
-    references: [classes.id],
+export const classSessionsRelations = relations(
+  classSessions,
+  ({ one, many }) => ({
+    class: one(classes, {
+      fields: [classSessions.classId],
+      references: [classes.id],
+    }),
+    classOffering: one(classOfferings, {
+      fields: [classSessions.classOfferingId],
+      references: [classOfferings.id],
+    }),
+    attendanceRecords: many(attendanceRecords),
   }),
-  classOffering: one(classOfferings, {
-    fields: [classSessions.classOfferingId],
-    references: [classOfferings.id],
-  }),
-}));
+);

@@ -63,7 +63,7 @@ export namespace Seeders {
     });
   };
 
-  export const seedClassOfferings = async (dbOrTx: DbOrTx | undefined) => {
+  export const seedClassOfferings = async (dbOrTx?: DbOrTx | undefined) => {
     const offeringRepo = new Enrollments.Repositories.ClassOffering(
       await createContext(),
     );
@@ -75,6 +75,23 @@ export namespace Seeders {
     });
   };
 
+  export const seedClassSessions = async (args: {
+    classOfferings: Enrollments.Types.ViewModels.ClassOffering[];
+    startDate: string;
+    endDate: string;
+    dbOrTx?: DbOrTx | undefined;
+  }) => {
+    const clsSessionRepo = new Enrollments.Repositories.ClassSession(
+      await createContext(),
+    );
+
+    return await clsSessionRepo.execInsert({
+      dbOrTx: args.dbOrTx,
+      fn: async ({ insert }) =>
+        insert.values(SampleData.generateClassSessions(args)).returning(),
+    });
+  };
+
   export const seedEnrollments = async (dbOrTx?: DbOrTx | undefined) => {
     const enrollmentRepo = new Enrollments.Repositories.Enrollment(
       await createContext(),
@@ -82,7 +99,8 @@ export namespace Seeders {
 
     return await enrollmentRepo.execInsert({
       dbOrTx,
-      fn: async ({ insert }) => insert.values(SampleData.enrollments),
+      fn: async ({ insert }) =>
+        insert.values(SampleData.enrollments).returning(),
     });
   };
 }

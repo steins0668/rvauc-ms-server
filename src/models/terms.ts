@@ -9,10 +9,9 @@ export const terms = sqliteTable(
     semester: integer("semester").notNull(),
   },
   (table) => [
-    uniqueIndex("uidx_terms_start_end_semester").on(
+    uniqueIndex("uidx_terms_year_start_semester").on(
       table.yearStart,
-      table.yearEnd,
-      table.semester
+      table.semester,
     ),
-  ]
+  ],
 );

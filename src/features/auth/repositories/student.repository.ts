@@ -32,7 +32,7 @@ export class StudentRepository extends Repository<Types.Tables.Student> {
       orderBy,
       limit,
       offset,
-      columns: { studentNumber: true, yearLevel: true, block: true },
+      columns: { id: true, studentNumber: true, yearLevel: true, block: true },
       with: {
         user: {
           columns: {

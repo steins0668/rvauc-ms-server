@@ -10,10 +10,11 @@ export namespace Clock {
 
   if (isDev)
     console.log(
-      "Currently in development. Fake date will be used: " + fakeDateISO
+      "Currently in development. Fake date will be used: " + fakeDateISO,
     );
 
-  export const now = () => (isDev ? new Date(fakeDateISO!) : new Date());
+  export const now = (date?: Date | undefined) =>
+    isDev ? (date ?? new Date(fakeDateISO!)) : new Date();
 
   export const nowMs = () =>
     (isDev ? new Date(fakeDateISO!) : new Date()).getTime();

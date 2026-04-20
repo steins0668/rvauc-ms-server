@@ -1,6 +1,4 @@
-import { ResultSet } from "@libsql/client/.";
-import { and, count, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
-import { SQLiteSelectBase } from "drizzle-orm/sqlite-core";
+import { and, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
 import { DbContext, DbOrTx } from "../../../../db/create-context";
 import { attendanceRecords } from "../../../../models";
 import { Repository } from "../../../../services";
@@ -15,7 +13,7 @@ export namespace Repositories {
       super(context, attendanceRecords);
     }
 
-    public async queryMinimalShapeWithClassOfferings(args: {
+    public async queryMinimalShapeWithSessionAndOffering(args: {
       constraints?: BaseRepositoryType.QueryConstraints;
       where?:
         | NonNullable<
@@ -40,17 +38,20 @@ export namespace Repositories {
           offset,
           columns: {
             classId: false,
-            classOfferingId: false,
             recordCount: false,
             recordedMs: false,
           },
           with: {
-            classOffering: {
-              columns: {
-                classId: false,
-                roomId: false,
+            classSession: {
+              columns: { id: true, datePh: true, status: true },
+              with: {
+                classOffering: {
+                  columns: { classId: false, roomId: false },
+                  with: {
+                    rooms: { columns: { name: true } },
+                  },
+                },
               },
-              with: { rooms: { columns: { name: true } } },
             },
           },
         },
@@ -82,7 +83,6 @@ export namespace Repositories {
           offset,
           columns: {
             classId: false,
-            classOfferingId: false,
             recordCount: false,
             recordedMs: false,
           },
@@ -167,47 +167,15 @@ export namespace Repositories {
       return await args.fn(deleteBase, AttendanceRecord.buildWhereClause);
     }
 
+    /**
+     * @deprecated
+     * ! DO NOT USE
+     * @param filter
+     * @returns
+     */
     public static buildWhereClause(
       filter?: Types.Repository.QueryFilters.AttendanceRecord,
     ): SQL | undefined {
-      const conditions = [];
-
-      if (filter) {
-        const {
-          filterType = "or",
-          id,
-          studentId,
-          classId,
-          status,
-          recordCount,
-          recordedAt,
-          recordedMs,
-          datePh,
-          custom,
-        } = filter;
-
-        if (id !== undefined) conditions.push(eq(attendanceRecords.id, id));
-        if (studentId !== undefined)
-          conditions.push(eq(attendanceRecords.studentId, studentId));
-        if (classId !== undefined)
-          conditions.push(eq(attendanceRecords.classId, classId));
-        if (status && status.trim())
-          conditions.push(eq(attendanceRecords.status, status));
-        if (recordCount !== undefined)
-          conditions.push(eq(attendanceRecords.recordCount, recordCount));
-        if (recordedAt && recordedAt.trim())
-          conditions.push(eq(attendanceRecords.recordedAt, recordedAt));
-        if (recordedMs !== undefined)
-          conditions.push(eq(attendanceRecords.recordedMs, recordedMs));
-        if (datePh && datePh.trim())
-          conditions.push(eq(attendanceRecords.datePh, datePh));
-        if (custom)
-          conditions.push(...custom(attendanceRecords, RepositoryUtil.filters));
-
-        if (conditions.length > 0)
-          return filterType === "or" ? or(...conditions) : and(...conditions);
-      }
-
       return undefined;
     }
 

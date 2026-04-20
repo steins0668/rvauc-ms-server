@@ -1,17 +1,84 @@
 import { and, eq, or, sql, SQL, SQLWrapper } from "drizzle-orm";
-import { DbContext, DbOrTx } from "../../../db/create-context";
-import { classOfferings } from "../../../models";
+import { SQLiteColumn } from "drizzle-orm/sqlite-core";
+import { DbContext, DbOrTx, TxContext } from "../../../db/create-context";
+import { Enums } from "../../../data";
+import { classOfferings, Schema } from "../../../models";
 import { Repository } from "../../../services";
-import { RepositoryUtil } from "../../../utils";
-import { Types } from "../types";
+import { RepositoryUtil, TimeUtil } from "../../../utils";
 import { BaseRepositoryType } from "../../../types";
+import { Auth } from "../../auth";
+import { Types } from "../types";
 
 export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
   public constructor(context: DbContext) {
     super(context, classOfferings);
   }
 
-  public async queryWithClass(args: {
+  getTimeFilters(args: { date: Date; mode: "now" | "now-or-next" }) {
+    const { date, mode } = args;
+
+    const { classOfferings: co } = Schema;
+    const { or, and, lte, gt } = RepositoryUtil.filters;
+
+    const seconds = TimeUtil.secondsSinceMidnightPh(date);
+
+    switch (mode) {
+      case "now":
+        //  ! class currently in session
+        return and(lte(co.startTime, seconds), gt(co.endTime, seconds));
+      case "now-or-next":
+        return or(
+          //  ! class currently in sesion
+          and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
+          //  ! next class
+          gt(co.startTime, seconds),
+        );
+      default:
+        return undefined;
+    }
+  }
+
+  async getActiveOffering(args: {
+    values: { date: Date; termId: number; userId: number };
+    role: keyof typeof Auth.Core.Data.Records.roles;
+    mode: "now" | "now-or-next";
+    tx?: TxContext | undefined;
+  }) {
+    return await this.queryWithClassAndProfessor({
+      constraints: { limit: 1 },
+      where: this.getActiveOfferingWhereClause(args),
+      orderBy: (co, { asc }) => asc(co.startTime),
+      dbOrTx: args.tx,
+    }).then((r) => r[0]);
+  }
+
+  async getMinimalShapesForWeekday(args: {
+    values: { weekDay: string; termId: number };
+    tx?: TxContext | undefined;
+  }) {
+    const { values, tx } = args;
+
+    return await (args.tx ?? this._dbContext).query.classOfferings.findMany({
+      where: (co, { and, eq, exists }) =>
+        and(
+          eq(co.weekDay, values.weekDay),
+          exists(
+            this.getClassSubquery({
+              values: { classId: co.classId, termId: values.termId },
+              tx,
+            }),
+          ),
+        ),
+      columns: {
+        id: true,
+        classId: true,
+        startTime: true,
+        endTime: true,
+      },
+    });
+  }
+
+  async queryWithClass(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:
       | NonNullable<
@@ -46,7 +113,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     });
   }
 
-  public async queryWithClassAndProfessor(args: {
+  async queryWithClassAndProfessor(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:
       | NonNullable<
@@ -95,9 +162,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     });
   }
 
-  public async execInsert<T>(
-    args: Types.Repository.InsertArgs.ClassOffering<T>,
-  ) {
+  async execInsert<T>(args: Types.Repository.InsertArgs.ClassOffering<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(classOfferings);
     return await args.fn({
       table: classOfferings,
@@ -189,5 +254,94 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
     builder: Types.Repository.OrderBuilders.ClassOffering,
   ) {
     return builder(classOfferings, RepositoryUtil.orderOperators);
+  }
+
+  private getActiveOfferingWhereClause(
+    args: Parameters<typeof this.getActiveOffering>[0],
+  ): Types.Repository.WhereBuilders.ClassOffering {
+    const { tx, role, mode } = args;
+    const { date, userId, termId } = args.values;
+
+    const { classes: c, enrollments: e } = Schema;
+    const { eq, and } = RepositoryUtil.filters;
+
+    const context = args.tx ?? this._dbContext;
+
+    const subqueryE = (args: { classId: SQLiteColumn; studentId: number }) =>
+      context
+        .select({ id: e.id })
+        .from(e)
+        .where(
+          and(eq(e.classId, args.classId), eq(e.studentId, args.studentId)),
+        );
+
+    return (co, { and, eq, exists, gt, lte }) => {
+      const day = Enums.Days[date.getDay()] as string;
+      const weekDay = day.substring(0, 3);
+
+      const conditions: (SQLWrapper | undefined)[] = [
+        eq(co.weekDay, weekDay),
+        exists(
+          this.getClassSubquery({
+            values: {
+              classId: co.classId,
+              termId,
+              professorId: role === "professor" ? userId : undefined,
+            },
+            tx,
+          }),
+        ),
+      ];
+
+      if (role === "student")
+        conditions.push(
+          exists(subqueryE({ classId: co.classId, studentId: userId })),
+        ); //  ! professors don't need enrollments subquery
+
+      const seconds = TimeUtil.secondsSinceMidnightPh(date);
+
+      switch (mode) {
+        case "now":
+          //  ! class currently in session
+          conditions.push(
+            and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
+          );
+        case "now-or-next":
+          conditions.push(
+            or(
+              //  ! class currently in sesion
+              and(lte(co.startTime, seconds), gt(co.endTime, seconds)),
+              //  ! next class
+              gt(co.startTime, seconds),
+            ),
+          );
+
+          return conditions.length ? and(...conditions) : undefined;
+      }
+    };
+  }
+
+  private getClassSubquery(args: {
+    values: {
+      classId: SQLiteColumn;
+      termId: number;
+      professorId?: number | undefined;
+    };
+    tx?: TxContext | undefined;
+  }) {
+    const { classId, termId, professorId } = args.values;
+    const { classes: c } = Schema;
+
+    const context = args.tx ?? this._dbContext;
+    const conditions = [eq(c.id, classId), eq(c.termId, termId)];
+
+    //  ! used when querying class offerings for professors
+    if (professorId !== undefined)
+      conditions.push(eq(c.professorId, professorId));
+
+    return context
+      .select({ id: c.id })
+      .from(c)
+      .where(and(...conditions));
   }
 }

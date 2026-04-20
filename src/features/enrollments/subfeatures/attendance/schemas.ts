@@ -8,7 +8,7 @@ export namespace Schemas {
   export namespace RequestBody {
     export const newRecord = z
       .strictObject({
-        date: z.coerce.date(),
+        date: z.coerce.date().default(Clock.now()),
         room: z.string(),
       })
       .strip();
@@ -17,12 +17,11 @@ export namespace Schemas {
 
     export const recordSubmission = z
       .strictObject({
-        date: z.coerce.date(),
         records: z.array(
           z
             .strictObject({
               recordedDate: z.coerce.date(),
-              studentId: z.number(),
+              enrollmentId: z.number(),
               status: z.enum(Data.attendanceStatus),
             })
             .strip(),
@@ -36,9 +35,9 @@ export namespace Schemas {
   export namespace RequestQuery {
     export const attendanceRecord = z
       .strictObject({
-        date: z.iso.datetime().default(Clock.now().toISOString()),
-        limit: z.number().min(1).max(50).default(6),
-        page: z.number().min(1).default(1),
+        timeMs: z.coerce.number().default(Clock.now().getTime()),
+        limit: z.coerce.number().min(1).max(50).default(6),
+        page: z.coerce.number().min(1).default(1),
       })
       .strip();
 
@@ -54,12 +53,22 @@ export namespace Schemas {
       .strictObject({ classOfferingId: z.coerce.number() })
       .strip();
 
+    export const classSessionId = z
+      .strictObject({ classSessionId: z.coerce.number() })
+      .strip();
+
+    export const enrollmentId = z
+      .strictObject({ enrollmentId: z.coerce.number() })
+      .strip();
+
     export const studentId = z
       .strictObject({ studentId: z.coerce.number() })
       .strip();
 
     export type ClassId = z.infer<typeof classId>;
     export type ClassOfferingId = z.infer<typeof classOfferingId>;
+    export type ClassSessionId = z.infer<typeof classSessionId>;
+    export type EnrollmentId = z.infer<typeof enrollmentId>;
     export type StudentId = z.infer<typeof studentId>;
   }
 
@@ -105,7 +114,13 @@ export namespace Schemas {
             z
               .strictObject({
                 record: base,
-                student: Core.Schemas.Dto.student,
+                enrollment: z
+                  .strictObject({
+                    id: z.number(),
+                    status: z.string(),
+                    student: Core.Schemas.Dto.student,
+                  })
+                  .strip(),
               })
               .strip(),
           ),
@@ -119,12 +134,10 @@ export namespace Schemas {
       //  ! `AttendanceRegistration` service helpers ONLY
       export const normalizedRecord = z
         .strictObject({
+          enrollmentId: z.number(),
+          status: z.enum(Data.attendanceStatus),
           recordedAt: z.string(),
           recordedMs: z.number(),
-          datePh: z.string(),
-          recordedDate: z.date(),
-          studentId: z.number(),
-          status: z.enum(Data.attendanceStatus),
         })
         .strip();
       export type NormalizedRecord = z.infer<typeof normalizedRecord>;
@@ -140,6 +153,25 @@ export namespace Schemas {
         })
         .strip();
       export type MutationResult = z.infer<typeof mutationResult>;
+
+      export const sessionAttendanceResult = z
+        .strictObject({
+          class: z
+            .strictObject({
+              ...Core.Schemas.Dto.class_.shape,
+              course: Core.Schemas.Dto.course,
+              offering: Core.Schemas.Dto.classOffering,
+              professor: Core.Schemas.Dto.professor,
+              session: Core.Schemas.Dto.classSession,
+            })
+            .strip(),
+          attendance: insertedAttendance,
+        })
+        .strip();
+
+      export type SessionAttendanceResult = z.infer<
+        typeof sessionAttendanceResult
+      >;
       //#endregion
     }
 
@@ -161,7 +193,13 @@ export namespace Schemas {
               course: Core.Schemas.Dto.course,
             })
             .strip(),
-          student: Core.Schemas.Dto.student,
+          enrollment: z
+            .strictObject({
+              id: z.number(),
+              status: z.string(),
+              student: Core.Schemas.Dto.student,
+            })
+            .strip(),
           attendanceRecords,
           summary: summary,
         })
@@ -209,7 +247,7 @@ export namespace Schemas {
           values: z
             .strictObject({
               ...defaultValues.shape,
-              classId: z.number(),
+              classSessionId: z.number(),
               professorId: z.number(),
             })
             .strip(),
@@ -226,7 +264,7 @@ export namespace Schemas {
               ...defaultValues.shape,
               classId: z.number(),
               professorId: z.number(),
-              studentId: z.number(),
+              enrollmentId: z.number(),
             })
             .strip(),
         })

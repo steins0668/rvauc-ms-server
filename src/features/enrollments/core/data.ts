@@ -2,6 +2,11 @@ import "dotenv/config";
 import z from "zod";
 
 export namespace Data {
+  export const classSessionStatus = {
+    scheduled: "scheduled",
+    cancelled: "cancelled",
+  } as const;
+
   export const enrollmentStatus = {
     enrolled: "enrolled",
   } as const;
