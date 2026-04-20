@@ -123,50 +123,6 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     return await query;
   }
 
-  existsForStudent(args: {
-    dbOrTx?: DbOrTx | undefined;
-    enrollmentId: SQLiteColumn;
-    studentId: number;
-  }) {
-    const { dbOrTx, enrollmentId, studentId } = args;
-    return this.getContext({
-      dbOrTx,
-      fn: ({ table: e, context, converter }) =>
-        context
-          .select({ id: e.id })
-          .from(e)
-          .where(
-            converter({
-              custom: (e, { eq, and }) => [
-                and(eq(e.id, enrollmentId), eq(e.studentId, studentId)),
-              ],
-            }),
-          ),
-    });
-  }
-
-  existsForClassAndStudent(args: {
-    dbOrTx?: DbOrTx | undefined;
-    classId: SQLiteColumn;
-    studentId: number;
-  }) {
-    const { dbOrTx, classId, studentId } = args;
-    return this.getContext({
-      dbOrTx,
-      fn: ({ table: e, context, converter }) =>
-        context
-          .select({ id: e.id })
-          .from(e)
-          .where(
-            converter({
-              custom: (e, { eq, and }) => [
-                and(eq(e.classId, classId), eq(e.studentId, studentId)),
-              ],
-            }),
-          ),
-    });
-  }
-
   public getContext<T>(args: Types.Repository.ContextArgs.Enrollment<T>) {
     const context = args.dbOrTx ?? this._dbContext;
 
