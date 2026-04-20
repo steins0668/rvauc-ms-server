@@ -7,6 +7,7 @@ import { Schemas } from "../schemas";
 import { ClassOfferingQuery } from "./class-offering-query.service";
 import { ClassRuntimeResolver } from "./class-runtime-resolver";
 import { ClassSessionQuery } from "./class-session-query.service";
+import { DtoMappers } from "../dto-mappers";
 
 export namespace ClassSessionRuntime {
   const { roles } = Auth.Core.Data.Records;
@@ -59,7 +60,10 @@ export namespace ClassSessionRuntime {
       }
 
       try {
-        const parsed = this.toDto(offering, session);
+        const parsed = DtoMappers.Query.ClassSessionRuntime.map(
+          offering,
+          session,
+        );
 
         return ResultBuilder.success({ ...parsed });
       } catch (err) {
@@ -104,7 +108,10 @@ export namespace ClassSessionRuntime {
       }
 
       try {
-        const parsed = this.toDto(offering, session);
+        const parsed = DtoMappers.Query.ClassSessionRuntime.map(
+          offering,
+          session,
+        );
 
         return ResultBuilder.success({ ...parsed });
       } catch (err) {
@@ -116,59 +123,6 @@ export namespace ClassSessionRuntime {
           }),
         );
       }
-    }
-
-    private toDto(
-      co: NonNullable<
-        Awaited<
-          ReturnType<Repositories.ClassOffering["queryWithClassAndProfessor"]>
-        >[0]
-      >,
-      cs: NonNullable<
-        Awaited<ReturnType<Repositories.ClassSession["getMinimalShape"]>>[0]
-      >,
-    ): {
-      class: Schemas.Dto.Class_ & {
-        course: Schemas.Dto.Course;
-        offering: Schemas.Dto.ClassOffering;
-        professor: Schemas.Dto.Professor;
-        session: Schemas.Dto.ClassSession;
-      };
-    } {
-      const { class: cls, rooms: r } = co;
-      const { course: crs, professor: p } = co.class;
-
-      return {
-        class: {
-          id: cls.id,
-          classNumber: cls.classNumber,
-          course: crs,
-          offering: {
-            id: co.id,
-            weekDay: co.weekDay,
-            room: r?.name ?? "N/A",
-            startTimeText: co.startTimeText,
-            endTimeText: co.endTimeText,
-            startTime: co.startTime,
-            endTime: co.endTime,
-          },
-          professor: {
-            surname: p.user.surname,
-            firstName: p.user.firstName,
-            middleName: p.user.middleName,
-            gender: p.user.gender,
-            college: p.college.name,
-            facultyRank: p.facultyRank,
-          },
-          session: Schemas.Dto.classSession.parse({
-            id: cs.id,
-            status: cs.status,
-            datePh: cs.datePh,
-            startTimeMs: cs.startTimeMs,
-            endTimeMs: cs.endTimeMs,
-          }),
-        },
-      };
     }
   }
 }

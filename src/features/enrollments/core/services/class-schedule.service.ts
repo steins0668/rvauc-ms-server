@@ -5,6 +5,7 @@ import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
 import { Schemas } from "../schemas";
 import { ClassOfferingQuery } from "./class-offering-query.service";
+import { DtoMappers } from "../dto-mappers";
 
 export namespace ClassSchedule {
   const { roles } = Auth.Core.Data.Records;
@@ -55,8 +56,10 @@ export namespace ClassSchedule {
       if (offerings.length === 0) return ResultBuilder.success([]);
 
       try {
-        const parsed = offerings.map((row) => this.toDto(row));
-        return ResultBuilder.success(parsed);
+        const parsed = offerings.map((row) =>
+          DtoMappers.Query.ClassSchedule.map(row),
+        );
+        return ResultBuilder.success({ classes: parsed });
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
@@ -102,8 +105,10 @@ export namespace ClassSchedule {
           ).values(),
         );
 
-        const parsed = distinctClasses.map((row) => this.toDto(row));
-        return ResultBuilder.success(parsed);
+        const parsed = distinctClasses.map((row) =>
+          DtoMappers.Query.ClassSchedule.map(row),
+        );
+        return ResultBuilder.success({ classes: parsed });
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
@@ -113,50 +118,6 @@ export namespace ClassSchedule {
           }),
         );
       }
-    }
-
-    private toDto(
-      classOffering: NonNullable<
-        Awaited<
-          ReturnType<Repositories.ClassOffering["queryWithClassAndProfessor"]>
-        >[0]
-      >,
-    ): {
-      class: Schemas.Dto.Class_ & {
-        course: Schemas.Dto.Course;
-        offering: Schemas.Dto.ClassOffering;
-        professor: Schemas.Dto.Professor;
-      };
-    } {
-      const { class: class_, rooms } = classOffering;
-      const { course, professor } = classOffering.class;
-
-      const dto = {
-        class: {
-          id: class_.id,
-          classNumber: class_.classNumber,
-          course,
-          offering: {
-            id: classOffering.id,
-            weekDay: classOffering.weekDay,
-            room: rooms?.name ?? "N/A",
-            startTimeText: classOffering.startTimeText,
-            endTimeText: classOffering.endTimeText,
-            startTime: classOffering.startTime,
-            endTime: classOffering.endTime,
-          },
-          professor: {
-            surname: professor.user.surname,
-            firstName: professor.user.firstName,
-            middleName: professor.user.middleName,
-            gender: professor.user.gender,
-            college: professor.college.name,
-            facultyRank: professor.facultyRank,
-          },
-        },
-      };
-
-      return dto;
     }
   }
 }
