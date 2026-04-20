@@ -115,7 +115,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     });
   }
 
-  public async queryMinimalShape(args: {
+  async getMinimalShape(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:
       | NonNullable<
@@ -144,9 +144,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     });
   }
 
-  public async execInsert<T>(
-    args: Types.Repository.InsertArgs.ClassSession<T>,
-  ) {
+  async execInsert<T>(args: Types.Repository.InsertArgs.ClassSession<T>) {
     const insert = (args.dbOrTx ?? this._dbContext).insert(classSessions);
     return await args.fn({
       table: classSessions,
@@ -156,7 +154,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     });
   }
 
-  public getContext<T>(args: Types.Repository.ContextArgs.ClassSession<T>) {
+  getContext<T>(args: Types.Repository.ContextArgs.ClassSession<T>) {
     const context = args.dbOrTx ?? this._dbContext;
 
     return args.fn({
@@ -168,7 +166,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     });
   }
 
-  public getSubQuery<T>(args: Types.Repository.SubQueryArgs.ClassSession<T>) {
+  getSubQuery<T>(args: Types.Repository.SubQueryArgs.ClassSession<T>) {
     const selectBase = (args.dbOrTx ?? this._dbContext)
       .select()
       .from(classSessions);
@@ -181,21 +179,17 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     });
   }
 
-  public async execQuery<T>(args: Types.Repository.QueryArgs.ClassSession<T>) {
+  async execQuery<T>(args: Types.Repository.QueryArgs.ClassSession<T>) {
     const query = (args.dbOrTx ?? this._dbContext).query.classSessions;
     return await args.fn(query, ClassSession.buildWhereClause);
   }
 
-  public async execUpdate<T>(
-    args: Types.Repository.UpdateArgs.ClassSession<T>,
-  ) {
+  async execUpdate<T>(args: Types.Repository.UpdateArgs.ClassSession<T>) {
     const update = (args.dbOrTx ?? this._dbContext).update(classSessions);
     return await args.fn(update, ClassSession.buildWhereClause);
   }
 
-  public async execDelete<T>(
-    args: Types.Repository.DeleteArgs.ClassSession<T>,
-  ) {
+  async execDelete<T>(args: Types.Repository.DeleteArgs.ClassSession<T>) {
     const deleteBase = (args.dbOrTx ?? this._dbContext).delete(classSessions);
     return await args.fn(deleteBase, ClassSession.buildWhereClause);
   }

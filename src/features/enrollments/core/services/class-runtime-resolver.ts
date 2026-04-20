@@ -191,7 +191,7 @@ export namespace ClassRuntimeResolver {
       tx?: TxContext | undefined;
     }) {
       return await this._classSessionRepo
-        .queryMinimalShape({
+        .getMinimalShape({
           where: this.whereClassSession({
             values: args.values,
             mode: args.mode,

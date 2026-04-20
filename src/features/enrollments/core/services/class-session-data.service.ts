@@ -74,10 +74,10 @@ export namespace ClassSessionData {
     }
 
     private async querySessions(
-      args: Parameters<Repositories.ClassSession["queryMinimalShape"]>[0],
+      args: Parameters<Repositories.ClassSession["getMinimalShape"]>[0],
     ) {
       try {
-        return await this._classSessionRepo.queryMinimalShape(args);
+        return await this._classSessionRepo.getMinimalShape(args);
       } catch (err) {
         throw DbAccess.normalizeError({
           name: "DB_ACCESS_QUERY_ERROR",

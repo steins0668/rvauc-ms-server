@@ -64,7 +64,7 @@ export namespace ClassSessionQuery {
     async ensureMinimalShape(
       args: Pick<
         NonNullable<
-          Parameters<Repositories.ClassSession["queryMinimalShape"]>[0]
+          Parameters<Repositories.ClassSession["getMinimalShape"]>[0]
         >,
         "where" | "orderBy" | "dbOrTx"
       >,
@@ -89,11 +89,11 @@ export namespace ClassSessionQuery {
      */
     async getMinimalShape(
       args: NonNullable<
-        Parameters<Repositories.ClassSession["queryMinimalShape"]>[0]
+        Parameters<Repositories.ClassSession["getMinimalShape"]>[0]
       >,
     ) {
       try {
-        return await this._classSessionRepo.queryMinimalShape(args);
+        return await this._classSessionRepo.getMinimalShape(args);
       } catch (err) {
         throw Errors.EnrollmentData.normalizeError({
           name: "ENROLLMENT_DATA_QUERY_ERROR",
