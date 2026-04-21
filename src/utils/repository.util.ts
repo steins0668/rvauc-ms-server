@@ -56,7 +56,7 @@ export namespace RepositoryUtil {
     c?: Partial<{ limit: number; page: number }> | undefined,
   ) {
     const limit = resolveLimit(c) ?? 6;
-    return (c?.page ?? 1 - 1) * limit;
+    return ((c?.page ?? 1) - 1) * limit;
   }
 
   export function resolveLimit(
