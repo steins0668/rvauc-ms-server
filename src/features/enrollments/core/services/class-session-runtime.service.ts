@@ -29,6 +29,10 @@ export namespace ClassSessionRuntime {
       this._classRuntimeResolver = args.classRuntimeResolver;
     }
 
+    /**
+     * @description
+     * Retrieves class session runtime details of the ongoing class.
+     */
     async getForNow(args: {
       values: {
         date: Date;
@@ -52,7 +56,7 @@ export namespace ClassSessionRuntime {
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_TRANSACTION_ERROR",
+            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
             message: "Failed resolving class offering and/or session.",
             err,
           }),
@@ -77,6 +81,10 @@ export namespace ClassSessionRuntime {
       }
     }
 
+    /**
+     * @description
+     * Retrieves class session runtime details of the ongoing class or the next scheduled class.
+     */
     async getForNowOrNext(args: {
       values: {
         date: Date;
@@ -100,7 +108,7 @@ export namespace ClassSessionRuntime {
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_TRANSACTION_ERROR",
+            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
             message: "Failed resolving class offering and/or session.",
             err,
           }),
