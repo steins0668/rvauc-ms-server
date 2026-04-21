@@ -56,7 +56,7 @@ export namespace ClassSessionRuntime {
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
+            name: "ENROLLMENT_DATA_INTERNAL_ERROR",
             message: "Failed resolving class offering and/or session.",
             err,
           }),
@@ -108,7 +108,7 @@ export namespace ClassSessionRuntime {
       } catch (err) {
         return ResultBuilder.fail(
           Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
+            name: "ENROLLMENT_DATA_INTERNAL_ERROR",
             message: "Failed resolving class offering and/or session.",
             err,
           }),
