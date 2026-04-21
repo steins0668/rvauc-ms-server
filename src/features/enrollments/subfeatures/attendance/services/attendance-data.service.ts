@@ -150,26 +150,17 @@ export namespace AttendanceData {
             });
         }
       } catch (err) {
-        const internalError = {
-          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
-          message: "Failed retrieving class attendance records for professor.",
-        } as const;
+        const internalError = Core.Errors.EnrollmentData.internalError(
+          "Failed retrieving class attendance records for professor.",
+        );
 
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.translateError({
-            fallback: {
-              name: internalError.name,
-              message: internalError.message,
-              err,
-            },
+            fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
                 case "ENROLLMENT_DATA_QUERY_ERROR":
-                  return create({
-                    name: internalError.name,
-                    message: internalError.message,
-                    cause: err,
-                  });
+                  return create({ ...internalError, cause: err });
               }
             },
           }),
@@ -229,32 +220,24 @@ export namespace AttendanceData {
           dbOrTx: args.dbOrTx,
         });
       } catch (err) {
-        const internalError = {
-          name: "ENROLLMENT_DATA_SYSTEM_ERROR",
-          message: "Failed retrieving class attendance records for student.",
-        } as const;
+        const internalError = Core.Errors.EnrollmentData.internalError(
+          "Failed retrieving class attendance records for student.",
+        );
 
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.translateError({
-            fallback: {
-              name: internalError.name,
-              message: internalError.message,
-              err,
-            },
+            fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
                 case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
                   return create({
-                    ...err,
+                    name: err.name,
                     message:
                       "Unable to find enrollment. The student, class, or enrollment record may not exist.",
-                  });
-                case "ENROLLMENT_DATA_QUERY_ERROR":
-                  return create({
-                    name: internalError.name,
-                    message: internalError.message,
                     cause: err,
                   });
+                case "ENROLLMENT_DATA_QUERY_ERROR":
+                  return create({ ...internalError, cause: err });
               }
             },
           }),
@@ -316,27 +299,17 @@ export namespace AttendanceData {
             },
           );
       } catch (err) {
-        const internalError = {
-          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
-          message:
-            "Failed retrieving class attendance of student for professor.",
-        } as const;
+        const internalError = Core.Errors.EnrollmentData.internalError(
+          "Failed retrieving class attendance of student for professor.",
+        );
 
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.translateError({
-            fallback: {
-              name: internalError.name,
-              message: internalError.message,
-              err,
-            },
+            fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
                 case "ENROLLMENT_DATA_QUERY_ERROR":
-                  return create({
-                    name: internalError.name,
-                    message: internalError.message,
-                    cause: err,
-                  });
+                  return create({ ...internalError, cause: err });
               }
             },
           }),
