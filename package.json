@@ -31,6 +31,7 @@
     "test:broker:sign-out": "jest \"session-broker.sign-out.test.ts\"",
     "test:attendance": "jest \"attendance.test.ts\"",
     "test:attendance:class": "jest \"attendance-class.test.ts\"",
+    "test:attendance:student": "jest \"attendance-student.test.ts\"",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:generate": "tsc && drizzle-kit generate --config=./config/drizzle.config.ts",

@@ -6,7 +6,7 @@ import { SessionManager } from "../../../features/auth/sub-features/session-mana
 import { createTokens } from "../../../features/auth/core/utils/create-tokens.util";
 import { Schemas } from "../../../features/enrollments/subfeatures/attendance/schemas";
 
-describe("Class Attendance Test Suite", () => {
+describe("Student Attendance Test Suite", () => {
   const tokens = {
     prof: "",
     student: "",
@@ -95,8 +95,8 @@ describe("Class Attendance Test Suite", () => {
   });
 
   //    200 ok
-  it(`GET records/class/offering/session/157`, async () => {
-    const url = `/enrollments/attendance/records/class/offering/session/157`;
+  it("GET records/class/6/enrollment/6", async () => {
+    const url = "/enrollments/attendance/records/class/6/enrollment/6";
     const res = await request(app)
       .get(url)
       .set("Authorization", `Bearer ${tokens.prof}`);
@@ -108,26 +108,12 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(true);
     expect(res.body).toHaveProperty("result");
 
-    Schemas.Dto.ClassAttendance.professorView.parse(res.body.result);
+    Schemas.Dto.StudentAttendance.professorView.parse(res.body.result);
   });
 
-  //    403 class/session not associated with professor
-  it("GET records/class/offering/session/156", async () => {
-    const url = "/enrollments/attendance/records/class/offering/session/156";
-    const res = await request(app)
-      .get(url)
-      .set("Authorization", `Bearer ${tokens.prof}`);
-
-    console.debug(JSON.stringify(res.body, null, 2));
-
-    expect(res.status).toBe(403);
-    expect(res.body).toHaveProperty("success");
-    expect(res.body.success).toBe(false);
-  });
-
-  //    404 class not found
-  it("GET records/class/offering/session/1000", async () => {
-    const url = "/enrollments/attendance/records/class/offering/session/1000";
+  //    404 CLASS_NOT_FOUND
+  it("GET records/class/10/enrollment/6", async () => {
+    const url = "/enrollments/attendance/records/class/10/enrollment/6";
     const res = await request(app)
       .get(url)
       .set("Authorization", `Bearer ${tokens.prof}`);
@@ -139,26 +125,12 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //    200 ok
-  it("GET records/class/6", async () => {
+  //    404 ENROLLMENT_NOT_FOUND
+  it("GET records/class/6/enrollment/20", async () => {
+    const url = "/enrollments/attendance/records/class/6/enrollment/20";
     const res = await request(app)
-      .get("/enrollments/attendance/records/class/6")
-      .set("Authorization", `Bearer ${tokens.student}`);
-
-    console.debug(JSON.stringify(res.body, null, 2));
-
-    expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty("success");
-    expect(res.body.success).toBe(true);
-
-    Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
-  });
-
-  //    404 enrollment not found
-  it("GET records/class/7", async () => {
-    const res = await request(app)
-      .get("/enrollments/attendance/records/class/7")
-      .set("Authorization", `Bearer ${tokens.student}`);
+      .get(url)
+      .set("Authorization", `Bearer ${tokens.prof}`);
 
     console.debug(JSON.stringify(res.body, null, 2));
 
