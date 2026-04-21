@@ -5,6 +5,7 @@ import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
 import { ClassOfferingQuery } from "./class-offering-query.service";
 import { DtoMappers } from "../dto-mappers";
+import { Schemas } from "../schemas";
 
 export namespace ClassSchedule {
   const { roles } = Auth.Core.Data.Records;
@@ -52,7 +53,10 @@ export namespace ClassSchedule {
         );
       }
 
-      if (offerings.length === 0) return ResultBuilder.success([]);
+      if (offerings.length === 0)
+        return ResultBuilder.success({
+          classes: [] as Schemas.Dto.ScheduledClassWithProfessor[],
+        });
 
       try {
         const parsed = offerings.map((row) =>
@@ -95,7 +99,10 @@ export namespace ClassSchedule {
         );
       }
 
-      if (offerings.length === 0) return ResultBuilder.success([]);
+      if (offerings.length === 0)
+        return ResultBuilder.success({
+          classes: [] as Schemas.Dto.ScheduledClassWithProfessor[],
+        });
 
       try {
         const distinctClasses = Array.from(
