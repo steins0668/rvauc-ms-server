@@ -1,22 +1,21 @@
 import bcrypt from "bcrypt";
 import { createContext, DbOrTx } from "../../../db/create-context";
-import { Auth } from "../../../features/auth";
 import { SampleData } from "./sample-data";
+import { Schema } from "../../../models";
 
 export namespace Seeders {
   export const seedRoles = async (dbOrTx?: DbOrTx | undefined) => {
-    const roleRepo = new Auth.Repositories.Role(await createContext());
+    const context = dbOrTx ?? (await createContext());
 
-    return await roleRepo.execInsert({
-      dbOrTx,
-      fn: async (insert) =>
-        insert.values(SampleData.roles).onConflictDoNothing().returning(),
-    });
+    return await context
+      .insert(Schema.roles)
+      .values(SampleData.roles)
+      .onConflictDoNothing()
+      .returning();
   };
 
   export const seedProfessors = async (dbOrTx?: DbOrTx | undefined) => {
-    const userRepo = new Auth.Repositories.User(await createContext());
-    const profRepo = new Auth.Repositories.Professor(await createContext());
+    const context = dbOrTx ?? (await createContext());
 
     const hashedUsersProfessors = await Promise.all(
       SampleData.usersProfessors.map(async (value) => {
@@ -25,22 +24,21 @@ export namespace Seeders {
       }),
     );
 
-    await userRepo.execInsert({
-      dbOrTx,
-      fn: async (insert) =>
-        insert.values(hashedUsersProfessors).onConflictDoNothing().returning(),
-    });
+    await context
+      .insert(Schema.users)
+      .values(hashedUsersProfessors)
+      .onConflictDoNothing()
+      .returning();
 
-    await profRepo.execInsert({
-      dbOrTx,
-      fn: async (insert) =>
-        insert.values(SampleData.professors).onConflictDoNothing().returning(),
-    });
+    await context
+      .insert(Schema.professors)
+      .values(SampleData.professors)
+      .onConflictDoNothing()
+      .returning();
   };
 
   export const seedStudents = async (dbOrTx?: DbOrTx | undefined) => {
-    const userRepo = new Auth.Repositories.User(await createContext());
-    const studentRepo = new Auth.Repositories.Student(await createContext());
+    const context = dbOrTx ?? (await createContext());
 
     const hashedUsersStudents = await Promise.all(
       SampleData.usersStudents.map(async (value) => {
@@ -49,16 +47,16 @@ export namespace Seeders {
       }),
     );
 
-    await userRepo.execInsert({
-      dbOrTx,
-      fn: async (insert) =>
-        insert.values(hashedUsersStudents).onConflictDoNothing().returning(),
-    });
+    await context
+      .insert(Schema.users)
+      .values(hashedUsersStudents)
+      .onConflictDoNothing()
+      .returning();
 
-    await studentRepo.execInsert({
-      dbOrTx,
-      fn: async (insert) =>
-        insert.values(SampleData.students).onConflictDoNothing().returning(),
-    });
+    await context
+      .insert(Schema.students)
+      .values(SampleData.students)
+      .onConflictDoNothing()
+      .returning();
   };
 }

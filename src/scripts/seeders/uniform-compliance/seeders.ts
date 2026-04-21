@@ -1,23 +1,17 @@
 import { createContext, DbOrTx } from "../../../db/create-context";
-import { UniformCompliance } from "../../../features/uniform-compliance";
 import { Schema } from "../../../models";
 import { SampleData } from "./sample-data";
 import { Enrollments as EnrollmentsFeature } from "../../../features/enrollments";
 
 export namespace Seeders {
   export const seedUniformTypes = async (dbOrTx?: DbOrTx | undefined) => {
-    const uniformTypeRepo = new UniformCompliance.Repositories.UniformType(
-      await createContext(),
-    );
+    const context = dbOrTx ?? (await createContext());
 
-    return await uniformTypeRepo.execInsert({
-      dbOrTx,
-      fn: async (insert) =>
-        insert
-          .values(SampleData.uniformTypes)
-          .onConflictDoNothing()
-          .returning(),
-    });
+    return await context
+      .insert(Schema.uniformTypes)
+      .values(SampleData.uniformTypes)
+      .onConflictDoNothing()
+      .returning();
   };
 
   export const seedRecords = async (args: {
