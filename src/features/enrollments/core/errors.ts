@@ -34,6 +34,8 @@ export namespace Errors {
       | "ENROLLMENT_DATA_INVALID_SEMESTER_DATE_ERROR"
       | "ENROLLMENT_DATA_INVALID_USER_INPUT_ERROR";
 
+    export type Authorization = "ENROLLMENT_DATA_CLASS_SESSION_FORBIDDEN_ERROR";
+
     export type ApplicationFailure = "ENROLLMENT_DATA_DTO_CONVERSION_ERROR";
 
     export type ErrorName =
@@ -42,7 +44,8 @@ export namespace Errors {
       | DomainState
       | SystemFailure
       | InputValidation
-      | ApplicationFailure;
+      | ApplicationFailure
+      | Authorization;
 
     export class ErrorClass extends BaseError<ErrorName> {}
 
@@ -69,6 +72,8 @@ export namespace Errors {
 
       ENROLLMENT_DATA_INVALID_SEMESTER_DATE_ERROR: 400,
       ENROLLMENT_DATA_INVALID_USER_INPUT_ERROR: 400,
+
+      ENROLLMENT_DATA_CLASS_SESSION_FORBIDDEN_ERROR: 403,
     };
 
     export function collapseError(args: {

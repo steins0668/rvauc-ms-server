@@ -348,7 +348,7 @@ export namespace AttendanceData {
 
       if (session.class.professorId !== professorId)
         throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
+          name: "ENROLLMENT_DATA_CLASS_SESSION_FORBIDDEN_ERROR",
           message: "This professor is not associated with the specified class.",
         });
 
