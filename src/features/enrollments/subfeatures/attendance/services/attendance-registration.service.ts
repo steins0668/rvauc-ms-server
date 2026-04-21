@@ -16,7 +16,6 @@ export namespace AttendanceRegistration {
   export async function create() {
     const context = await createContext();
     const attendanceRecordRepo = new Repositories.AttendanceRecord(context);
-    const classRepo = new CoreRepositories.Class(context);
     const classOfferingRepo = new CoreRepositories.ClassOffering(context);
     const classSessionRepo = new CoreRepositories.ClassSession(context);
     const enrollmentRepo = new CoreRepositories.Enrollment(context);
@@ -125,9 +124,30 @@ export namespace AttendanceRegistration {
         return { updated, inserted, rejected: organizedRecords.rejects };
       }, tx);
 
-      try {
-        const result = await txPromise;
+      let result;
 
+      try {
+        result = await txPromise;
+      } catch (err) {
+        const internalError = Core.Errors.EnrollmentData.internalError(
+          "Failed mutating attendance records.",
+        );
+
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.translateError({
+            fallback: { ...internalError, err },
+            map: (err, create) => {
+              switch (err.name) {
+                case "ENROLLMENT_DATA_QUERY_ERROR":
+                case "ENROLLMENT_DATA_STORE_ERROR":
+                  return create({ ...internalError, cause: err });
+              }
+            },
+          }),
+        );
+      }
+
+      try {
         return ResultBuilder.success(
           DtoMappers.Mutation.sessionRecordsMutationResult(
             result.updated,
@@ -166,20 +186,12 @@ export namespace AttendanceRegistration {
       };
       tx?: TxContext | undefined;
     }) {
-      const { termId, studentId, recordedDate } = args.values;
+      const { recordedDate } = args.values;
       const txPromise = execTransaction(async (tx) => {
-        const clsRuntime = await this._classRuntimeResolver.resolve({
-          values: { termId, userId: studentId, date: recordedDate },
-          role: "student",
-          mode: "now",
-          sessionPolicy: "strict-scheduled",
-          tx,
-        });
-
-        const enrollment =
-          await this._enrollmentQuery.ensureEnrollmentForClassAndStudent({
-            values: { studentId, classId: clsRuntime.offering.class.id },
-            dbOrTx: tx,
+        const { clsRuntime, enrollment } =
+          await this.ensureEnrollmentForRuntime({
+            values: args.values,
+            tx,
           });
 
         const status = Utils.Policy.Attendance.getAttendanceStatus({
@@ -209,11 +221,19 @@ export namespace AttendanceRegistration {
       try {
         txResult = await txPromise;
       } catch (err) {
+        const internalError = Core.Errors.EnrollmentData.internalError(
+          "Failed recording attendance for session.",
+        );
+
         return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_TRANSACTION_ERROR",
-            message: "Failed storing attendance record from scan.",
-            err,
+          Core.Errors.EnrollmentData.translateError({
+            fallback: { ...internalError, err },
+            map: (err, create) => {
+              switch (err.name) {
+                case "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR":
+                  return create({ ...internalError, cause: err });
+              }
+            },
           }),
         );
       }
@@ -234,6 +254,55 @@ export namespace AttendanceRegistration {
             err,
           }),
         );
+      }
+    }
+
+    private async ensureEnrollmentForRuntime(args: {
+      values: { termId: number; studentId: number; recordedDate: Date };
+      tx?: TxContext | undefined;
+    }) {
+      const { tx } = args;
+      const { termId, studentId, recordedDate } = args.values;
+
+      try {
+        const clsRuntime = await this._classRuntimeResolver.resolve({
+          values: { termId, userId: studentId, date: recordedDate },
+          role: "student",
+          mode: "now",
+          sessionPolicy: "strict-scheduled",
+          tx,
+        });
+
+        const enrollment =
+          await this._enrollmentQuery.ensureEnrollmentForClassAndStudent({
+            values: { studentId, classId: clsRuntime.offering.class.id },
+            dbOrTx: tx,
+          });
+
+        return { clsRuntime, enrollment };
+      } catch (err) {
+        const internalError = {
+          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+          message: "Failed recording attendance for session.",
+        } as const;
+
+        throw Core.Errors.EnrollmentData.translateError({
+          fallback: { ...internalError, err },
+          map: (err, create) => {
+            switch (err.name) {
+              case "ENROLLMENT_DATA_STORE_ERROR":
+              case "ENROLLMENT_DATA_QUERY_ERROR":
+                return create({ ...internalError, cause: err });
+              case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
+                return create({
+                  name: "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR",
+                  message:
+                    "A class runtime was resolved for the provided student, but the enrollment could not be found.",
+                  cause: err,
+                });
+            }
+          },
+        });
       }
     }
   }
