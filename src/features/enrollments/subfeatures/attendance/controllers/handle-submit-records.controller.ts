@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import { StrictValidatedRequest } from "../../../../../interfaces";
 import { Auth } from "../../../../auth";
+import { Core } from "../../../core";
 import { Schemas } from "../schemas";
-
-const internalErrMessage = "Something went wrong. Please try again later.";
 
 export async function handleSubmitRecords(req: Request, res: Response) {
   const {
@@ -49,12 +48,12 @@ export async function handleSubmitRecords(req: Request, res: Response) {
 
     return res.status(500).json({
       success: false,
-      message: internalErrMessage,
+      message: "Something went wrong. Please try again later.",
     });
   }
 
   logger.log("debug", "Attempting to update records...");
-  const tx = await attendanceRegistrationService.mutateSessionRecords({
+  const mutation = await attendanceRegistrationService.mutateSessionRecords({
     values: {
       classSessionId: params.classSessionId,
       professorId: auth.payload.id,
@@ -62,20 +61,21 @@ export async function handleSubmitRecords(req: Request, res: Response) {
     },
   });
 
-  if (!tx.success) {
-    const { error } = tx;
+  if (!mutation.success) {
+    const { error } = mutation;
+    const { message } = error;
 
     logger.log("error", "Failed updating attendance records.", error);
 
-    return res
-      .status(500)
-      .json({ success: false, message: internalErrMessage });
+    const status = Core.Errors.EnrollmentData.getErrStatusCode(error);
+
+    return res.status(status).json({ success: false, message });
   }
 
   logger.log("info", "Success updating attendance records");
   return res.status(200).json({
     success: true,
-    result: { records: tx.result },
+    result: { records: mutation.result },
     message: "Attendance records updated.",
   });
 }

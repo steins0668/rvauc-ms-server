@@ -1,10 +1,8 @@
 import { Request, Response } from "express";
 import { StrictValidatedRequest } from "../../../../../interfaces";
 import { Auth } from "../../../../auth";
-import { Schemas } from "../schemas";
 import { Core } from "../../../core";
-
-const internalErrMessage = "Something went wrong. Please try again later.";
+import { Schemas } from "../schemas";
 
 export async function handleGetClassList(req: Request, res: Response) {
   const {
@@ -50,7 +48,7 @@ export async function handleGetClassList(req: Request, res: Response) {
 
     return res.status(500).json({
       success: false,
-      message: internalErrMessage,
+      message: "Something went wrong. Please try again later.",
     });
   }
 
@@ -68,23 +66,18 @@ export async function handleGetClassList(req: Request, res: Response) {
 
   if (!queried.success) {
     const { error } = queried;
+    const { message } = error;
 
     logger.log("error", "Failed querying enrollments.", error);
 
-    const message =
-      error.name === "ENROLLMENT_DATA_NO_CLASS_LIST_ERROR"
-        ? `This ${user.role}does not have any class for this term.`
-        : internalErrMessage;
+    const status = Core.Errors.EnrollmentData.getErrStatusCode(error);
 
-    return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
-      success: false,
-      message,
-    });
+    return res.status(status).json({ success: false, message });
   }
 
   return res.status(200).json({
     success: true,
-    result: { classList: queried.result },
+    result: queried.result,
     message: "Success retrieving class list.",
   });
 }

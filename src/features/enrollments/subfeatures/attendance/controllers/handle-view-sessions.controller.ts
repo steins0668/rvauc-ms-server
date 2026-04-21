@@ -2,9 +2,8 @@ import { Request, Response } from "express";
 import { StrictValidatedRequest } from "../../../../../interfaces";
 import { Clock } from "../../../../../utils";
 import { Auth } from "../../../../auth";
+import { Core } from "../../../core";
 import { Schemas } from "../schemas";
-
-const internalErrMessage = "Something went wrong. Please try again later.";
 
 export async function handleViewSessions(req: Request, res: Response) {
   const {
@@ -45,7 +44,7 @@ export async function handleViewSessions(req: Request, res: Response) {
 
     return res.status(500).json({
       success: false,
-      message: internalErrMessage,
+      message: "Something went wrong. Please try again later.",
     });
   }
 
@@ -61,12 +60,13 @@ export async function handleViewSessions(req: Request, res: Response) {
 
   if (!queried.success) {
     const { error } = queried;
+    const { message } = error;
 
     logger.log("error", "Failed retrieving class sessions.", error);
 
-    return res
-      .status(500)
-      .json({ success: false, message: internalErrMessage });
+    const status = Core.Errors.EnrollmentData.getErrStatusCode(error);
+
+    return res.status(status).json({ success: false, message });
   }
 
   logger.log("info", "Success retrieving class sessions");

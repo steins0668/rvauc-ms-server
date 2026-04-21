@@ -57,7 +57,7 @@ export async function handleGetCurrentOrNext(req: Request, res: Response) {
   const date = new Date(query.timeMs);
   const { payload: user } = auth;
 
-  const queried = await classSessionRuntimeService.getForNowOrNext({
+  const runtime = await classSessionRuntimeService.getForNowOrNext({
     values: {
       userId: user.id,
       date,
@@ -66,25 +66,20 @@ export async function handleGetCurrentOrNext(req: Request, res: Response) {
     role: user.role,
   });
 
-  if (!queried.success) {
-    const { error } = queried;
+  if (!runtime.success) {
+    const { error } = runtime;
+    const { message } = error;
 
     logger.log("error", "Failed querying enrollments.", error);
 
-    const message =
-      error.name === "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR"
-        ? `This ${user.role} does not have any more classes scheduled for this day.`
-        : internalErrMessage;
+    const status = Core.Errors.EnrollmentData.getErrStatusCode(error);
 
-    return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
-      success: false,
-      message,
-    });
+    return res.status(status).json({ success: false, message });
   }
 
   return res.status(200).json({
     success: true,
-    result: { schedule: queried.result },
+    result: runtime.result,
     message: "Success retrieving class.",
   });
 }

@@ -4,8 +4,6 @@ import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Schemas } from "../schemas";
 
-const internalErrMessage = "Something went wrong. Please try again later.";
-
 export async function handleGetSchedule(req: Request, res: Response) {
   const {
     auth,
@@ -50,7 +48,7 @@ export async function handleGetSchedule(req: Request, res: Response) {
 
     return res.status(500).json({
       success: false,
-      message: internalErrMessage,
+      message: "Something went wrong. Please try again later.",
     });
   }
 
@@ -68,18 +66,13 @@ export async function handleGetSchedule(req: Request, res: Response) {
 
   if (!queried.success) {
     const { error } = queried;
+    const { message } = error;
 
     logger.log("error", "Failed querying enrollments.", error);
 
-    const message =
-      error.name === "ENROLLMENT_DATA_NO_CLASS_TODAY_ERROR"
-        ? `This ${user.role} does not have any class scheduled for this day.`
-        : internalErrMessage;
+    const status = Core.Errors.EnrollmentData.getErrStatusCode(error);
 
-    return res.status(Core.Errors.EnrollmentData.getErrStatusCode(error)).json({
-      success: false,
-      message,
-    });
+    return res.status(status).json({ success: false, message });
   }
 
   return res.status(200).json({

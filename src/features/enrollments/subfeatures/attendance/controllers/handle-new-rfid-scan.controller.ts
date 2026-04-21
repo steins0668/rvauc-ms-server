@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import { Clock } from "../../../../../utils";
 import { Auth } from "../../../../auth";
+import { Core } from "../../../core";
 import { Schemas } from "../schemas";
-
-const internalErrMessage = "Something went wrong. Please try again later.";
 
 export async function handleNewRfidScan(
   req: Request<{}, {}, Schemas.RequestBody.NewRecord>,
@@ -50,7 +49,7 @@ export async function handleNewRfidScan(
 
     return res.status(500).json({
       success: false,
-      message: internalErrMessage,
+      message: "Something went wrong. Please try again later.",
     });
   }
 
@@ -78,18 +77,13 @@ export async function handleNewRfidScan(
 
   if (!recorded.success) {
     const { error } = recorded;
+    const { message } = error;
 
     logger.log("error", "Failed recording new attendance record.", error);
 
-    const message =
-      error.name === "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR"
-        ? error.message
-        : internalErrMessage;
+    const status = Core.Errors.EnrollmentData.getErrStatusCode(error);
 
-    return res.status(500).json({
-      success: false,
-      message,
-    });
+    return res.status(status).json({ success: false, message });
   }
 
   const { attendance } = recorded.result;
@@ -100,7 +94,7 @@ export async function handleNewRfidScan(
 
   logger.log("info", message);
 
-  return res.status(201).json({
+  return res.status(attendance.isNew ? 201 : 200).json({
     success: true,
     result: recorded.result,
     message,

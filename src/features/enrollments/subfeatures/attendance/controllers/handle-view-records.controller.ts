@@ -2,10 +2,9 @@ import { Request, Response } from "express";
 import { StrictValidatedRequest } from "../../../../../interfaces";
 import { Clock, TimeUtil } from "../../../../../utils";
 import { Auth } from "../../../../auth";
+import { Core } from "../../../core";
 import { Data } from "../data";
 import { Schemas } from "../schemas";
-
-const internalErrMessage = "Something went wrong. Please try again later.";
 
 const { roles } = Auth.Core.Data.Records;
 const { scope } = Data.AttendanceQuery;
@@ -84,7 +83,7 @@ export function handleViewRecords<
 
       return res.status(500).json({
         success: false,
-        message: internalErrMessage,
+        message: "Something went wrong. Please try again later.",
       });
     }
 
@@ -170,25 +169,26 @@ export function handleViewRecords<
     const queryContext = parsedQueryContext.data;
 
     logger.log("debug", "Attempting to get attendance records...");
-    const queried = await attendanceDataService.getAttendance({
+    const attendanceQuery = await attendanceDataService.getAttendance({
       constraints: { limit: query.limit, page: query.page },
       queryContext,
     });
 
-    if (!queried.success) {
-      const { error } = queried;
+    if (!attendanceQuery.success) {
+      const { error } = attendanceQuery;
+      const { message } = error;
 
       logger.log("error", "Failed retrieving attendance records.", error);
 
-      return res
-        .status(500)
-        .json({ success: false, message: internalErrMessage });
+      const status = Core.Errors.EnrollmentData.getErrStatusCode(error);
+
+      return res.status(status).json({ success: false, message });
     }
 
     logger.log("info", "Success retrieving attendance records");
     return res.status(200).json({
       success: true,
-      result: queried.result,
+      result: attendanceQuery.result,
       message: "Attendance list retrieved.",
     });
   };
