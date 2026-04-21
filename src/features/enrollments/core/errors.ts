@@ -64,22 +64,14 @@ export namespace Errors {
     };
 
     export function collapseError(args: {
-      error: unknown;
-      to: {
-        name: ErrorName;
-        message: string;
-      };
+      name: ErrorName;
+      message: string;
+      err: unknown;
     }) {
-      const normalized = normalizeError({
-        name: args.to.name,
-        message: args.to.message,
-        err: args.error,
-      });
-
       return new ErrorClass({
-        name: args.to.name,
-        message: args.to.message,
-        cause: normalized,
+        name: args.name,
+        message: args.message,
+        cause: args.err,
       });
     }
 
