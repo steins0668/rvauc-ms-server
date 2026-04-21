@@ -56,21 +56,26 @@ export const seedDatabase = async (
 
     const enrollments = await Enrollments.seedEnrollments(tx); //  * dependent on auth-students
 
-    const dateRange = {
+    const classSessionDateRange = {
       startDate: "2025-09-30",
       endDate: "2025-12-24",
     };
 
     const classSessions = await Enrollments.seedClassSessions({
-      ...dateRange,
+      ...classSessionDateRange,
       classOfferings,
       dbOrTx: tx,
     });
 
     if (!include?.attendance) return;
 
+    const attendanceDateRange = {
+      startDate: "2025-09-30",
+      endDate: "2025-11-30",
+    };
+
     await AttendanceRecords.seedAttendanceRecords({
-      ...dateRange,
+      ...attendanceDateRange,
       classes,
       classOfferings,
       classSessions,
@@ -81,7 +86,7 @@ export const seedDatabase = async (
     if (!include?.uniformCompliance) return;
 
     await UniformCompliance.seedRecords({
-      ...dateRange,
+      ...attendanceDateRange,
       offerings: classOfferings,
       enrollments,
       dbOrTx: tx,
