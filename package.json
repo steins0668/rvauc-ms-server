@@ -32,6 +32,7 @@
     "test:attendance": "jest \"attendance.test.ts\"",
     "test:attendance:class": "jest \"attendance-class.test.ts\"",
     "test:attendance:student": "jest \"attendance-student.test.ts\"",
+    "test:attendance:rfid": "jest \"attendance-rfid.test.ts\"",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:generate": "tsc && drizzle-kit generate --config=./config/drizzle.config.ts",
