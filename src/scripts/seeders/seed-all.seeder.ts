@@ -7,7 +7,9 @@ import { Seeders as Violations } from "./violations/seeders";
 
 export const seedDatabase = async (
   args?:
-    | Partial<{ include: { attendance: boolean; uniformCompliance: boolean } }>
+    | Partial<{
+        include: Partial<{ attendance: boolean; uniformCompliance: boolean }>;
+      }>
     | undefined,
 ) => {
   await execTransaction(async (tx) => {
