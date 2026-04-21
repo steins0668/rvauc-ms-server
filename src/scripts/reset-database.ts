@@ -1,7 +1,7 @@
-import { createContext } from "../db/create-context";
+import { createContext, TxContext } from "../db/create-context";
 
-export const resetDatabase = async () => {
-  const context = await createContext();
+export const resetDatabase = async (tx?: TxContext | undefined) => {
+  const context = tx ?? (await createContext());
   await context.run(`PRAGMA foreign_keys = OFF;`);
 
   const tables = await context.all(

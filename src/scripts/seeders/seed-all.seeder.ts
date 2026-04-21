@@ -1,4 +1,4 @@
-import { execTransaction } from "../../db/create-context";
+import { execTransaction, TxContext } from "../../db/create-context";
 import { Seeders as AttendanceRecords } from "./enrollments/attendance/seeders";
 import { Seeders as Auth } from "./auth/seeders";
 import { Seeders as Enrollments } from "./enrollments/seeders";
@@ -15,6 +15,7 @@ export const seedDatabase = async (
           attendance: boolean;
           uniformCompliance: boolean;
         }>;
+        tx: TxContext;
       }>
     | undefined,
 ) => {
@@ -85,7 +86,7 @@ export const seedDatabase = async (
       enrollments,
       dbOrTx: tx,
     });
-  });
+  }, args?.tx);
 };
 
 seedDatabase();
