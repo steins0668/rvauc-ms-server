@@ -12,31 +12,6 @@ export class Class extends Repository<Types.Tables.Class> {
     super(context, classes);
   }
 
-  public existsForContext(args: {
-    dbOrTx?: DbOrTx | undefined;
-    classId: SQLiteColumn;
-    termId: number;
-    professorId?: number | undefined;
-  }) {
-    const { dbOrTx, classId, termId, professorId } = args;
-    return this.getContext({
-      dbOrTx,
-      fn: ({ table: c, context }) => {
-        const { eq, and } = RepositoryUtil.filters;
-
-        const conditions = [eq(c.id, classId), eq(c.termId, termId)];
-        //  ! used when querying class offerings for professors
-        if (professorId !== undefined)
-          conditions.push(eq(c.professorId, professorId));
-
-        return context
-          .select({ id: c.id })
-          .from(c)
-          .where(and(...conditions));
-      },
-    });
-  }
-
   public async queryWithCourse(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:

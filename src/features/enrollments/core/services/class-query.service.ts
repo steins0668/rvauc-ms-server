@@ -24,11 +24,7 @@ export namespace ClassQuery {
         ...args,
       }).then((r) => r[0]);
 
-      if (!cls)
-        throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
-          message: "The specified class was not found.",
-        });
+      if (!cls) throw Service.classNotFoundError();
 
       return cls;
     }
@@ -43,12 +39,25 @@ export namespace ClassQuery {
       try {
         return await this._classRepo.queryWithCourse(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `classes` table",
-          err,
-        });
+        throw Service.normalizeQueryError(err);
       }
+    }
+
+    private static classNotFoundError(msg?: string) {
+      const message = msg ?? "The specified class was not found.";
+
+      return new Errors.EnrollmentData.ErrorClass({
+        name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
+        message,
+      });
+    }
+
+    private static normalizeQueryError(err: unknown) {
+      return Errors.EnrollmentData.normalizeError({
+        name: "ENROLLMENT_DATA_QUERY_ERROR",
+        message: "Failed querying `classes` table.",
+        err,
+      });
     }
   }
 }

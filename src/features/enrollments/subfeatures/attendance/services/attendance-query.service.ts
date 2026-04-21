@@ -26,37 +26,6 @@ export namespace AttendanceQuery {
 
     /**
      * @description
-     * Retrieves
-     */
-    async fetchMinimalRecordsForSessionEnrollments(args: {
-      values: {
-        classSessionId: number;
-        enrollmentIds: number[];
-      };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { values, dbOrTx } = args;
-
-      try {
-        return await this._attendanceRecordRepo.queryMinimalShape({
-          where: (ar, { and, eq, inArray }) =>
-            and(
-              inArray(ar.enrollmentId, values.enrollmentIds),
-              eq(ar.classSessionId, values.classSessionId),
-            ),
-          dbOrTx,
-        });
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed to retrieve attendance records",
-          err,
-        });
-      }
-    }
-
-    /**
-     * @description
      * Queries attendance records matching a set of enrollment ids, and optional class id or class session id
      */
     async fetchRecordsAndSummary(args: {

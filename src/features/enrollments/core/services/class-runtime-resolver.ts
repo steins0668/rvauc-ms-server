@@ -35,9 +35,8 @@ export namespace ClassRuntimeResolver {
     }
 
     /**
-     * ! do not touch. query composition is done with reusability in mind.
-     * @param args
-     * @returns
+     * @description
+     * Resolves a class with its details and session based on various aruguments.
      */
     async resolve(args: {
       values: {

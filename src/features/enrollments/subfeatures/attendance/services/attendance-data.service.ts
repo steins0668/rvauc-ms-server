@@ -4,9 +4,9 @@ import { RepositoryUtil, ResultBuilder } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Repositories as CoreRepositories } from "../../../repositories";
+import { DtoMappers } from "../dto-mappers";
 import { Repositories } from "../repositories";
 import { Schemas } from "../schemas";
-import { AttendanceViewDto } from "./attendance-view-dto.mapper";
 import { AttendanceQuery } from "./attendance-query.service";
 
 export namespace AttendanceData {
@@ -114,7 +114,7 @@ export namespace AttendanceData {
       try {
         const constraints = {
           limit: RepositoryUtil.resolveLimit(args.constraints),
-          offset: RepositoryUtil.resolveOffset(args.constraints),
+          offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
         };
 
         session = await this.ensureSessionForProfessor(args);
@@ -162,7 +162,7 @@ export namespace AttendanceData {
 
       try {
         return ResultBuilder.success(
-          AttendanceViewDto.Mapper.toClassAttendanceProfessorViewDto(
+          DtoMappers.Query.classAttendanceProfessorView(
             session,
             classEnrollments,
             recordsAndSummary,
@@ -208,7 +208,7 @@ export namespace AttendanceData {
           },
           constraints: {
             limit: RepositoryUtil.resolveLimit(args.constraints),
-            offset: RepositoryUtil.resolveOffset(args.constraints),
+            offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
           },
           dbOrTx: args.dbOrTx,
         });
@@ -224,9 +224,7 @@ export namespace AttendanceData {
 
       try {
         const dto =
-          AttendanceViewDto.Mapper.toClassAttendanceStudentViewDto(
-            recordsAndSummary,
-          );
+          DtoMappers.Query.classAttendanceStudentView(recordsAndSummary);
         return ResultBuilder.success(dto);
       } catch (err) {
         return ResultBuilder.fail(
@@ -291,7 +289,7 @@ export namespace AttendanceData {
 
       try {
         return ResultBuilder.success(
-          AttendanceViewDto.Mapper.toStudentAttendanceProfessorViewDto(
+          DtoMappers.Query.studentAttendanceProfessorView(
             cls,
             enrollment,
             recordsAndSummary,

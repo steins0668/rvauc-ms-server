@@ -50,10 +50,11 @@ export async function handleViewSessions(req: Request, res: Response) {
   }
 
   logger.log("debug", "Attempting to get class sessions...");
-  const queried = await classSessionDataService.getProfessorView({
+  const queried = await classSessionDataService.getAllSessionsUntilDate({
     values: {
       date: Clock.now(new Date()),
       classId: params.classId,
+      professorId: auth.payload.id,
       termId: term.id,
     },
   });

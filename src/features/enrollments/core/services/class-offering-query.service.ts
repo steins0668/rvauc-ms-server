@@ -11,6 +11,27 @@ export namespace ClassOfferingQuery {
 
     /**
      * @description
+     * Fetches scheduled class offerings (with class + professor) for a user.
+     *
+     * Filters by date, term, role, and scope:
+     * - "today": offerings on the given date
+     * - "term": all offerings in the term
+     *
+     * Results are ordered by start time (ascending).
+     * Uses provided transaction if available.
+     */
+    async getScheduledOfferings(
+      args: Parameters<Repositories.ClassOffering["getScheduledOfferings"]>[0],
+    ) {
+      try {
+        return await this._classOfferingRepo.getScheduledOfferings(args);
+      } catch (err) {
+        throw Service.normalizeQueryError(err);
+      }
+    }
+
+    /**
+     * @description
      * Retrieves the current class offering for a provided date, term id, and user id.
      *
      * Executes varying behaviors depending on role and mode.
@@ -24,11 +45,7 @@ export namespace ClassOfferingQuery {
       args: Parameters<Repositories.ClassOffering["getActiveOffering"]>[0],
     ) {
       const offering = await this.getActiveOffering(args);
-      if (!offering)
-        throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_OFFERING_NOT_FOUND_ERROR",
-          message: "The specified class offering was not found.",
-        });
+      if (!offering) throw Service.offeringNotFoundError();
 
       return offering;
     }
@@ -49,11 +66,7 @@ export namespace ClassOfferingQuery {
       try {
         return await this._classOfferingRepo.getActiveOffering(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `class_offerings` table.",
-          err,
-        });
+        throw Service.normalizeQueryError(err);
       }
     }
 
@@ -69,12 +82,25 @@ export namespace ClassOfferingQuery {
       try {
         return await this._classOfferingRepo.getMinimalShapesForWeekday(args);
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed querying `class_offerings` table.",
-          err,
-        });
+        throw Service.normalizeQueryError(err);
       }
+    }
+
+    private static offeringNotFoundError(msg?: string) {
+      const message = msg ?? "The specified class offering was not found.";
+
+      return new Errors.EnrollmentData.ErrorClass({
+        name: "ENROLLMENT_DATA_CLASS_OFFERING_NOT_FOUND_ERROR",
+        message,
+      });
+    }
+
+    private static normalizeQueryError(err: unknown) {
+      return Errors.EnrollmentData.normalizeError({
+        name: "ENROLLMENT_DATA_QUERY_ERROR",
+        message: "Failed querying `class_offerings` table.",
+        err,
+      });
     }
   }
 }
