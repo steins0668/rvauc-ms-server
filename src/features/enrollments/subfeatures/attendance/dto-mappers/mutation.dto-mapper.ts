@@ -10,8 +10,10 @@ export namespace Mutation {
     >,
     attendance: NonNullable<
       Awaited<
-        ReturnType<Services.AttendanceCommand.Service["persistRecords"]>
-      >[number]
+        ReturnType<
+          Services.AttendanceCommand.Service["persistSessionAttendance"]
+        >
+      >
     >,
   ): Schemas.Dto.ClassAttendance.SessionAttendanceResult {
     const { offering: co, session: cs } = classRuntime;
@@ -62,11 +64,13 @@ export namespace Mutation {
   export function sessionRecordsMutationResult(
     updated: Awaited<
       ReturnType<
-        Services.AttendanceCommand.Service["updateClassSessionRecords"]
+        Services.AttendanceCommand.Service["upsertStatusAndRecordDateTime"]
       >
     >,
     inserted: Awaited<
-      ReturnType<Services.AttendanceCommand.Service["persistRecords"]>
+      ReturnType<
+        Services.AttendanceCommand.Service["upsertStatusAndRecordDateTime"]
+      >
     >,
     rejected: Schemas.Dto.ClassAttendance.NormalizedRecords,
   ): Schemas.Dto.ClassAttendance.MutationResult {
