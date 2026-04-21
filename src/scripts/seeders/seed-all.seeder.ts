@@ -37,7 +37,15 @@ export const seedDatabase = async (
     await Enrollments.seedCourses(tx);
     const classes = await Enrollments.seedClasses(tx); //  * dependent on auth-professors
 
-    const { include } = args ?? {};
+    const { include } = args ?? {
+      include: {
+        attendance: true,
+        enrollments: true,
+        offerings: true,
+        sessions: true,
+        uniformCompliance: true,
+      },
+    };
 
     if (!include?.offerings) return;
 
