@@ -278,16 +278,15 @@ export namespace AttendanceData {
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
+        cls = await this._classQuery.ensureClassWithCourse({
+          where: (c, { eq }) => eq(c.id, args.values.classId),
+          dbOrTx: args.dbOrTx,
+        });
         enrollment =
           await this._enrollmentQuery.ensureEnrollmentsWithStudentGraph({
             where: (e, { eq }) => eq(e.id, args.values.enrollmentId),
             dbOrTx: args.dbOrTx,
           });
-        cls = await this._classQuery.ensureClassWithCourse({
-          where: (c, { eq }) => eq(c.id, args.values.classId),
-          orderBy: (c, { asc }) => asc(c.id), //  ! should be user input eventually
-          dbOrTx: args.dbOrTx,
-        });
         recordsAndSummary =
           await this._attendanceQuery.fetchRecordsAndSummaryWithSessionAndOffering(
             {
