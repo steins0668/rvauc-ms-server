@@ -67,10 +67,10 @@ export namespace ClassSessionScheduler {
         });
       } catch (err) {
         return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
+          Errors.EnrollmentData.collapseError({
+            name: "ENROLLMENT_DATA_INTERNAL_ERROR",
             message:
-              "Failed to resolve start date for recording missign sessions",
+              "Failed to resolve start date for recording missing sessions",
             err,
           }),
         );
@@ -141,11 +141,29 @@ export namespace ClassSessionScheduler {
 
         return ResultBuilder.success({ generated });
       } catch (err) {
+        const internalError = {
+          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+          message: "Failed recording class sessions.",
+        } as const;
+
         return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_TRANSACTION_ERROR",
-            message: "Failed storing class sessions.",
-            err,
+          Errors.EnrollmentData.translateError({
+            fallback: {
+              name: internalError.name,
+              message: internalError.message,
+              err,
+            },
+            map: (err, create) => {
+              switch (err.name) {
+                case "ENROLLMENT_DATA_QUERY_ERROR":
+                case "ENROLLMENT_DATA_STORE_ERROR":
+                  return create({
+                    name: internalError.name,
+                    message: internalError.message,
+                    cause: err,
+                  });
+              }
+            },
           }),
         );
       }

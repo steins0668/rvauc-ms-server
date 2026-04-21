@@ -150,12 +150,19 @@ export namespace AttendanceData {
             });
         }
       } catch (err) {
+        const internalError = Core.Errors.EnrollmentData.internalError(
+          "Failed retrieving class attendance records for professor.",
+        );
+
         return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
-            message:
-              "Failed retrieving class attendance records for professor.",
-            err,
+          Core.Errors.EnrollmentData.translateError({
+            fallback: { ...internalError, err },
+            map: (err, create) => {
+              switch (err.name) {
+                case "ENROLLMENT_DATA_QUERY_ERROR":
+                  return create({ ...internalError, cause: err });
+              }
+            },
           }),
         );
       }
@@ -213,11 +220,26 @@ export namespace AttendanceData {
           dbOrTx: args.dbOrTx,
         });
       } catch (err) {
+        const internalError = Core.Errors.EnrollmentData.internalError(
+          "Failed retrieving class attendance records for student.",
+        );
+
         return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
-            message: "Failed retrieving class attendance records for student.",
-            err,
+          Core.Errors.EnrollmentData.translateError({
+            fallback: { ...internalError, err },
+            map: (err, create) => {
+              switch (err.name) {
+                case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
+                  return create({
+                    name: err.name,
+                    message:
+                      "Unable to find enrollment. The student, class, or enrollment record may not exist.",
+                    cause: err,
+                  });
+                case "ENROLLMENT_DATA_QUERY_ERROR":
+                  return create({ ...internalError, cause: err });
+              }
+            },
           }),
         );
       }
@@ -277,12 +299,19 @@ export namespace AttendanceData {
             },
           );
       } catch (err) {
+        const internalError = Core.Errors.EnrollmentData.internalError(
+          "Failed retrieving class attendance of student for professor.",
+        );
+
         return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_SYSTEM_ERROR",
-            message:
-              "Failed retrieving class attendance of student for professor.",
-            err,
+          Core.Errors.EnrollmentData.translateError({
+            fallback: { ...internalError, err },
+            map: (err, create) => {
+              switch (err.name) {
+                case "ENROLLMENT_DATA_QUERY_ERROR":
+                  return create({ ...internalError, cause: err });
+              }
+            },
           }),
         );
       }
@@ -320,8 +349,7 @@ export namespace AttendanceData {
       if (session.class.professorId !== professorId)
         throw new Core.Errors.EnrollmentData.ErrorClass({
           name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
-          message:
-            "This professor is not associated with the specified class or class session.",
+          message: "This professor is not associated with the specified class.",
         });
 
       return session;
