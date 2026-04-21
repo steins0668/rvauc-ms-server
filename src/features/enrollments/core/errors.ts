@@ -63,6 +63,26 @@ export namespace Errors {
       ENROLLMENT_DATA_UPDATE_ERROR: 500,
     };
 
+    export function collapseError(args: {
+      error: unknown;
+      to: {
+        name: ErrorName;
+        message: string;
+      };
+    }) {
+      const normalized = normalizeError({
+        name: args.to.name,
+        message: args.to.message,
+        err: args.error,
+      });
+
+      return new ErrorClass({
+        name: args.to.name,
+        message: args.to.message,
+        cause: normalized,
+      });
+    }
+
     export function normalizeError<E extends ErrorName>({
       name,
       message,
