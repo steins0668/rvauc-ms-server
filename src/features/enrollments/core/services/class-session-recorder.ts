@@ -1,8 +1,8 @@
 import { execTransaction, TxContext } from "../../../../db/create-context";
-import { DbAccess } from "../../../../error";
 import { Clock, TimeUtil } from "../../../../utils";
 import { Repositories } from "../../repositories";
 import { Types } from "../../types";
+import { Errors } from "../errors";
 import { ClassOfferingQuery } from "./class-offering-query.service";
 
 export namespace ClassSessionRecorder {
@@ -128,8 +128,8 @@ export namespace ClassSessionRecorder {
               .returning(),
         });
       } catch (err) {
-        throw DbAccess.normalizeError({
-          name: "DB_ACCESS_INSERT_ERROR",
+        throw Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_STORE_ERROR",
           message: "Failed inserting into class_sessions table.",
           err,
         });
