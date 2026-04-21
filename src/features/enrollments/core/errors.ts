@@ -136,6 +136,13 @@ export namespace Errors {
       return mapped ?? normalized;
     }
 
+    export function internalError(message: string) {
+      return new ErrorClass({
+        name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+        message: message ?? "Something went wrong.",
+      });
+    }
+
     export function getErrStatusCode(error: ErrorClass) {
       return StatusCode.fromError({
         errorName: error.name,
