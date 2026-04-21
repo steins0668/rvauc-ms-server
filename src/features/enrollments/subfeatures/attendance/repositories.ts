@@ -118,8 +118,6 @@ export namespace Repositories {
 
       if (where) query.where(where);
 
-      console.log(query.toSQL());
-
       return await query.then(
         (r) =>
           r[0] ?? {
