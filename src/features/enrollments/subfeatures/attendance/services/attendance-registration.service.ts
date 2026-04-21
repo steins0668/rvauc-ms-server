@@ -230,6 +230,7 @@ export namespace AttendanceRegistration {
             fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
+                case "ENROLLMENT_DATA_STORE_ERROR":
                 case "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR":
                   return create({ ...internalError, cause: err });
               }
@@ -290,7 +291,6 @@ export namespace AttendanceRegistration {
           fallback: { ...internalError, err },
           map: (err, create) => {
             switch (err.name) {
-              case "ENROLLMENT_DATA_STORE_ERROR":
               case "ENROLLMENT_DATA_QUERY_ERROR":
                 return create({ ...internalError, cause: err });
               case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
