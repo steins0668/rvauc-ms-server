@@ -6,8 +6,7 @@ import { SessionManager } from "../../../features/auth/sub-features/session-mana
 import { createTokens } from "../../../features/auth/core/utils/create-tokens.util";
 import { Schemas } from "../../../features/enrollments/subfeatures/attendance/schemas";
 
-describe("Attendance Test Suite", () => {
-  let token: string;
+describe("Class Attendance Test Suite", () => {
   const tokens = {
     prof: "",
     student: "",
