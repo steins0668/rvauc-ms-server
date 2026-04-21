@@ -125,7 +125,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //    404 class not found
+  //    404 class session not found
   it("GET records/class/offering/session/1000", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/1000";
     const res = await request(app)
@@ -159,6 +159,171 @@ describe("Class Attendance Test Suite", () => {
     const res = await request(app)
       .get("/enrollments/attendance/records/class/7")
       .set("Authorization", `Bearer ${tokens.student}`);
+
+    console.debug(JSON.stringify(res.body, null, 2));
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
+  //  200 ok
+  it("POST records/class/offering/session/157", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/157";
+    const res = await request(app)
+      .post(url)
+      .set("Authorization", `Bearer ${tokens.prof}`)
+      .send({
+        records: [
+          {
+            //  * student id 7
+            recordedDate: "2025-12-03T07:40:00+08:00",
+            enrollmentId: 6,
+            status: "late",
+          },
+          {
+            //  * student id 8
+            recordedDate: "2025-12-03T07:35:00+08:00",
+            enrollmentId: 12,
+            status: "late",
+          },
+          {
+            //  * student id 9
+            recordedDate: "2025-12-03T07:00:00+08:00",
+            enrollmentId: 18,
+            status: "absent",
+          },
+        ],
+      });
+
+    console.debug(JSON.stringify(res.body, null, 2));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(true);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        result: { records: expect.any(Object) },
+      }),
+    );
+
+    Schemas.Dto.ClassAttendance.mutationResult.parse(res.body.result.records);
+  });
+
+  //  200 ok (one invalid enrollment id)
+  it("POST records/class/offering/session/157", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/157";
+    const res = await request(app)
+      .post(url)
+      .set("Authorization", `Bearer ${tokens.prof}`)
+      .send({
+        records: [
+          {
+            //  * student id 7
+            recordedDate: "2025-12-03T07:40:00+08:00",
+            enrollmentId: 100, //  invalid id
+            status: "late",
+          },
+          {
+            //  * student id 8
+            recordedDate: "2025-12-03T07:35:00+08:00",
+            enrollmentId: 12,
+            status: "late",
+          },
+          {
+            //  * student id 9
+            recordedDate: "2025-12-03T07:00:00+08:00",
+            enrollmentId: 18,
+            status: "absent",
+          },
+        ],
+      });
+
+    console.debug(JSON.stringify(res.body, null, 2));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(true);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        result: { records: expect.any(Object) },
+      }),
+    );
+
+    Schemas.Dto.ClassAttendance.mutationResult.parse(res.body.result.records);
+  });
+
+  //  200 ok (one invalid date)
+  it("POST records/class/offering/session/157", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/157";
+    const res = await request(app)
+      .post(url)
+      .set("Authorization", `Bearer ${tokens.prof}`)
+      .send({
+        records: [
+          {
+            //  * student id 7
+            recordedDate: "2025-12-03T12:40:00+08:00",
+            enrollmentId: 6,
+            status: "late",
+          },
+          {
+            //  * student id 8
+            recordedDate: "2025-12-03T07:35:00+08:00",
+            enrollmentId: 12,
+            status: "late",
+          },
+          {
+            //  * student id 9
+            recordedDate: "2025-12-03T07:00:00+08:00",
+            enrollmentId: 18,
+            status: "absent",
+          },
+        ],
+      });
+
+    console.debug(JSON.stringify(res.body, null, 2));
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(true);
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        result: { records: expect.any(Object) },
+      }),
+    );
+
+    Schemas.Dto.ClassAttendance.mutationResult.parse(res.body.result.records);
+  });
+
+  //  404 SESSION_NOT_FOUND
+  it("POST records/class/offering/session/1000", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/1000";
+    const res = await request(app)
+      .post(url)
+      .set("Authorization", `Bearer ${tokens.prof}`)
+      .send({
+        records: [
+          {
+            //  * student id 7
+            recordedDate: "2025-12-03T07:40:00+08:00",
+            enrollmentId: 6,
+            status: "late",
+          },
+          {
+            //  * student id 8
+            recordedDate: "2025-12-03T07:35:00+08:00",
+            enrollmentId: 12,
+            status: "late",
+          },
+          {
+            //  * student id 9
+            recordedDate: "2025-12-03T07:00:00+08:00",
+            enrollmentId: 18,
+            status: "absent",
+          },
+        ],
+      });
 
     console.debug(JSON.stringify(res.body, null, 2));
 
