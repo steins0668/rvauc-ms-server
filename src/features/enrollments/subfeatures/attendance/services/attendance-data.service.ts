@@ -247,7 +247,7 @@ export namespace AttendanceData {
                   return create({
                     ...err,
                     message:
-                      "Unable to locate enrollment. The student, class, or enrollment record may not exist.",
+                      "Unable to find enrollment. The student, class, or enrollment record may not exist.",
                   });
                 case "ENROLLMENT_DATA_QUERY_ERROR":
                   return create({
