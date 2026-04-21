@@ -79,10 +79,39 @@ export namespace ClassRuntimeResolver {
       try {
         return await txPromise;
       } catch (err) {
-        throw Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_TRANSACTION_ERROR",
+        const internalError = {
+          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
           message: "Failed resolving class offering and/or session runtime.",
-          err,
+        } as const;
+
+        throw Errors.EnrollmentData.translateError({
+          fallback: {
+            name: internalError.name,
+            message: internalError.message,
+            err,
+          },
+          map: (err, create) => {
+            switch (err.name) {
+              case "ENROLLMENT_DATA_QUERY_ERROR":
+                return create({
+                  name: internalError.name,
+                  message: internalError.message,
+                  cause: err,
+                });
+              case "ENROLLMENT_DATA_CLASS_OFFERING_NOT_FOUND_ERROR":
+                return create({
+                  name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
+                  message: `This ${args.role} does not have an ongoing class.`,
+                  cause: err,
+                });
+              case "ENROLLMENT_DATA_CLASS_SESSION_NOT_FOUND_ERROR":
+                return create({
+                  name: "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR",
+                  message: "Expected a session for the found offering.",
+                  cause: err,
+                });
+            }
+          },
         });
       }
     }
