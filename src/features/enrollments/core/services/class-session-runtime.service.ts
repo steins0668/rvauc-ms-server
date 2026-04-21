@@ -54,11 +54,20 @@ export namespace ClassSessionRuntime {
         offering = result.offering;
         session = result.session;
       } catch (err) {
+        const internalError = {
+          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+          message: "Failed resolving class offering and/or session.",
+        } as const;
+
         return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_INTERNAL_ERROR",
-            message: "Failed resolving class offering and/or session.",
-            err,
+          Errors.EnrollmentData.translateError({
+            fallback: { ...internalError, err },
+            map: (err, create) => {
+              switch (err.name) {
+                case "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR":
+                  return create({ ...internalError, cause: err });
+              }
+            },
           }),
         );
       }
@@ -106,11 +115,20 @@ export namespace ClassSessionRuntime {
         offering = result.offering;
         session = result.session;
       } catch (err) {
+        const internalError = {
+          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+          message: "Failed resolving class offering and/or session.",
+        } as const;
+
         return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_INTERNAL_ERROR",
-            message: "Failed resolving class offering and/or session.",
-            err,
+          Errors.EnrollmentData.translateError({
+            fallback: { ...internalError, err },
+            map: (err, create) => {
+              switch (err.name) {
+                case "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR":
+                  return create({ ...internalError, cause: err });
+              }
+            },
           }),
         );
       }

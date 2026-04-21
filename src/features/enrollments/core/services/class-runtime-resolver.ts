@@ -5,6 +5,7 @@ import {
 } from "../../../../db/create-context";
 import { Auth } from "../../../auth";
 import { Repositories } from "../../repositories";
+import { Data } from "../data";
 import { Errors } from "../errors";
 import { ClassOfferingQuery } from "./class-offering-query.service";
 import { ClassSessionQuery } from "./class-session-query.service";
@@ -52,6 +53,17 @@ export namespace ClassRuntimeResolver {
       const { date, termId, userId } = args.values;
 
       const txPromise = execTransaction(async (tx) => {
+        //  todo: replace this with db query.
+        const { semesterStart, semesterEnd } = Data.Env.getAcademicYearConfig();
+
+        const isValidDate = semesterStart <= date && semesterEnd >= date;
+
+        if (!isValidDate)
+          throw new Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_INVALID_SEMESTER_DATE_ERROR",
+            message: `The provided date ${date.toISOString()} is invalid as it falls out of the semester's calendar.`,
+          });
+
         const offering = await this._classOfferingQuery.ensureActiveOffering({
           values: { date, termId, userId },
           role: args.role,
@@ -107,7 +119,8 @@ export namespace ClassRuntimeResolver {
               case "ENROLLMENT_DATA_CLASS_SESSION_NOT_FOUND_ERROR":
                 return create({
                   name: "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR",
-                  message: "Expected a session for the found offering.",
+                  message:
+                    "Class session missing for a valid scheduled offering. Possible schedule hydration failure or data inconsistency detected.",
                   cause: err,
                 });
             }
