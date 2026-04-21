@@ -89,19 +89,31 @@ export namespace Errors {
     }
 
     export function translateError<E extends ErrorName>(args: {
-      error: {
+      fallback: {
         name: E;
         message: string;
         err: unknown;
       };
-      match: (err: ErrorClass) => boolean;
-      map: (err: ErrorClass) => ErrorClass;
-    }) {
-      const normalized = normalizeError(args.error);
+      map: (
+        err: ErrorClass,
+        create: (args: {
+          name: ErrorName;
+          message: string;
+          cause?: unknown;
+        }) => ErrorClass,
+      ) => ErrorClass | undefined;
+    }): ErrorClass {
+      const normalized = normalizeError(args.fallback);
 
-      if (!args.match(normalized)) return normalized;
+      const create = (args: {
+        name: ErrorName;
+        message: string;
+        cause?: unknown;
+      }) => new ErrorClass(args);
 
-      return args.map(normalized);
+      const mapped = args.map(normalized, create);
+
+      return mapped ?? normalized;
     }
 
     export function getErrStatusCode(error: ErrorClass) {
