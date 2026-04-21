@@ -56,7 +56,7 @@ export namespace ClassSessionQuery {
       if (session.status === Data.classSessionStatus.cancelled)
         throw new Errors.EnrollmentData.ErrorClass({
           name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-          message: "This class session was cancelled.",
+          message: "The specified class session was cancelled.",
         });
 
       return session;
