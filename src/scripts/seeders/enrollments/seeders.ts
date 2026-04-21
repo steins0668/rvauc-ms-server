@@ -11,6 +11,7 @@ export namespace Seeders {
       fn: async ({ insert }) =>
         insert
           .values({ id: 1, yearStart: 2025, yearEnd: 2026, semester: 1 })
+          .onConflictDoNothing()
           .returning(),
     });
   };
@@ -20,7 +21,8 @@ export namespace Seeders {
 
     return await repo.execInsert({
       dbOrTx,
-      fn: async ({ insert }) => insert.values(SampleData.colleges).returning(),
+      fn: async ({ insert }) =>
+        insert.values(SampleData.colleges).onConflictDoNothing().returning(),
     });
   };
 
@@ -30,7 +32,7 @@ export namespace Seeders {
     return await repo.execInsert({
       dbOrTx,
       fn: async ({ insert }) =>
-        insert.values(SampleData.departments).returning(),
+        insert.values(SampleData.departments).onConflictDoNothing().returning(),
     });
   };
 
@@ -39,7 +41,8 @@ export namespace Seeders {
 
     return await repo.execInsert({
       dbOrTx,
-      fn: async ({ insert }) => insert.values(SampleData.rooms).returning(),
+      fn: async ({ insert }) =>
+        insert.values(SampleData.rooms).onConflictDoNothing().returning(),
     });
   };
 
@@ -50,7 +53,8 @@ export namespace Seeders {
 
     return await courseRepo.execInsert({
       dbOrTx,
-      fn: async ({ insert }) => insert.values(SampleData.courses).returning(),
+      fn: async ({ insert }) =>
+        insert.values(SampleData.courses).onConflictDoNothing().returning(),
     });
   };
 
@@ -59,7 +63,8 @@ export namespace Seeders {
 
     return await classRepo.execInsert({
       dbOrTx,
-      fn: async ({ insert }) => insert.values(SampleData.classes).returning(),
+      fn: async ({ insert }) =>
+        insert.values(SampleData.classes).onConflictDoNothing().returning(),
     });
   };
 
@@ -71,7 +76,10 @@ export namespace Seeders {
     return await offeringRepo.execInsert({
       dbOrTx,
       fn: async ({ insert }) =>
-        insert.values(SampleData.classOfferings).returning(),
+        insert
+          .values(SampleData.classOfferings)
+          .onConflictDoNothing()
+          .returning(),
     });
   };
 
@@ -88,7 +96,10 @@ export namespace Seeders {
     return await clsSessionRepo.execInsert({
       dbOrTx: args.dbOrTx,
       fn: async ({ insert }) =>
-        insert.values(SampleData.generateClassSessions(args)).returning(),
+        insert
+          .values(SampleData.generateClassSessions(args))
+          .onConflictDoNothing()
+          .returning(),
     });
   };
 
@@ -100,7 +111,7 @@ export namespace Seeders {
     return await enrollmentRepo.execInsert({
       dbOrTx,
       fn: async ({ insert }) =>
-        insert.values(SampleData.enrollments).returning(),
+        insert.values(SampleData.enrollments).onConflictDoNothing().returning(),
     });
   };
 }

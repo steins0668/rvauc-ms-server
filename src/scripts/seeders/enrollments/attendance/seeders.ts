@@ -21,7 +21,10 @@ export namespace Seeders {
     for (let i = 0; i < records.length; i += chunkSize) {
       const chunk = records.slice(i, i + chunkSize);
 
-      await context.insert(Schema.attendanceRecords).values(chunk);
+      await context
+        .insert(Schema.attendanceRecords)
+        .values(chunk)
+        .onConflictDoNothing();
     }
   };
 }

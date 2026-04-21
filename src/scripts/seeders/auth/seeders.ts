@@ -9,7 +9,8 @@ export namespace Seeders {
 
     return await roleRepo.execInsert({
       dbOrTx,
-      fn: async (insert) => insert.values(SampleData.roles).returning(),
+      fn: async (insert) =>
+        insert.values(SampleData.roles).onConflictDoNothing().returning(),
     });
   };
 
@@ -26,12 +27,14 @@ export namespace Seeders {
 
     await userRepo.execInsert({
       dbOrTx,
-      fn: async (insert) => insert.values(hashedUsersProfessors).returning(),
+      fn: async (insert) =>
+        insert.values(hashedUsersProfessors).onConflictDoNothing().returning(),
     });
 
     await profRepo.execInsert({
       dbOrTx,
-      fn: async (insert) => insert.values(SampleData.professors).returning(),
+      fn: async (insert) =>
+        insert.values(SampleData.professors).onConflictDoNothing().returning(),
     });
   };
 
@@ -48,12 +51,14 @@ export namespace Seeders {
 
     await userRepo.execInsert({
       dbOrTx,
-      fn: async (insert) => insert.values(hashedUsersStudents).returning(),
+      fn: async (insert) =>
+        insert.values(hashedUsersStudents).onConflictDoNothing().returning(),
     });
 
     await studentRepo.execInsert({
       dbOrTx,
-      fn: async (insert) => insert.values(SampleData.students).returning(),
+      fn: async (insert) =>
+        insert.values(SampleData.students).onConflictDoNothing().returning(),
     });
   };
 }

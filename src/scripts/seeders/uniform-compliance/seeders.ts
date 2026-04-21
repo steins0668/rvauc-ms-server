@@ -12,7 +12,11 @@ export namespace Seeders {
 
     return await uniformTypeRepo.execInsert({
       dbOrTx,
-      fn: async (insert) => insert.values(SampleData.uniformTypes),
+      fn: async (insert) =>
+        insert
+          .values(SampleData.uniformTypes)
+          .onConflictDoNothing()
+          .returning(),
     });
   };
 
@@ -34,13 +38,19 @@ export namespace Seeders {
       for (let i = 0; i < complianceRecords.length; i += chunkSize) {
         const chunk = complianceRecords.slice(i, i + chunkSize);
 
-        await tx.insert(Schema.complianceRecords).values(chunk);
+        await tx
+          .insert(Schema.complianceRecords)
+          .values(chunk)
+          .onConflictDoNothing();
       }
 
       for (let i = 0; i < violationRecords.length; i += chunkSize) {
         const chunk = violationRecords.slice(i, i + chunkSize);
 
-        await tx.insert(Schema.violationRecords).values(chunk);
+        await tx
+          .insert(Schema.violationRecords)
+          .values(chunk)
+          .onConflictDoNothing();
       }
     });
   };

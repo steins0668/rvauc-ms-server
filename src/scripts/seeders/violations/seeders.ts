@@ -10,7 +10,11 @@ export namespace Seeders {
 
     return await violationStatusRepo.execInsert({
       dbOrTx,
-      fn: async (insert) => insert.values(SampleData.violationStatuses),
+      fn: async (insert) =>
+        insert
+          .values(SampleData.violationStatuses)
+          .onConflictDoNothing()
+          .returning(),
     });
   };
 }
