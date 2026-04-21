@@ -5,7 +5,11 @@ import { Seeders as Enrollments } from "./enrollments/seeders";
 import { Seeders as UniformCompliance } from "./uniform-compliance/seeders";
 import { Seeders as Violations } from "./violations/seeders";
 
-export const seedDatabase = async () => {
+export const seedDatabase = async (
+  args?:
+    | Partial<{ include: { attendance: boolean; uniformCompliance: boolean } }>
+    | undefined,
+) => {
   await execTransaction(async (tx) => {
     //  miscellaneous (no dependencies)
     await Enrollments.seedTerms(tx);
@@ -38,16 +42,25 @@ export const seedDatabase = async () => {
       dbOrTx: tx,
     });
 
-    await AttendanceRecords.seedAttendanceRecords({
-      ...dateRange,
-      classes,
-      classOfferings,
-      classSessions,
-      enrollments,
-      dbOrTx: tx,
-    });
+    const { include } = args ?? {};
 
-    await UniformCompliance.seedRecords({ ...dateRange, dbOrTx: tx });
+    if (include?.attendance)
+      await AttendanceRecords.seedAttendanceRecords({
+        ...dateRange,
+        classes,
+        classOfferings,
+        classSessions,
+        enrollments,
+        dbOrTx: tx,
+      });
+
+    if (include?.uniformCompliance)
+      await UniformCompliance.seedRecords({
+        ...dateRange,
+        offerings: classOfferings,
+        enrollments,
+        dbOrTx: tx,
+      });
   });
 };
 

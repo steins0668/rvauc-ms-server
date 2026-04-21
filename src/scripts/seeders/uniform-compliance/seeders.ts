@@ -2,6 +2,7 @@ import { createContext, DbOrTx } from "../../../db/create-context";
 import { UniformCompliance } from "../../../features/uniform-compliance";
 import { Schema } from "../../../models";
 import { SampleData } from "./sample-data";
+import { Enrollments as EnrollmentsFeature } from "../../../features/enrollments";
 
 export namespace Seeders {
   export const seedUniformTypes = async (dbOrTx?: DbOrTx | undefined) => {
@@ -19,6 +20,8 @@ export namespace Seeders {
     dbOrTx?: DbOrTx | undefined;
     startDate: string;
     endDate: string;
+    offerings: EnrollmentsFeature.Types.ViewModels.ClassOffering[];
+    enrollments: EnrollmentsFeature.Types.ViewModels.Enrollment[];
   }) => {
     const context = args.dbOrTx ?? (await createContext());
 

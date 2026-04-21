@@ -1,8 +1,8 @@
 import { randomInt } from "crypto";
-import { DbOrTx } from "../../../db/create-context";
 import { TimeUtil } from "../../../utils";
 import { SampleData as Enrollments } from "../enrollments/sample-data";
 import { SampleData as Auth } from "../auth/sample-data";
+import { Enrollments as EnrollmentsFeature } from "../../../features/enrollments";
 
 export namespace SampleData {
   export const uniformTypes = [
@@ -89,6 +89,8 @@ export namespace SampleData {
   export const generateComplianceAndViolationRecords = async (args: {
     startDate: string;
     endDate: string;
+    offerings: EnrollmentsFeature.Types.ViewModels.ClassOffering[];
+    enrollments: EnrollmentsFeature.Types.ViewModels.Enrollment[];
   }) => {
     const complianceRecords = [];
     const violationRecords = [];
@@ -102,14 +104,14 @@ export namespace SampleData {
       const datePh = TimeUtil.toPhDate(current);
       const weekDay = TimeUtil.toPhDay(current);
 
-      const offeringsToday = Enrollments.classOfferings.filter(
+      const offeringsToday = args.offerings.filter(
         (e) => e.weekDay === weekDay && e.roomId !== undefined,
       );
 
       const recordedEnrollees = new Set<number>();
 
       for (const o of offeringsToday) {
-        const enrollees = Enrollments.enrollments.filter(
+        const enrollees = args.enrollments.filter(
           (e) => e.classId === o.classId,
         );
 
