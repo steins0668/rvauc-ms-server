@@ -3,19 +3,20 @@ import { ENV } from "../data";
 
 export namespace Clock {
   const env = ENV.getEnvironment();
-  const isDev = env === "dev";
+  const isDevOrTesting = env === "dev" || env === "testing";
   const fakeDateISO = process.env.FAKE_DATE as string | undefined;
 
-  if (isDev && !fakeDateISO) throw Error("Fake date is not configured");
+  if (isDevOrTesting && !fakeDateISO)
+    throw Error("Fake date is not configured");
 
-  if (isDev)
+  if (isDevOrTesting)
     console.log(
       "Currently in development. Fake date will be used: " + fakeDateISO,
     );
 
   export const now = (date?: Date | undefined) =>
-    isDev ? (date ?? new Date(fakeDateISO!)) : new Date();
+    isDevOrTesting ? (date ?? new Date(fakeDateISO!)) : new Date();
 
   export const nowMs = () =>
-    (isDev ? new Date(fakeDateISO!) : new Date()).getTime();
+    (isDevOrTesting ? new Date(fakeDateISO!) : new Date()).getTime();
 }
