@@ -30,6 +30,10 @@ export namespace Errors {
       | "ENROLLMENT_DATA_SYSTEM_ERROR"
       | "ENROLLMENT_DATA_TERM_RESOLUTION_ERROR";
 
+    export type InputValidation =
+      | "ENROLLMENT_DATA_INVALID_SEMESTER_DATE_ERROR"
+      | "ENROLLMENT_DATA_INVALID_USER_INPUT_ERROR";
+
     export type ApplicationFailure = "ENROLLMENT_DATA_DTO_CONVERSION_ERROR";
 
     export type ErrorName =
@@ -37,6 +41,7 @@ export namespace Errors {
       | EntityNotFound
       | DomainState
       | SystemFailure
+      | InputValidation
       | ApplicationFailure;
 
     export class ErrorClass extends BaseError<ErrorName> {}
@@ -61,6 +66,9 @@ export namespace Errors {
       ENROLLMENT_DATA_TERM_RESOLUTION_ERROR: 503,
       ENROLLMENT_DATA_TRANSACTION_ERROR: 500,
       ENROLLMENT_DATA_UPDATE_ERROR: 500,
+
+      ENROLLMENT_DATA_INVALID_SEMESTER_DATE_ERROR: 400,
+      ENROLLMENT_DATA_INVALID_USER_INPUT_ERROR: 400,
     };
 
     export function collapseError(args: {
