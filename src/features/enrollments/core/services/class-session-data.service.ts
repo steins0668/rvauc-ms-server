@@ -53,9 +53,9 @@ export namespace ClassSessionData {
         return ResultBuilder.success({ sessions: dto });
       } catch (err) {
         return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed getting sessions for professor.",
+          Errors.EnrollmentData.collapseError({
+            name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+            message: "Failed getting sessions.",
             err,
           }),
         );

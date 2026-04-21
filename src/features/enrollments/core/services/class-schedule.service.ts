@@ -3,7 +3,6 @@ import { ResultBuilder } from "../../../../utils";
 import { Auth } from "../../../auth";
 import { Repositories } from "../../repositories";
 import { Errors } from "../errors";
-import { Schemas } from "../schemas";
 import { ClassOfferingQuery } from "./class-offering-query.service";
 import { DtoMappers } from "../dto-mappers";
 
@@ -45,9 +44,9 @@ export namespace ClassSchedule {
         });
       } catch (err) {
         return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying the `enrollments` table.",
+          Errors.EnrollmentData.collapseError({
+            name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+            message: "Failed retrieving schedule today.",
             err,
           }),
         );
@@ -88,9 +87,9 @@ export namespace ClassSchedule {
         });
       } catch (err) {
         return ResultBuilder.fail(
-          Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_QUERY_ERROR",
-            message: "Failed querying the `enrollments` table.",
+          Errors.EnrollmentData.collapseError({
+            name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+            message: "Failed getting schedule for term.",
             err,
           }),
         );
