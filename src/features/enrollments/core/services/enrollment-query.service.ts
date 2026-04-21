@@ -162,6 +162,20 @@ export namespace EnrollmentQuery {
       }
     }
 
+    /**
+     * @description
+     * Retrieves a list of enrollment ids for those enrolled in a class id.
+     */
+    async getEnrolledIdsForClass(
+      args: Parameters<Repositories.Enrollment["getEnrolledIdsForClass"]>[0],
+    ) {
+      try {
+        return await this._enrollmentRepo.getEnrolledIdsForClass(args);
+      } catch (err) {
+        throw Service.normalizeQueryError({ err });
+      }
+    }
+
     private static enrollmentNotFoundError(msg?: string) {
       const message = msg ?? "The specified enrollment was not found.";
 

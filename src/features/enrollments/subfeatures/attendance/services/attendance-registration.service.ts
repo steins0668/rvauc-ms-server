@@ -78,7 +78,7 @@ export namespace AttendanceRegistration {
       } & Schemas.RequestBody.RecordSubmission;
       tx?: TxContext | undefined;
     }) {
-      const { values, tx } = args;
+      const { values } = args;
 
       //  * remove duplicate records
       const uniqueRecords = new Map<number, (typeof values.records)[number]>();
@@ -91,13 +91,21 @@ export namespace AttendanceRegistration {
         //  * fetch session details
         const session = await this._classSessionQuery.ensureMinimalShape({
           where: (cs, { eq }) => eq(cs.id, values.classSessionId),
-          dbOrTx: args.tx,
+          dbOrTx: tx,
         });
+
+        const enrolleeIds = await this._enrollmentQuery
+          .getEnrolledIdsForClass({
+            classId: session.classId,
+            tx,
+          })
+          .then((r) => new Set(r.map((r) => r.id)));
 
         const organizedRecords =
           Utils.Policy.AttendanceSumbission.organizeRecords(
-            values.records,
             session,
+            enrolleeIds,
+            values.records,
           );
 
         //  * auditing field
@@ -122,7 +130,7 @@ export namespace AttendanceRegistration {
         const updated = upserted.filter((r) => r.createdAt !== r.updatedAt);
 
         return { updated, inserted, rejected: organizedRecords.rejects };
-      }, tx);
+      }, args.tx);
 
       let result;
 
@@ -195,9 +203,10 @@ export namespace AttendanceRegistration {
           });
 
         const status = Utils.Policy.Attendance.getAttendanceStatus({
-          attendanceDate: recordedDate,
-          schedStartTime: clsRuntime.offering.startTime,
-          schedEndTime: clsRuntime.offering.endTime,
+          values: {
+            date: recordedDate,
+            session: clsRuntime.session,
+          },
         });
 
         const inserted = await this._attendanceCommand.persistSessionAttendance(

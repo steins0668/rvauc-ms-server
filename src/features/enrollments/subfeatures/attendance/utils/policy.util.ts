@@ -4,14 +4,15 @@ import { Schemas } from "../schemas";
 
 export namespace Policy {
   export namespace Attendance {
-    export function isWithinSchedule(
-      recordedDate: Date,
-      session: { startTimeMs: number; endTimeMs: number },
-    ) {
-      const offsetMs = session.startTimeMs - 30 * 60 * 1000; // ! accepting attendance 30 mins before class
-      const recordedMs = recordedDate.getTime();
+    export function isWithinSchedule(args: {
+      recordedMs: number;
+      session: { startTimeMs: number; endTimeMs: number };
+    }) {
+      const { recordedMs, session } = args;
 
-      return offsetMs <= recordedMs && recordedMs < session.endTimeMs;
+      return (
+        session.startTimeMs <= recordedMs && recordedMs < session.endTimeMs
+      );
     }
 
     /**
@@ -22,19 +23,19 @@ export namespace Policy {
      * @returns
      */
     export function getAttendanceStatus(args: {
-      attendanceDate: Date;
-      schedStartTime: number;
-      schedEndTime: number;
+      values: {
+        attendanceTime: number;
+        session: { startTimeMs: number; endTimeMs: number };
+      };
     }) {
-      const { attendanceDate, schedStartTime, schedEndTime } = args;
-      const attendanceTime = TimeUtil.secondsSinceMidnightPh(attendanceDate);
+      const { attendanceTime, session } = args.values;
 
-      const GRACE_PERIOD_OFFSET_SECONDS = 15 * 60; //  ! 15 minutes grace period
-      const graceTime = schedStartTime + GRACE_PERIOD_OFFSET_SECONDS;
+      const GRACE_PERIOD_OFFSET_MS = 15 * 60 * 1000; //  ! 15 minutes grace period
+      const GRACE_TIME_MS = session.startTimeMs + GRACE_PERIOD_OFFSET_MS;
 
-      return attendanceTime >= schedEndTime
+      return attendanceTime >= session.endTimeMs
         ? Data.attendanceStatus.absent
-        : attendanceTime > graceTime
+        : attendanceTime > GRACE_TIME_MS
           ? Data.attendanceStatus.late
           : Data.attendanceStatus.present;
     }
@@ -43,39 +44,46 @@ export namespace Policy {
   export namespace AttendanceSumbission {
     export const normalizeRecord = (
       record: Schemas.RequestBody.RecordSubmission["records"][number],
-      session: { endTimeMs: number },
     ): Schemas.Dto.ClassAttendance.NormalizedRecord => {
-      const finalDate =
-        record.status === "absent"
-          ? new Date(session.endTimeMs)
-          : record.recordedDate;
-
       return {
         enrollmentId: record.enrollmentId,
         status: record.status,
-        recordedAt: finalDate.toISOString(),
-        recordedMs: finalDate.getTime(),
+        recordedAt: record.recordedDate.toISOString(),
+        recordedMs: record.recordedDate.getTime(),
       };
     };
 
     export const organizeRecords = (
-      records: Schemas.RequestBody.RecordSubmission["records"],
       session: { datePh: string; startTimeMs: number; endTimeMs: number },
+      enrolleeIds: Set<number>,
+      records: Schemas.RequestBody.RecordSubmission["records"],
     ) => {
       let upserts: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
-      let rejects: Schemas.Dto.ClassAttendance.NormalizedRecords = [];
+      let rejects: Schemas.Dto.ClassAttendance.RejectedRecords = [];
 
       for (const r of records) {
-        const normalized = normalizeRecord(r, session);
+        const normalized = normalizeRecord(r);
 
-        const recordedDate = new Date(normalized.recordedAt);
+        const { status } = normalized;
 
-        const isSameDate = TimeUtil.toPhDate(recordedDate) === session.datePh;
+        const isWithinSchedule = Attendance.isWithinSchedule({
+          recordedMs: normalized.recordedMs,
+          session,
+        });
 
-        const isReject =
-          !isSameDate || !Attendance.isWithinSchedule(recordedDate, session);
+        const isTimeIrrelevant = status === "absent" || status === "excused";
+        const isValidTime = isTimeIrrelevant || isWithinSchedule;
+        const isEnrolled = enrolleeIds.has(r.enrollmentId);
 
-        isReject ? rejects.push(normalized) : upserts.push(normalized);
+        const reasons: Schemas.Dto.ClassAttendance.RejectedRecord["reasons"] =
+          [];
+
+        if (!isValidTime) reasons.push("OUT_OF_SCHEDULE");
+        if (!isEnrolled) reasons.push("NOT_ENROLLED");
+
+        reasons.length
+          ? rejects.push({ record: normalized, reasons })
+          : upserts.push(normalized);
       }
 
       return { upserts, rejects };

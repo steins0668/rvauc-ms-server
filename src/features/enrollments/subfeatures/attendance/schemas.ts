@@ -140,16 +140,27 @@ export namespace Schemas {
           recordedMs: z.number(),
         })
         .strip();
-      export type NormalizedRecord = z.infer<typeof normalizedRecord>;
-
       export const normalizedRecords = z.array(normalizedRecord);
+      export const rejectedRecord = z
+        .strictObject({
+          record: normalizedRecord,
+          reasons: z.array(
+            z.enum(["OUT_OF_SESSION_DATE", "OUT_OF_SCHEDULE", "NOT_ENROLLED"]),
+          ),
+        })
+        .strip();
+      export const rejectedRecords = z.array(rejectedRecord);
+
+      export type NormalizedRecord = z.infer<typeof normalizedRecord>;
       export type NormalizedRecords = z.infer<typeof normalizedRecords>;
+      export type RejectedRecord = z.infer<typeof rejectedRecord>;
+      export type RejectedRecords = z.infer<typeof rejectedRecords>;
 
       export const mutationResult = z
         .strictObject({
           updated: z.array(base),
           inserted: z.array(insertedAttendance),
-          rejected: normalizedRecords,
+          rejected: rejectedRecords,
         })
         .strip();
       export type MutationResult = z.infer<typeof mutationResult>;

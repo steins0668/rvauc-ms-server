@@ -1,12 +1,13 @@
 import { ResultSet } from "@libsql/client/.";
-import { and, eq, or, sql, SQL } from "drizzle-orm";
-import { SQLiteColumn, SQLiteSelectBase } from "drizzle-orm/sqlite-core";
-import { DbContext, DbOrTx } from "../../../db/create-context";
+import { sql, SQL } from "drizzle-orm";
+import { SQLiteSelectBase } from "drizzle-orm/sqlite-core";
+import { DbContext, DbOrTx, TxContext } from "../../../db/create-context";
 import { Schema } from "../../../models";
 import { enrollments } from "../../../models";
 import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
 import { RepositoryUtil } from "../../../utils";
+import { Core } from "../core";
 import { Types } from "../types";
 
 export class Enrollment extends Repository<Types.Tables.Enrollment> {
@@ -23,6 +24,21 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     const { enrollments } = Schema;
 
     return await (dbOrTx ?? this._dbContext).$count(enrollments, where);
+  }
+
+  async getEnrolledIdsForClass(args: {
+    classId: number;
+    tx?: TxContext | undefined;
+  }) {
+    return await (args.tx ?? this._dbContext).query.enrollments.findMany({
+      where: (e, { and, eq }) =>
+        and(
+          eq(e.classId, args.classId),
+          eq(e.status, Core.Data.enrollmentStatus.enrolled),
+        ),
+      orderBy: (e, { asc }) => asc(e.id),
+      columns: { id: true, status: true },
+    });
   }
 
   async queryWithStudentDetails(args: {

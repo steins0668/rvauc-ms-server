@@ -72,7 +72,7 @@ export namespace Mutation {
         Services.AttendanceCommand.Service["upsertStatusAndRecordDateTime"]
       >
     >,
-    rejected: Schemas.Dto.ClassAttendance.NormalizedRecords,
+    rejected: Schemas.Dto.ClassAttendance.RejectedRecords,
   ): Schemas.Dto.ClassAttendance.MutationResult {
     const updatedDto = updated.map((r) => {
       return {
