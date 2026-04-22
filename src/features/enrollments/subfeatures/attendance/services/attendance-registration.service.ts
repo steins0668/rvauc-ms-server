@@ -283,11 +283,12 @@ export namespace AttendanceRegistration {
           tx,
         });
 
-        const enrollment =
-          await this._enrollmentQuery.ensureEnrollmentForClassAndStudent({
+        const enrollment = await this._enrollmentQuery.ensureForClassAndStudent(
+          {
             values: { studentId, classId: clsRuntime.offering.class.id },
             dbOrTx: tx,
-          });
+          },
+        );
 
         return { clsRuntime, enrollment };
       } catch (err) {
