@@ -94,8 +94,7 @@ describe("Class Attendance Test Suite", () => {
     tokens.student = tokentStudent.result.accessToken;
   });
 
-  //    200 ok
-  it(`GET records/class/offering/session/157`, async () => {
+  it(`GET session records (professor view) - success`, async () => {
     const url = `/enrollments/attendance/records/class/offering/session/157`;
     const res = await request(app)
       .get(url)
@@ -109,8 +108,7 @@ describe("Class Attendance Test Suite", () => {
     Schemas.Dto.ClassAttendance.professorView.parse(res.body.result);
   });
 
-  //    403 class/session not associated with professor
-  it("GET records/class/offering/session/156", async () => {
+  it("GET session records (professor view) - forbidden | unassociated class session", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/156";
     const res = await request(app)
       .get(url)
@@ -121,8 +119,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //    404 class session not found
-  it("GET records/class/offering/session/1000", async () => {
+  it("GET session records (professor view) - class session not found", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/1000";
     const res = await request(app)
       .get(url)
@@ -133,8 +130,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //    401 unauthorized
-  it("GET records/class/offering/session/157", async () => {
+  it("GET session records (professor view) - unauthorized | no token", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/157";
     const res = await request(app).get(url);
 
@@ -143,8 +139,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //    403 forbidden
-  it("GET records/class/offering/session/157", async () => {
+  it("GET session records (professor view) - forbidden | student", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/157";
     const res = await request(app)
       .get(url)
@@ -155,8 +150,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //    200 ok
-  it("GET records/class/6", async () => {
+  it("GET class records (student view) - success", async () => {
     const res = await request(app)
       .get("/enrollments/attendance/records/class/6")
       .set("Authorization", `Bearer ${tokens.student}`);
@@ -168,8 +162,7 @@ describe("Class Attendance Test Suite", () => {
     Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
   });
 
-  //    404 class not found
-  it("GET records/class/7", async () => {
+  it("GET class records (student view) - class not found", async () => {
     const res = await request(app)
       .get("/enrollments/attendance/records/class/7")
       .set("Authorization", `Bearer ${tokens.student}`);
@@ -179,8 +172,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //    401 unauthorized
-  it("GET records/class/6", async () => {
+  it("GET class records (student view) - unauthorized | no token", async () => {
     const res = await request(app).get(
       "/enrollments/attendance/records/class/6",
     );
@@ -190,8 +182,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //    403 forbidden
-  it("GET records/class/6", async () => {
+  it("GET class records (student view) - forbidden | professor", async () => {
     const res = await request(app)
       .get("/enrollments/attendance/records/class/6")
       .set("Authorization", `Bearer ${tokens.prof}`);
@@ -201,8 +192,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //  200 ok
-  it("POST records/class/offering/session/157", async () => {
+  it("POST session records (professor) - success", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/157";
     const res = await request(app)
       .post(url)
@@ -246,8 +236,7 @@ describe("Class Attendance Test Suite", () => {
     expect(parsed.rejected.length).toBe(0);
   });
 
-  //  200 ok (one invalid enrollment id)
-  it("POST records/class/offering/session/157", async () => {
+  it("POST session records (professor) - success | invalid enrollment id", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/157";
     const res = await request(app)
       .post(url)
@@ -295,8 +284,7 @@ describe("Class Attendance Test Suite", () => {
     expect(rejected?.reasons).toContain("NOT_ENROLLED");
   });
 
-  //  200 ok (one invalid date)
-  it("POST records/class/offering/session/157", async () => {
+  it("POST session records (professor) - success | invalid date", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/157";
     const res = await request(app)
       .post(url)
@@ -344,8 +332,7 @@ describe("Class Attendance Test Suite", () => {
     expect(rejected?.reasons).toContain("OUT_OF_SCHEDULE");
   });
 
-  //  404 SESSION_NOT_FOUND
-  it("POST records/class/offering/session/1000", async () => {
+  it("POST session records (professor) - class session not found", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/1000";
     const res = await request(app)
       .post(url)
@@ -378,8 +365,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //  401 unauthenticated
-  it("POST records/class/offering/session/157", async () => {
+  it("POST session records (professor) - unauthorized | no token", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/157";
     const res = await request(app)
       .post(url)
@@ -411,8 +397,7 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
-  //  403 forbidden
-  it("POST records/class/offering/session/157", async () => {
+  it("POST session records (professor) - forbidden | student", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/157";
     const res = await request(app)
       .post(url)
