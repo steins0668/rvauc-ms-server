@@ -204,7 +204,7 @@ export namespace AttendanceRegistration {
 
         const status = Utils.Policy.Attendance.getAttendanceStatus({
           values: {
-            date: recordedDate,
+            attendanceTime: recordedDate.getTime(),
             session: clsRuntime.session,
           },
         });
