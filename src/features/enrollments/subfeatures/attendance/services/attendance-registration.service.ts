@@ -303,7 +303,7 @@ export namespace AttendanceRegistration {
             switch (err.name) {
               case "ENROLLMENT_DATA_QUERY_ERROR":
                 return create({ ...internalError, cause: err });
-              case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
+              case "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR":
                 return create({
                   name: "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR",
                   message:

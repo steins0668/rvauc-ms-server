@@ -41,6 +41,32 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     });
   }
 
+  async getForClassAndStudent(args: {
+    values: { classId: number; studentId: number };
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { values, dbOrTx } = args;
+
+    const { classes: c, enrollments: e, students: s } = Schema;
+    const { and, eq } = RepositoryUtil.filters;
+
+    const context = dbOrTx ?? this._dbContext;
+
+    return await context
+      .select({
+        id: e.id,
+        classId: c.id,
+        studentId: s.id,
+        status: e.status,
+      })
+      .from(c)
+      .leftJoin(s, eq(s.id, values.studentId))
+      .leftJoin(e, and(eq(e.classId, c.id), eq(e.studentId, s.id)))
+      .where(eq(c.id, values.classId))
+      .limit(1)
+      .then((r) => r[0]);
+  }
+
   async queryWithStudentDetails(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:

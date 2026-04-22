@@ -194,7 +194,7 @@ export namespace AttendanceData {
         };
       },
     ) {
-      const { classId, studentId } = args.values;
+      const { classId } = args.values;
 
       let enrollment;
       let recordsAndSummary: Awaited<
@@ -202,11 +202,7 @@ export namespace AttendanceData {
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
-        enrollment =
-          await this._enrollmentQuery.ensureEnrollmentForClassAndStudent({
-            values: { classId, studentId },
-            dbOrTx: args.dbOrTx,
-          });
+        enrollment = await this._enrollmentQuery.ensureForClassAndStudent(args);
 
         recordsAndSummary = await this._attendanceQuery.fetchRecordsAndSummary({
           values: {
@@ -229,13 +225,6 @@ export namespace AttendanceData {
             fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
-                case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
-                  return create({
-                    name: err.name,
-                    message:
-                      "Unable to find enrollment. The student, class, or enrollment record may not exist.",
-                    cause: err,
-                  });
                 case "ENROLLMENT_DATA_QUERY_ERROR":
                   return create({ ...internalError, cause: err });
               }

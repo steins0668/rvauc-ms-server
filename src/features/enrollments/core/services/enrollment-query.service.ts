@@ -74,31 +74,22 @@ export namespace EnrollmentQuery {
      * Returns minimal enrollment data (no relational graph hydration).
      * Throws if no matching enrollment exists.
      */
-    async ensureEnrollmentForClassAndStudent(args: {
+    async ensureForClassAndStudent(args: {
       values: {
         classId: number;
         studentId: number;
       };
       dbOrTx?: DbOrTx | undefined;
     }) {
-      const { classId, studentId } = args.values;
-
       let enrollment;
 
       try {
-        enrollment = await this._enrollmentRepo.execQuery({
-          dbOrTx: args.dbOrTx,
-          fn: async (query) =>
-            query.findFirst({
-              where: (e, { and, eq }) =>
-                and(eq(e.studentId, studentId), eq(e.classId, classId)),
-            }),
-        });
+        enrollment = await this._enrollmentRepo.getForClassAndStudent(args);
       } catch (err) {
         throw Service.normalizeQueryError({ err });
       }
 
-      if (!enrollment) throw Service.enrollmentNotFoundError();
+      this.assertValidEnrollment(enrollment);
 
       return enrollment;
     }
@@ -174,6 +165,38 @@ export namespace EnrollmentQuery {
       } catch (err) {
         throw Service.normalizeQueryError({ err });
       }
+    }
+
+    /**
+     * @description
+     * Asserts the validity of a queried enrollment. Class, student, and enrollment
+     * must all exist for the result to be considered valid.
+     */
+    private assertValidEnrollment(
+      e: Awaited<ReturnType<Repositories.Enrollment["getForClassAndStudent"]>>,
+    ): asserts e is {
+      id: number;
+      classId: number;
+      studentId: number;
+      status: string;
+    } {
+      if (!e)
+        throw new Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR",
+          message: "The specified class does not exist.",
+        });
+
+      if (e.studentId === null)
+        throw new Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR",
+          message: "The specified student does not exist.",
+        });
+
+      if (e.id === null)
+        throw new Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR",
+          message: "This student is not allowed to access this resource.",
+        });
     }
 
     private static enrollmentNotFoundError(msg?: string) {
