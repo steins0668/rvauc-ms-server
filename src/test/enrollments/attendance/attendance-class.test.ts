@@ -101,8 +101,6 @@ describe("Class Attendance Test Suite", () => {
       .get(url)
       .set("Authorization", `Bearer ${tokens.prof}`);
 
-    console.debug(JSON.stringify(res.body, null, 2));
-
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(true);
@@ -118,8 +116,6 @@ describe("Class Attendance Test Suite", () => {
       .get(url)
       .set("Authorization", `Bearer ${tokens.prof}`);
 
-    console.debug(JSON.stringify(res.body, null, 2));
-
     expect(res.status).toBe(403);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(false);
@@ -132,9 +128,29 @@ describe("Class Attendance Test Suite", () => {
       .get(url)
       .set("Authorization", `Bearer ${tokens.prof}`);
 
-    console.debug(JSON.stringify(res.body, null, 2));
-
     expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
+  //    401 unauthorized
+  it("GET records/class/offering/session/157", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/157";
+    const res = await request(app).get(url);
+
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
+  //    403 forbidden
+  it("GET records/class/offering/session/157", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/157";
+    const res = await request(app)
+      .get(url)
+      .set("Authorization", `Bearer ${tokens.student}`);
+
+    expect(res.status).toBe(403);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(false);
   });
@@ -145,8 +161,6 @@ describe("Class Attendance Test Suite", () => {
       .get("/enrollments/attendance/records/class/6")
       .set("Authorization", `Bearer ${tokens.student}`);
 
-    console.debug(JSON.stringify(res.body, null, 2));
-
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(true);
@@ -154,15 +168,35 @@ describe("Class Attendance Test Suite", () => {
     Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
   });
 
-  //    404 enrollment not found
+  //    404 class not found
   it("GET records/class/7", async () => {
     const res = await request(app)
       .get("/enrollments/attendance/records/class/7")
       .set("Authorization", `Bearer ${tokens.student}`);
 
-    console.debug(JSON.stringify(res.body, null, 2));
-
     expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
+  //    401 unauthorized
+  it("GET records/class/6", async () => {
+    const res = await request(app).get(
+      "/enrollments/attendance/records/class/6",
+    );
+
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
+  //    403 forbidden
+  it("GET records/class/6", async () => {
+    const res = await request(app)
+      .get("/enrollments/attendance/records/class/6")
+      .set("Authorization", `Bearer ${tokens.prof}`);
+
+    expect(res.status).toBe(403);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(false);
   });
@@ -196,8 +230,6 @@ describe("Class Attendance Test Suite", () => {
         ],
       });
 
-    console.debug(JSON.stringify(res.body, null, 2));
-
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(true);
@@ -207,7 +239,11 @@ describe("Class Attendance Test Suite", () => {
       }),
     );
 
-    Schemas.Dto.ClassAttendance.mutationResult.parse(res.body.result.records);
+    const { records } = res.body.result;
+
+    const parsed = Schemas.Dto.ClassAttendance.mutationResult.parse(records);
+
+    expect(parsed.rejected.length).toBe(0);
   });
 
   //  200 ok (one invalid enrollment id)
@@ -239,8 +275,6 @@ describe("Class Attendance Test Suite", () => {
         ],
       });
 
-    console.debug(JSON.stringify(res.body, null, 2));
-
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(true);
@@ -250,7 +284,15 @@ describe("Class Attendance Test Suite", () => {
       }),
     );
 
-    Schemas.Dto.ClassAttendance.mutationResult.parse(res.body.result.records);
+    const { records } = res.body.result;
+
+    const parsed = Schemas.Dto.ClassAttendance.mutationResult.parse(records);
+
+    expect(parsed.rejected.length).toBe(1);
+
+    const rejected = parsed.rejected[0];
+    expect(rejected?.record.enrollmentId).toBe(100);
+    expect(rejected?.reasons).toContain("NOT_ENROLLED");
   });
 
   //  200 ok (one invalid date)
@@ -263,7 +305,7 @@ describe("Class Attendance Test Suite", () => {
         records: [
           {
             //  * student id 7
-            recordedDate: "2025-12-03T12:40:00+08:00",
+            recordedDate: "2025-12-03T12:40:00+08:00", //  invalid date
             enrollmentId: 6,
             status: "late",
           },
@@ -282,8 +324,6 @@ describe("Class Attendance Test Suite", () => {
         ],
       });
 
-    console.debug(JSON.stringify(res.body, null, 2));
-
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(true);
@@ -293,7 +333,15 @@ describe("Class Attendance Test Suite", () => {
       }),
     );
 
-    Schemas.Dto.ClassAttendance.mutationResult.parse(res.body.result.records);
+    const { records } = res.body.result;
+
+    const parsed = Schemas.Dto.ClassAttendance.mutationResult.parse(records);
+
+    expect(parsed.rejected.length).toBe(1);
+
+    const rejected = parsed.rejected[0];
+    expect(rejected?.record.enrollmentId).toBe(6);
+    expect(rejected?.reasons).toContain("OUT_OF_SCHEDULE");
   });
 
   //  404 SESSION_NOT_FOUND
@@ -325,9 +373,74 @@ describe("Class Attendance Test Suite", () => {
         ],
       });
 
-    console.debug(JSON.stringify(res.body, null, 2));
-
     expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
+  //  401 unauthenticated
+  it("POST records/class/offering/session/157", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/157";
+    const res = await request(app)
+      .post(url)
+      .send({
+        records: [
+          {
+            //  * student id 7
+            recordedDate: "2025-12-03T07:40:00+08:00",
+            enrollmentId: 6,
+            status: "late",
+          },
+          {
+            //  * student id 8
+            recordedDate: "2025-12-03T07:35:00+08:00",
+            enrollmentId: 12,
+            status: "late",
+          },
+          {
+            //  * student id 9
+            recordedDate: "2025-12-03T07:00:00+08:00",
+            enrollmentId: 18,
+            status: "absent",
+          },
+        ],
+      });
+
+    expect(res.status).toBe(401);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
+  //  403 forbidden
+  it("POST records/class/offering/session/157", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/157";
+    const res = await request(app)
+      .post(url)
+      .set("Authorization", `Bearer ${tokens.student}`)
+      .send({
+        records: [
+          {
+            //  * student id 7
+            recordedDate: "2025-12-03T07:40:00+08:00",
+            enrollmentId: 6,
+            status: "late",
+          },
+          {
+            //  * student id 8
+            recordedDate: "2025-12-03T07:35:00+08:00",
+            enrollmentId: 12,
+            status: "late",
+          },
+          {
+            //  * student id 9
+            recordedDate: "2025-12-03T07:00:00+08:00",
+            enrollmentId: 18,
+            status: "absent",
+          },
+        ],
+      });
+
+    expect(res.status).toBe(403);
     expect(res.body).toHaveProperty("success");
     expect(res.body.success).toBe(false);
   });
