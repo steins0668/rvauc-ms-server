@@ -225,6 +225,13 @@ export namespace AttendanceData {
             fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
+                case "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR":
+                case "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR":
+                  return create({
+                    name: "ENROLLMENT_DATA_CLASS_FORBIDDEN_ERROR",
+                    message: "This student does not have access to this class.",
+                    cause: err,
+                  });
                 case "ENROLLMENT_DATA_QUERY_ERROR":
                   return create({ ...internalError, cause: err });
               }
