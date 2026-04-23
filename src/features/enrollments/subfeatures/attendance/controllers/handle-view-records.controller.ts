@@ -62,31 +62,6 @@ export function handleViewRecords<
       });
     }
 
-    let term;
-
-    logger.log("debug", "Attempting to get current term from system config...");
-    try {
-      const queried = await termDataService.getCurrentTerm();
-      if (!queried.success) throw queried.error;
-
-      term = queried.result;
-      logger.log(
-        "debug",
-        "Success getting term config: " + JSON.stringify(term),
-      );
-    } catch (err) {
-      logger.log(
-        "error",
-        "Failed getting current term from system config.",
-        err,
-      );
-
-      return res.status(500).json({
-        success: false,
-        message: "Something went wrong. Please try again later.",
-      });
-    }
-
     const clientDate = new Date(query.timeMs);
     const serverDate = Clock.now(clientDate);
 
@@ -150,8 +125,6 @@ export function handleViewRecords<
         values: {
           ...extractInput(req),
           ...roleScopeValues,
-          termId: term.id,
-          date: new Date(query.timeMs),
         },
       },
     );
