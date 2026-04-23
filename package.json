@@ -31,7 +31,7 @@
     "test:broker:sign-out": "jest \"session-broker.sign-out.test.ts\"",
     "test:attendance": "jest \"attendance.test.ts\"",
     "test:attendance:class": "jest \"class-routes.test.ts\"",
-    "test:attendance:student": "jest \"attendance-student.test.ts\"",
+    "test:attendance:student": "jest \"student-routes.test.ts\"",
     "test:attendance:rfid": "jest \"attendance-rfid.test.ts\"",
     "build": "tsc",
     "start": "node dist/index.js",
