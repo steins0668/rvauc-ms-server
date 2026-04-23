@@ -111,7 +111,7 @@ export namespace AttendanceRegistration {
           );
 
         //  * auditing field
-        const createdOrUpdatedAt = Clock.now().toISOString();
+        const createdOrUpdatedAt = Clock.now(new Date()).toISOString();
 
         const upserted = organizedRecords.upserts.length
           ? await this._attendanceCommand.upsertStatusAndRecordDateTime({
