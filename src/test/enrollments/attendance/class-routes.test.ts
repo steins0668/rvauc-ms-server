@@ -29,7 +29,7 @@ describe("Class Attendance Routes", () => {
         invalid: 0,
       },
     },
-  };
+  } as const;
 
   beforeAll(async () => {
     tokens.prof = createJwt({
