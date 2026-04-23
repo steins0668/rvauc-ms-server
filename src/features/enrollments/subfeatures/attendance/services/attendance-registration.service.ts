@@ -192,6 +192,7 @@ export namespace AttendanceRegistration {
       values: {
         termId: number;
         studentId: number;
+        room: string;
         recordedDate: Date;
       };
       tx?: TxContext | undefined;
@@ -270,11 +271,16 @@ export namespace AttendanceRegistration {
     }
 
     private async ensureEnrollmentForRuntime(args: {
-      values: { termId: number; studentId: number; recordedDate: Date };
+      values: {
+        termId: number;
+        studentId: number;
+        room: string;
+        recordedDate: Date;
+      };
       tx?: TxContext | undefined;
     }) {
       const { tx } = args;
-      const { termId, studentId, recordedDate } = args.values;
+      const { termId, studentId, recordedDate, room } = args.values;
 
       try {
         const clsRuntime = await this._classRuntimeResolver.resolve({
@@ -284,6 +290,21 @@ export namespace AttendanceRegistration {
           sessionPolicy: "strict-scheduled",
           tx,
         });
+
+        const { offering } = clsRuntime;
+
+        if (offering.rooms === null)
+          throw new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_NO_FACE_TO_FACE_CLASS_ERROR",
+            message: "This class doesn't have a designated room. ",
+          });
+
+        if (offering.rooms.name !== room)
+          throw new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_ROOM_MISMATCH_ERROR",
+            message:
+              "This student is not allowed to take attendance in a different room for the current class.",
+          });
 
         const enrollment = await this._enrollmentQuery.ensureForClassAndStudent(
           {
