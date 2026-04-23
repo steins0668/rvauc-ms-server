@@ -105,7 +105,7 @@ describe("Student Attendance Routes", () => {
   });
 
   describe("GET student records", () => {
-    describe("as student", () => {
+    describe("as professor", () => {
       it("should return records", async () => {
         const c = ids.class.prof.valid;
         const e = ids.enrollment.prof.valid;
