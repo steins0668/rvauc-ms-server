@@ -353,7 +353,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
           exists(subqueryE({ classId: co.classId, studentId: userId })),
         ); //  ! professors don't need enrollments subquery
 
-      if (scope === "today") eq(co.weekDay, weekDay);
+      if (scope === "today") conditions.push(eq(co.weekDay, weekDay));
 
       return conditions.length ? and(...conditions) : undefined;
     };
