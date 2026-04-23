@@ -7,8 +7,8 @@ describe("Class Attendance Routes", () => {
   const tokens = {
     prof: "",
     student: "",
-    profInvalid: "",
-    studentInvalid: "",
+    profNonExistent: "",
+    studentNonExistent: "",
   };
 
   const ids = {
@@ -70,7 +70,7 @@ describe("Class Attendance Routes", () => {
       },
     });
 
-    tokens.studentInvalid = createJwt({
+    tokens.studentNonExistent = createJwt({
       payloadType: "full",
       tokenType: "access",
       payload: {
@@ -90,7 +90,7 @@ describe("Class Attendance Routes", () => {
       },
     });
 
-    tokens.profInvalid = createJwt({
+    tokens.profNonExistent = createJwt({
       payloadType: "full",
       tokenType: "access",
       payload: {
@@ -138,12 +138,12 @@ describe("Class Attendance Routes", () => {
         expect(res.body.success).toBe(false);
       });
 
-      it("should return 403 for invalid professor", async () => {
+      it("should return 403 for non-existent professor", async () => {
         const id = ids.session.professor.valid;
         const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .get(url)
-          .set("Authorization", `Bearer ${tokens.profInvalid}`);
+          .set("Authorization", `Bearer ${tokens.profNonExistent}`);
 
         expect(res.status).toBe(403);
         expect(res.body).toHaveProperty("success");
@@ -214,11 +214,11 @@ describe("Class Attendance Routes", () => {
         expect(res.body.success).toBe(false);
       });
 
-      it("should return 403 for class forbidden (invalid student)", async () => {
+      it("should return 403 for class forbidden (non-existent student)", async () => {
         const id = ids.class.student.valid;
         const res = await request(app)
           .get(`/enrollments/attendance/records/class/${id}`)
-          .set("Authorization", `Bearer ${tokens.studentInvalid}`);
+          .set("Authorization", `Bearer ${tokens.studentNonExistent}`);
 
         expect(res.status).toBe(403);
         expect(res.body).toHaveProperty("success");
@@ -467,12 +467,12 @@ describe("Class Attendance Routes", () => {
         expect(res.body.success).toBe(false);
       });
 
-      it("should return 403 for invalid professor", async () => {
+      it("should return 403 for non-existent professor", async () => {
         const id = ids.session.professor.valid;
         const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .post(url)
-          .set("Authorization", `Bearer ${tokens.profInvalid}`)
+          .set("Authorization", `Bearer ${tokens.profNonExistent}`)
           .send({
             records: [
               {
