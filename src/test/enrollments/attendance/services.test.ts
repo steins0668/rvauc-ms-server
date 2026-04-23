@@ -3,9 +3,11 @@ import { app } from "../../../app";
 import { AttendanceData } from "../../../features/enrollments/subfeatures/attendance/services/attendance-data.service";
 import { Schemas } from "../../../features/enrollments/subfeatures/attendance/schemas";
 import { Errors } from "../../../features/enrollments/core/errors";
+import { AttendanceRegistration } from "../../../features/enrollments/subfeatures/attendance/services/attendance-registration.service";
 
 describe("Attendance Services", () => {
   let dataService: AttendanceData.Service;
+  let regService: AttendanceRegistration.Service;
   const assertSuccess: (success: boolean) => asserts success is true = (
     success: boolean,
   ): asserts success is true => {
@@ -53,10 +55,11 @@ describe("Attendance Services", () => {
         notFound: 100,
       },
     },
-  };
+  } as const;
 
   beforeAll(async () => {
     dataService = await AttendanceData.create();
+    regService = await AttendanceRegistration.create();
   });
 
   describe("Attendance Data Service", () => {
@@ -433,6 +436,271 @@ describe("Attendance Services", () => {
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
 
         expect(error.name).toBe(errorName);
+      });
+    });
+  });
+
+  describe("Attendance Registration Service", () => {
+    describe("Session Records Mutation", () => {
+      it("should insert records", async () => {
+        const op = await regService.mutateSessionRecords({
+          values: {
+            classSessionId: ids.session.professor.valid,
+            professorId: ids.professor.valid,
+            records: [
+              {
+                //  * student id 7
+                recordedDate: new Date("2025-12-03T07:40:00+08:00"),
+                enrollmentId: 6,
+                status: "late",
+              },
+              {
+                //  * student id 8
+                recordedDate: new Date("2025-12-03T07:35:00+08:00"),
+                enrollmentId: 12,
+                status: "late",
+              },
+              {
+                //  * student id 9
+                recordedDate: new Date("2025-12-03T07:00:00+08:00"),
+                enrollmentId: 18,
+                status: "absent",
+              },
+            ],
+          },
+        });
+
+        expect(op.success).toBe(true);
+
+        assertSuccess(op.success);
+
+        const { mutationResult } = Schemas.Dto.ClassAttendance;
+
+        const parsed = mutationResult.parse(op.result);
+
+        expect(parsed.inserted.length).toBe(3);
+      });
+
+      it("should update records", async () => {
+        const op = await regService.mutateSessionRecords({
+          values: {
+            classSessionId: ids.session.professor.valid,
+            professorId: ids.professor.valid,
+            records: [
+              {
+                //  * student id 7
+                recordedDate: new Date("2025-12-03T07:00:00+08:00"),
+                enrollmentId: 6,
+                status: "present",
+              },
+              {
+                //  * student id 8
+                recordedDate: new Date("2025-12-03T07:05:00+08:00"),
+                enrollmentId: 12,
+                status: "present",
+              },
+              {
+                //  * student id 9
+                recordedDate: new Date("2025-12-03T07:30:00+08:00"),
+                enrollmentId: 18,
+                status: "late",
+              },
+            ],
+          },
+        });
+
+        expect(op.success).toBe(true);
+
+        assertSuccess(op.success);
+
+        const { mutationResult } = Schemas.Dto.ClassAttendance;
+
+        const parsed = mutationResult.parse(op.result);
+
+        expect(parsed.updated.length).toBe(3);
+      });
+
+      it("should reject records", async () => {
+        const op = await regService.mutateSessionRecords({
+          values: {
+            classSessionId: ids.session.professor.valid,
+            professorId: ids.professor.valid,
+            records: [
+              {
+                //  * student id 7
+                recordedDate: new Date("2025-12-03T07:00:00+08:00"),
+                enrollmentId: 100, // invalid enrollment
+                status: "present",
+              },
+              {
+                //  * student id 8
+                recordedDate: new Date("2025-12-04T07:05:00+08:00"), //  out of schedule
+                enrollmentId: 12,
+                status: "present",
+              },
+              {
+                //  * student id 9
+                recordedDate: new Date("2025-12-03T10:30:00+08:00"), //  out of schedule
+                enrollmentId: 18,
+                status: "late",
+              },
+            ],
+          },
+        });
+
+        expect(op.success).toBe(true);
+
+        assertSuccess(op.success);
+
+        const { mutationResult } = Schemas.Dto.ClassAttendance;
+
+        const { rejected } = mutationResult.parse(op.result);
+
+        expect(rejected.length).toBe(3);
+      });
+
+      it("should fail for forbidden (non-existent class session) ", async () => {
+        const op = await regService.mutateSessionRecords({
+          values: {
+            classSessionId: ids.session.professor.notFound,
+            professorId: ids.professor.valid,
+            records: [
+              {
+                //  * student id 7
+                recordedDate: new Date("2025-12-03T07:00:00+08:00"),
+                enrollmentId: 100, // invalid enrollment
+                status: "present",
+              },
+              {
+                //  * student id 8
+                recordedDate: new Date("2025-12-04T07:05:00+08:00"), //  out of schedule
+                enrollmentId: 12,
+                status: "present",
+              },
+              {
+                //  * student id 9
+                recordedDate: new Date("2025-12-03T10:30:00+08:00"), //  out of schedule
+                enrollmentId: 18,
+                status: "late",
+              },
+            ],
+          },
+        });
+
+        expect(op.success).toBe(false);
+
+        assertFail(op.success);
+
+        const errorName: Errors.EnrollmentData.ErrorName =
+          "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+      });
+
+      it("should fail for forbidden (invalid class session) ", async () => {
+        const op = await regService.mutateSessionRecords({
+          values: {
+            classSessionId: ids.session.professor.invalid,
+            professorId: ids.professor.valid,
+            records: [
+              {
+                //  * student id 7
+                recordedDate: new Date("2025-12-03T07:00:00+08:00"),
+                enrollmentId: 100, // invalid enrollment
+                status: "present",
+              },
+              {
+                //  * student id 8
+                recordedDate: new Date("2025-12-04T07:05:00+08:00"), //  out of schedule
+                enrollmentId: 12,
+                status: "present",
+              },
+              {
+                //  * student id 9
+                recordedDate: new Date("2025-12-03T10:30:00+08:00"), //  out of schedule
+                enrollmentId: 18,
+                status: "late",
+              },
+            ],
+          },
+        });
+
+        expect(op.success).toBe(false);
+
+        assertFail(op.success);
+
+        const errorName: Errors.EnrollmentData.ErrorName =
+          "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+      });
+
+      it("should fail for forbidden (non-existent professor) ", async () => {
+        const op = await regService.mutateSessionRecords({
+          values: {
+            classSessionId: ids.session.professor.valid,
+            professorId: ids.professor.notFound,
+            records: [
+              {
+                //  * student id 7
+                recordedDate: new Date("2025-12-03T07:00:00+08:00"),
+                enrollmentId: 100, // invalid enrollment
+                status: "present",
+              },
+              {
+                //  * student id 8
+                recordedDate: new Date("2025-12-04T07:05:00+08:00"), //  out of schedule
+                enrollmentId: 12,
+                status: "present",
+              },
+              {
+                //  * student id 9
+                recordedDate: new Date("2025-12-03T10:30:00+08:00"), //  out of schedule
+                enrollmentId: 18,
+                status: "late",
+              },
+            ],
+          },
+        });
+
+        expect(op.success).toBe(false);
+
+        assertFail(op.success);
+
+        const errorName: Errors.EnrollmentData.ErrorName =
+          "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+      });
+
+      it("should fail for forbidden (invalid professor) ", async () => {
+        const op = await regService.mutateSessionRecords({
+          values: {
+            classSessionId: ids.session.professor.valid,
+            professorId: ids.professor.invalid,
+            records: [
+              {
+                //  * student id 7
+                recordedDate: new Date("2025-12-03T07:00:00+08:00"),
+                enrollmentId: 100, // invalid enrollment
+                status: "present",
+              },
+              {
+                //  * student id 8
+                recordedDate: new Date("2025-12-04T07:05:00+08:00"), //  out of schedule
+                enrollmentId: 12,
+                status: "present",
+              },
+              {
+                //  * student id 9
+                recordedDate: new Date("2025-12-03T10:30:00+08:00"), //  out of schedule
+                enrollmentId: 18,
+                status: "late",
+              },
+            ],
+          },
+        });
+
+        expect(op.success).toBe(false);
+
+        assertFail(op.success);
+
+        const errorName: Errors.EnrollmentData.ErrorName =
+          "ENROLLMENT_DATA_FORBIDDEN_ERROR";
       });
     });
   });
