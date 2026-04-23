@@ -122,7 +122,7 @@ describe("Student Attendance Routes", () => {
         Schemas.Dto.StudentAttendance.professorView.parse(res.body.result);
       });
 
-      it("should return 404 for class not found", async () => {
+      it("should return 403 for non-existent class", async () => {
         const c = ids.class.prof.notFound;
         const e = ids.enrollment.prof.valid;
         const url = `/enrollments/attendance/records/class/${c}/enrollment/${e}`;
@@ -130,12 +130,12 @@ describe("Student Attendance Routes", () => {
           .get(url)
           .set("Authorization", `Bearer ${tokens.prof}`);
 
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(403);
         expect(res.body).toHaveProperty("success");
         expect(res.body.success).toBe(false);
       });
 
-      it("should return 404 for enrollment not found", async () => {
+      it("should return 403 for non-existent enrollment", async () => {
         const c = ids.class.prof.valid;
         const e = ids.enrollment.prof.notFound;
         const url = `/enrollments/attendance/records/class/${c}/enrollment/${e}`;
@@ -143,7 +143,7 @@ describe("Student Attendance Routes", () => {
           .get(url)
           .set("Authorization", `Bearer ${tokens.prof}`);
 
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(403);
         expect(res.body).toHaveProperty("success");
         expect(res.body.success).toBe(false);
       });

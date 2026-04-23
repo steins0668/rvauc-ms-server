@@ -159,6 +159,12 @@ export namespace AttendanceData {
             fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
+                case "ENROLLMENT_DATA_CLASS_SESSION_NOT_FOUND_ERROR":
+                  return create({
+                    name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
+                    message:
+                      "This professor is not allowed to access this resource.",
+                  });
                 case "ENROLLMENT_DATA_QUERY_ERROR":
                   return create({ ...internalError, cause: err });
               }
@@ -225,6 +231,7 @@ export namespace AttendanceData {
             fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
+                case "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR":
                 case "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR":
                 case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
                   return create({
@@ -273,9 +280,24 @@ export namespace AttendanceData {
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
-        cls = await this.ensureClassForProfessor(args);
+        cls = await this._classQuery.ensureClassWithCourse({
+          where: (c, { and, eq }) =>
+            and(
+              eq(c.id, args.values.classId),
+              eq(c.professorId, args.values.professorId),
+            ),
+          dbOrTx: args.dbOrTx,
+        });
 
-        enrollment = await this.ensureEnrollmentForClass(args);
+        enrollment =
+          await this._enrollmentQuery.ensureEnrollmentsWithStudentGraph({
+            where: (e, { and, eq }) =>
+              and(
+                eq(e.id, args.values.enrollmentId),
+                eq(e.classId, args.values.classId),
+              ),
+            dbOrTx: args.dbOrTx,
+          });
 
         recordsAndSummary =
           await this._attendanceQuery.fetchRecordsAndSummaryWithSessionAndOffering(
@@ -297,6 +319,13 @@ export namespace AttendanceData {
             fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
+                case "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR":
+                case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
+                  return create({
+                    name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
+                    message:
+                      "This professor is not allowed to access this resource.",
+                  });
                 case "ENROLLMENT_DATA_QUERY_ERROR":
                   return create({ ...internalError, cause: err });
               }
@@ -338,51 +367,10 @@ export namespace AttendanceData {
       if (session.class.professorId !== professorId)
         throw new Core.Errors.EnrollmentData.ErrorClass({
           name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
-          message:
-            "This professor is not associated with the specified class session.",
+          message: "This professor is not allowed to access this resource.",
         });
 
       return session;
-    }
-
-    private async ensureClassForProfessor(args: {
-      values: {
-        classId: number;
-        professorId: number;
-      };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const cls = await this._classQuery.ensureClassWithCourse({
-        where: (c, { eq }) => eq(c.id, args.values.classId),
-        dbOrTx: args.dbOrTx,
-      });
-
-      if (cls.professorId !== args.values.professorId)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
-          message: "This professor is not associated with the specified class.",
-        });
-
-      return cls;
-    }
-
-    private async ensureEnrollmentForClass(args: {
-      values: { classId: number; enrollmentId: number };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const enrollment =
-        await this._enrollmentQuery.ensureEnrollmentsWithStudentGraph({
-          where: (e, { eq }) => eq(e.id, args.values.enrollmentId),
-          dbOrTx: args.dbOrTx,
-        });
-
-      if (enrollment.classId !== args.values.classId)
-        throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
-          message: "The specified enrollment was not found.",
-        });
-
-      return enrollment;
     }
   }
 

@@ -150,14 +150,14 @@ describe("Class Attendance Routes", () => {
         expect(res.body.success).toBe(false);
       });
 
-      it("should return 404 for class session not found", async () => {
+      it("should return 403 for non-existent class session", async () => {
         const id = ids.session.professor.notFound;
         const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .get(url)
           .set("Authorization", `Bearer ${tokens.prof}`);
 
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(403);
         expect(res.body).toHaveProperty("success");
         expect(res.body.success).toBe(false);
       });
@@ -203,18 +203,18 @@ describe("Class Attendance Routes", () => {
         Schemas.Dto.ClassAttendance.studentView.parse(res.body.result);
       });
 
-      it("should return 404 for class not found", async () => {
+      it("should return 403 for non-existent class", async () => {
         const id = ids.class.student.notFound;
         const res = await request(app)
           .get(`/enrollments/attendance/records/class/${id}`)
           .set("Authorization", `Bearer ${tokens.student}`);
 
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(403);
         expect(res.body).toHaveProperty("success");
         expect(res.body.success).toBe(false);
       });
 
-      it("should return 403 for class forbidden (non-existent student)", async () => {
+      it("should return 403 for non-existent student", async () => {
         const id = ids.class.student.valid;
         const res = await request(app)
           .get(`/enrollments/attendance/records/class/${id}`)
