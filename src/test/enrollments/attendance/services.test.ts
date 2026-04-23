@@ -520,6 +520,99 @@ describe("Attendance Services", () => {
         expect(parsed.updated.length).toBe(3);
       });
 
+      it("should partially reject records", async () => {
+        const op = await regService.mutateSessionRecords({
+          values: {
+            classSessionId: ids.session.professor.valid,
+            professorId: ids.professor.valid,
+            records: [
+              {
+                //  * student id 7
+                recordedDate: new Date("2025-12-03T07:00:00+08:00"),
+                enrollmentId: 100, // non-existent id
+                status: "present",
+              },
+              {
+                //  * student id 8
+                recordedDate: new Date("2025-12-03T07:05:00+08:00"),
+                enrollmentId: 12,
+                status: "present",
+              },
+              {
+                //  * student id 9
+                recordedDate: new Date("2025-12-03T07:30:00+08:00"),
+                enrollmentId: 18,
+                status: "late",
+              },
+            ],
+          },
+        });
+
+        expect(op.success).toBe(true);
+
+        assertSuccess(op.success);
+
+        const { mutationResult } = Schemas.Dto.ClassAttendance;
+
+        const { updated, rejected } = mutationResult.parse(op.result);
+
+        expect(updated.length).toBe(2);
+        expect(rejected.length).toBe(1);
+
+        const noEnrollment = rejected[0];
+
+        expect(noEnrollment).toBeDefined();
+        expect(noEnrollment?.record.enrollmentId).toBe(100);
+        expect(noEnrollment?.reasons).toContain("NOT_ENROLLED");
+      });
+
+      it("should partially reject records", async () => {
+        const op = await regService.mutateSessionRecords({
+          values: {
+            classSessionId: ids.session.professor.valid,
+            professorId: ids.professor.valid,
+            records: [
+              {
+                //  * student id 7
+                recordedDate: new Date("2025-12-03T07:00:00+08:00"),
+                enrollmentId: 6,
+                status: "present",
+              },
+              {
+                //  * student id 8
+                recordedDate: new Date("2025-12-03T07:05:00+08:00"),
+                enrollmentId: 17, //  invalid enrollment
+                status: "present",
+              },
+              {
+                //  * student id 9
+                recordedDate: new Date("2025-12-03T07:30:00+08:00"),
+                enrollmentId: 18,
+                status: "late",
+              },
+            ],
+          },
+        });
+
+        expect(op.success).toBe(true);
+
+        assertSuccess(op.success);
+
+        const { mutationResult } = Schemas.Dto.ClassAttendance;
+
+        const { updated, rejected } = mutationResult.parse(op.result);
+
+        expect(updated.length).toBe(2);
+
+        expect(rejected.length).toBe(1);
+
+        const invalidEnrollment = rejected[0];
+
+        expect(invalidEnrollment).toBeDefined();
+        expect(invalidEnrollment?.record.enrollmentId).toBe(17);
+        expect(invalidEnrollment?.reasons).toContain("NOT_ENROLLED");
+      });
+
       it("should reject records", async () => {
         const op = await regService.mutateSessionRecords({
           values: {
@@ -557,6 +650,23 @@ describe("Attendance Services", () => {
         const { rejected } = mutationResult.parse(op.result);
 
         expect(rejected.length).toBe(3);
+
+        const notEnrolled = rejected.filter(
+          (r) => r.reasons[0] === "NOT_ENROLLED",
+        )[0];
+
+        expect(notEnrolled?.record.enrollmentId).toBe(100);
+
+        const outOfSchedule = rejected.filter(
+          (r) => r.reasons[0] === "OUT_OF_SCHEDULE",
+        );
+
+        expect(
+          outOfSchedule.find((r) => r.record.enrollmentId === 12),
+        ).toBeDefined();
+        expect(
+          outOfSchedule.find((r) => r.record.enrollmentId === 12),
+        ).toBeDefined();
       });
 
       it("should fail for forbidden (non-existent class session) ", async () => {
