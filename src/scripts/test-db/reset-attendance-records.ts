@@ -34,7 +34,7 @@ export const resetAttendanceRecords = async (tx?: TxContext | undefined) => {
       dbOrTx: tx,
     });
 
-    await tx.run(`PRAGMA foreign_keys ON;`);
+    await tx.run(`PRAGMA foreign_keys = ON;`);
   }, tx);
 };
 
