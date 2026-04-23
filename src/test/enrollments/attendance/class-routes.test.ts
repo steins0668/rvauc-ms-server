@@ -7,8 +7,28 @@ describe("Class Attendance Routes", () => {
   const tokens = {
     prof: "",
     student: "",
+    profInvalid: "",
     studentInvalid: "",
-    professorInvalid: "",
+  };
+
+  const ids = {
+    class: {
+      student: {
+        valid: 6,
+        notFound: 7,
+      },
+    },
+    session: {
+      professor: {
+        valid: 157,
+        invalid: 156,
+        notFound: 1000,
+      },
+      student: {
+        valid: 0,
+        invalid: 0,
+      },
+    },
   };
 
   beforeAll(async () => {
@@ -70,7 +90,7 @@ describe("Class Attendance Routes", () => {
       },
     });
 
-    tokens.professorInvalid = createJwt({
+    tokens.profInvalid = createJwt({
       payloadType: "full",
       tokenType: "access",
       payload: {
@@ -92,7 +112,8 @@ describe("Class Attendance Routes", () => {
   describe("GET session records)", () => {
     describe("as professor", () => {
       it(`should return records for associated session`, async () => {
-        const url = `/enrollments/attendance/records/class/offering/session/157`;
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .get(url)
           .set("Authorization", `Bearer ${tokens.prof}`);
@@ -106,8 +127,8 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should return 403 for unassociated class session", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/156";
+        const id = ids.session.professor.invalid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .get(url)
           .set("Authorization", `Bearer ${tokens.prof}`);
@@ -118,11 +139,11 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should return 403 for invalid professor", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/157";
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .get(url)
-          .set("Authorization", `Bearer ${tokens.professorInvalid}`);
+          .set("Authorization", `Bearer ${tokens.profInvalid}`);
 
         expect(res.status).toBe(403);
         expect(res.body).toHaveProperty("success");
@@ -130,8 +151,8 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should return 404 for class session not found", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/1000";
+        const id = ids.session.professor.notFound;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .get(url)
           .set("Authorization", `Bearer ${tokens.prof}`);
@@ -144,8 +165,8 @@ describe("Class Attendance Routes", () => {
 
     describe("authorization", () => {
       it("should return 401 for missing token.", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/157";
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app).get(url);
 
         expect(res.status).toBe(401);
@@ -154,8 +175,8 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should return 403 for student", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/157";
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .get(url)
           .set("Authorization", `Bearer ${tokens.student}`);
@@ -170,8 +191,9 @@ describe("Class Attendance Routes", () => {
   describe("GET class records", () => {
     describe("as student", () => {
       it("should return records", async () => {
+        const id = ids.class.student.valid;
         const res = await request(app)
-          .get("/enrollments/attendance/records/class/6")
+          .get(`/enrollments/attendance/records/class/${id}`)
           .set("Authorization", `Bearer ${tokens.student}`);
 
         expect(res.status).toBe(200);
@@ -182,8 +204,9 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should return 404 for class not found", async () => {
+        const id = ids.class.student.notFound;
         const res = await request(app)
-          .get("/enrollments/attendance/records/class/7")
+          .get(`/enrollments/attendance/records/class/${id}`)
           .set("Authorization", `Bearer ${tokens.student}`);
 
         expect(res.status).toBe(404);
@@ -192,8 +215,9 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should return 404 for student not found", async () => {
+        const id = ids.class.student.valid;
         const res = await request(app)
-          .get("/enrollments/attendance/records/class/6")
+          .get(`/enrollments/attendance/records/class/${id}`)
           .set("Authorization", `Bearer ${tokens.studentInvalid}`);
 
         expect(res.status).toBe(404);
@@ -204,8 +228,9 @@ describe("Class Attendance Routes", () => {
 
     describe("authorization", () => {
       it("should return 401 for missing token", async () => {
+        const id = ids.class.student.valid;
         const res = await request(app).get(
-          "/enrollments/attendance/records/class/6",
+          `/enrollments/attendance/records/class/${id}`,
         );
 
         expect(res.status).toBe(401);
@@ -214,8 +239,9 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should return 403 for professor", async () => {
+        const id = ids.class.student.valid;
         const res = await request(app)
-          .get("/enrollments/attendance/records/class/6")
+          .get(`/enrollments/attendance/records/class/${id}`)
           .set("Authorization", `Bearer ${tokens.prof}`);
 
         expect(res.status).toBe(403);
@@ -228,8 +254,8 @@ describe("Class Attendance Routes", () => {
   describe("POST session records", () => {
     describe("as professor", () => {
       it("should create records", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/157";
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .post(url)
           .set("Authorization", `Bearer ${tokens.prof}`)
@@ -274,8 +300,8 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should partially reject invalid enrollment id", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/157";
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .post(url)
           .set("Authorization", `Bearer ${tokens.prof}`)
@@ -324,8 +350,8 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should partially reject out of schedule date", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/157";
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .post(url)
           .set("Authorization", `Bearer ${tokens.prof}`)
@@ -374,8 +400,8 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should return 404 for class session not found", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/1000";
+        const id = ids.session.professor.notFound;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .post(url)
           .set("Authorization", `Bearer ${tokens.prof}`)
@@ -407,12 +433,46 @@ describe("Class Attendance Routes", () => {
         expect(res.body.success).toBe(false);
       });
 
-      it("should return 403 for invalid professor", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/157";
+      it("should return 403 for unassociated class session", async () => {
+        const id = ids.session.professor.invalid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .post(url)
-          .set("Authorization", `Bearer ${tokens.professorInvalid}`)
+          .set("Authorization", `Bearer ${tokens.prof}`)
+          .send({
+            records: [
+              {
+                //  * student id 7
+                recordedDate: "2025-12-03T07:40:00+08:00",
+                enrollmentId: 6,
+                status: "late",
+              },
+              {
+                //  * student id 8
+                recordedDate: "2025-12-03T07:35:00+08:00",
+                enrollmentId: 12,
+                status: "late",
+              },
+              {
+                //  * student id 9
+                recordedDate: "2025-12-03T07:00:00+08:00",
+                enrollmentId: 18,
+                status: "absent",
+              },
+            ],
+          });
+
+        expect(res.status).toBe(403);
+        expect(res.body).toHaveProperty("success");
+        expect(res.body.success).toBe(false);
+      });
+
+      it("should return 403 for invalid professor", async () => {
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
+        const res = await request(app)
+          .post(url)
+          .set("Authorization", `Bearer ${tokens.profInvalid}`)
           .send({
             records: [
               {
@@ -444,8 +504,8 @@ describe("Class Attendance Routes", () => {
 
     describe("authorization", () => {
       it("should return 401 for missing token", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/157";
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .post(url)
           .send({
@@ -477,8 +537,8 @@ describe("Class Attendance Routes", () => {
       });
 
       it("should return 403 for student", async () => {
-        const url =
-          "/enrollments/attendance/records/class/offering/session/157";
+        const id = ids.session.professor.valid;
+        const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
           .post(url)
           .set("Authorization", `Bearer ${tokens.student}`)
