@@ -253,6 +253,7 @@ export namespace AttendanceData {
         values: {
           classId: number;
           enrollmentId: number;
+          professorId: number;
         };
       },
     ) {
@@ -265,15 +266,10 @@ export namespace AttendanceData {
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
-        cls = await this._classQuery.ensureClassWithCourse({
-          where: (c, { eq }) => eq(c.id, args.values.classId),
-          dbOrTx: args.dbOrTx,
-        });
-        enrollment =
-          await this._enrollmentQuery.ensureEnrollmentsWithStudentGraph({
-            where: (e, { eq }) => eq(e.id, args.values.enrollmentId),
-            dbOrTx: args.dbOrTx,
-          });
+        cls = await this.ensureClassForProfessor(args);
+
+        enrollment = await this.ensureEnrollmentForClass(args);
+
         recordsAndSummary =
           await this._attendanceQuery.fetchRecordsAndSummaryWithSessionAndOffering(
             {
@@ -335,10 +331,51 @@ export namespace AttendanceData {
       if (session.class.professorId !== professorId)
         throw new Core.Errors.EnrollmentData.ErrorClass({
           name: "ENROLLMENT_DATA_CLASS_SESSION_FORBIDDEN_ERROR",
-          message: "This professor is not associated with the specified class.",
+          message:
+            "This professor is not associated with the specified class session.",
         });
 
       return session;
+    }
+
+    private async ensureClassForProfessor(args: {
+      values: {
+        classId: number;
+        professorId: number;
+      };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const cls = await this._classQuery.ensureClassWithCourse({
+        where: (c, { eq }) => eq(c.id, args.values.classId),
+        dbOrTx: args.dbOrTx,
+      });
+
+      if (cls.professorId !== args.values.professorId)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_CLASS_FORBIDDEN_ERROR",
+          message: "This professor is not associated with the specified class.",
+        });
+
+      return cls;
+    }
+
+    private async ensureEnrollmentForClass(args: {
+      values: { classId: number; enrollmentId: number };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      const enrollment =
+        await this._enrollmentQuery.ensureEnrollmentsWithStudentGraph({
+          where: (e, { eq }) => eq(e.id, args.values.enrollmentId),
+          dbOrTx: args.dbOrTx,
+        });
+
+      if (enrollment.classId !== args.values.classId)
+        throw new Core.Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
+          message: "The specified enrollment was not found.",
+        });
+
+      return enrollment;
     }
   }
 

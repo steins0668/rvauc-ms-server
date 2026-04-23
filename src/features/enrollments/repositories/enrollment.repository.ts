@@ -88,7 +88,7 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
       orderBy,
       limit: RepositoryUtil.resolveLimit(args.constraints),
       offset: RepositoryUtil.resolveOffset(args.constraints),
-      columns: { id: true, status: true },
+      columns: { id: true, status: true, classId: true },
       with: {
         student: {
           columns: { studentNumber: true, yearLevel: true, block: true },
