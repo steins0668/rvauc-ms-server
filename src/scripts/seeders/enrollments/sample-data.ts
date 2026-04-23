@@ -1,4 +1,5 @@
 import { Enrollments } from "../../../features/enrollments";
+import { Types } from "../../../features/enrollments/types";
 import { Clock, TimeUtil } from "../../../utils";
 
 export namespace SampleData {
@@ -109,7 +110,7 @@ export namespace SampleData {
     { id: 8, name: "309", building: "Athletes' Village" },
   ];
 
-  export const classOfferings = [
+  export const classOfferings: Types.ViewModels.ClassOffering[] = [
     {
       id: 1,
       classId: 1,
@@ -144,6 +145,7 @@ export namespace SampleData {
       id: 4,
       classId: 4,
       weekDay: "tue",
+      roomId: null,
       startTime: 32400,
       endTime: 39600,
       startTimeText: "9:00 AM",
@@ -153,6 +155,7 @@ export namespace SampleData {
       id: 5,
       classId: 5,
       weekDay: "tue",
+      roomId: null,
       startTime: 46800,
       endTime: 54000,
       startTimeText: "1:00 PM",
@@ -162,6 +165,7 @@ export namespace SampleData {
       id: 6,
       classId: 2,
       weekDay: "tue",
+      roomId: null,
       startTime: 54000,
       endTime: 61200,
       startTimeText: "3:00 PM",
@@ -231,6 +235,7 @@ export namespace SampleData {
       id: 13,
       classId: 6,
       weekDay: "thu",
+      roomId: null,
       startTime: 36000,
       endTime: 43200,
       startTimeText: "10:00 AM",
@@ -240,6 +245,7 @@ export namespace SampleData {
       id: 14,
       classId: 1,
       weekDay: "thu",
+      roomId: null,
       startTime: 46800,
       endTime: 54000,
       startTimeText: "1:00 PM",
@@ -283,7 +289,7 @@ export namespace SampleData {
     endDate: string;
   }) => {
     const { classOfferings, startDate, endDate } = args;
-    const sessions: Enrollments.Types.InsertModels.ClassSession[] = [];
+    const sessions: Enrollments.Types.ViewModels.ClassSession[] = [];
     let id = 1;
 
     const current = new Date(startDate);
@@ -312,6 +318,7 @@ export namespace SampleData {
           endTimeMs,
           createdAt: nowISO,
           updatedAt: nowISO,
+          status: Enrollments.Core.Data.enrollmentStatus.enrolled,
         });
       }
 
