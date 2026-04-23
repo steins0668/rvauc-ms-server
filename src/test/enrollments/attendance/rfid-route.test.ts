@@ -7,7 +7,7 @@ import { Schemas as CoreSchemas } from "../../../features/enrollments/core/schem
 describe("RFID Scan Route", () => {
   const minimalTokens = {
     student: "",
-    studentInvalid: "",
+    studentNonExistent: "",
   };
 
   const tokens = {
@@ -36,7 +36,7 @@ describe("RFID Scan Route", () => {
       },
     });
 
-    minimalTokens.studentInvalid = createJwt({
+    minimalTokens.studentNonExistent = createJwt({
       tokenType: "access",
       payloadType: "minimal",
       payload: {
@@ -163,10 +163,10 @@ describe("RFID Scan Route", () => {
         expect(res.body.success).toBe(false);
       });
 
-      it(`should return 404 for invalid student`, async () => {
+      it(`should return 404 for non-existent student`, async () => {
         const res = await request(app)
           .post("/enrollments/attendance/new-rfid-scan")
-          .set("Authorization", `Bearer ${minimalTokens.studentInvalid}`)
+          .set("Authorization", `Bearer ${minimalTokens.studentNonExistent}`)
           .send({
             date: "2025-12-01T09:00:00+08:00",
             room: "406",
