@@ -77,7 +77,7 @@ export async function handleGetSchedule(req: Request, res: Response) {
 
   return res.status(200).json({
     success: true,
-    result: { schedule: queried.result },
+    result: queried.result,
     message: "Success retrieving schedule.",
   });
 }
