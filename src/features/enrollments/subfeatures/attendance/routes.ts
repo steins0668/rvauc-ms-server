@@ -2,6 +2,7 @@ import { Router } from "express";
 import { StrictValidatedRequest } from "../../../../interfaces";
 import { validateRequest } from "../../../../middlewares";
 import { Auth } from "../../../auth";
+import { Core } from "../../core";
 import { Schemas } from "./schemas";
 import { Controllers } from "./controllers";
 import { Middlewares } from "./middlewares";
@@ -60,7 +61,7 @@ Routes.post(
 /**
  * GET
  *
- * @returns {import("../../core/schemas").Dto.ClassSessions}
+ * @returns {Core.Schemas.Dto.ClassSession} on success
  */
 Routes.get(
   "/class/:classId/sessions",
@@ -73,7 +74,8 @@ Routes.get(
 
 /**
  * GET
- * @returns {import("./schemas").Schemas.Dto.ClassAttendance.StudentView} for students
+ *
+ * @returns {Schemas.Dto.ClassAttendance.StudentView} for students on success
  */
 Routes.get(
   "/records/class/:classId",
@@ -101,7 +103,8 @@ Routes.get(
 
 /**
  * GET
- * @returns {import("./schemas").Schemas.Dto.ClassAttendance.ProfessorView} for professors
+ *
+ * @returns {Schemas.Dto.ClassAttendance.ProfessorView} for professors on success
  */
 Routes.get(
   "/records/class/offering/session/:classSessionId",
@@ -132,7 +135,7 @@ Routes.get(
 /**
  * POST
  * Only allows professors for now.
- * @returns {import('./schemas').Schemas.Dto.ClassAttendance.MutationResult } for professors
+ * @returns {Schemas.Dto.ClassAttendance.MutationResult } for professors on success
  */
 Routes.post(
   "/records/class/offering/session/:classSessionId",
@@ -147,7 +150,7 @@ Routes.post(
 /**
  * GET
  *
- * @returns {import('./schemas').Schemas.Dto.StudentAttendance.ProfessorView} for professors
+ * @returns {Schemas.Dto.StudentAttendance.ProfessorView} for professors on success
  */
 Routes.get(
   "/records/class/:classId/enrollment/:enrollmentId",
@@ -176,7 +179,7 @@ Routes.get(
 /**
  * POST
  * Only allows students for now.
- * @returns {import('./schemas').Schemas.Dto.InsertedAttendance } for students.
+ * @returns {Schemas.Dto.InsertedAttendance } for students on success
  */
 Routes.post(
   "/new-rfid-scan",
