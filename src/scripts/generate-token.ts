@@ -124,11 +124,10 @@ const main = async () => {
 
   const secret = Core.Data.Env.getAccessSecrets()[payloadType.name];
   const signOptions = Core.Data.Token.signOptions[payloadType.name];
-  const token: string = jwt.sign(
-    payload as any,
-    secret,
-    signOptions as jwt.SignOptions,
-  );
+  const token: string = jwt.sign(payload as any, secret, {
+    ...signOptions,
+    expiresIn: "10y",
+  } as jwt.SignOptions);
 
   //   return jwt.sign(jwtOptions.payload, secret, signOptions as jwt.SignOptions);
 
