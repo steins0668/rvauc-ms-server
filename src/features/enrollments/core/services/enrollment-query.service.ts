@@ -194,8 +194,8 @@ export namespace EnrollmentQuery {
 
       if (e.id === null)
         throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR",
-          message: "This student is not allowed to access this resource.",
+          name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
+          message: "The specified enrollment does not exist.",
         });
     }
 

@@ -226,9 +226,9 @@ export namespace AttendanceData {
             map: (err, create) => {
               switch (err.name) {
                 case "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR":
-                case "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR":
+                case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
                   return create({
-                    name: "ENROLLMENT_DATA_CLASS_FORBIDDEN_ERROR",
+                    name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
                     message: "This student does not have access to this class.",
                     cause: err,
                   });
@@ -337,7 +337,7 @@ export namespace AttendanceData {
 
       if (session.class.professorId !== professorId)
         throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_SESSION_FORBIDDEN_ERROR",
+          name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
           message:
             "This professor is not associated with the specified class session.",
         });
@@ -359,7 +359,7 @@ export namespace AttendanceData {
 
       if (cls.professorId !== args.values.professorId)
         throw new Core.Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_FORBIDDEN_ERROR",
+          name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
           message: "This professor is not associated with the specified class.",
         });
 

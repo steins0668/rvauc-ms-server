@@ -323,22 +323,23 @@ export namespace AttendanceRegistration {
         throw Core.Errors.EnrollmentData.translateError({
           fallback: { ...internalError, err },
           map: (err, create) => {
+            const inconsistentStateErr = (
+              field: "student" | "enrollment",
+              err: unknown,
+            ) =>
+              create({
+                name: "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR",
+                message: `A class runtime was resolved for the provided student id, but the ${field} could not be found.`,
+                cause: err,
+              });
+
             switch (err.name) {
-              case "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR":
-                return create({
-                  name: "ENROLLMENT_DATA_CLASS_FORBIDDEN_ERROR",
-                  message: "This student does not have access to this class.",
-                  cause: err,
-                });
               case "ENROLLMENT_DATA_QUERY_ERROR":
                 return create({ ...internalError, cause: err });
-              case "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR":
-                return create({
-                  name: "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR",
-                  message:
-                    "A class runtime was resolved for the provided student, but the enrollment could not be found.",
-                  cause: err,
-                });
+              case "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR":
+                return inconsistentStateErr("student", err);
+              case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
+                return inconsistentStateErr("enrollment", err);
             }
           },
         });

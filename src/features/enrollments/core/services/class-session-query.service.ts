@@ -158,7 +158,7 @@ export namespace ClassSessionQuery {
 
       if (result.class.professorId !== args.values.professorId)
         throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_CLASS_SESSION_FORBIDDEN_ERROR",
+          name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
           message:
             "This professor is not associated with the specified class session.",
         });
