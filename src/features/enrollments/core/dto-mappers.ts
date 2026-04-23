@@ -14,6 +14,8 @@ export namespace DtoMappers {
         const { class: cls, rooms: r } = co;
         const { course: c, professor: p } = co.class;
 
+        const room = r ? r.building + r.name : "N/A";
+
         return {
           id: cls.id,
           classNumber: cls.classNumber,
@@ -21,7 +23,7 @@ export namespace DtoMappers {
           offering: {
             id: co.id,
             weekDay: co.weekDay,
-            room: r?.name ?? "N/A",
+            room,
             startTimeText: co.startTimeText,
             endTimeText: co.endTimeText,
             startTime: co.startTime,

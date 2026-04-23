@@ -146,7 +146,7 @@ export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
             },
           },
         },
-        rooms: { columns: { name: true } },
+        rooms: { columns: { name: true, building: true } },
       },
     });
   }
