@@ -5,20 +5,7 @@ import { Seeders as Enrollments } from "./enrollments/seeders";
 import { Seeders as UniformCompliance } from "./uniform-compliance/seeders";
 import { Seeders as Violations } from "./violations/seeders";
 
-export const seedDatabase = async (
-  args?:
-    | Partial<{
-        include: Partial<{
-          offerings: boolean;
-          enrollments: boolean;
-          sessions: boolean;
-          attendance: boolean;
-          uniformCompliance: boolean;
-        }>;
-        tx: TxContext;
-      }>
-    | undefined,
-) => {
+export const seedDatabase = async (tx?: TxContext | undefined) => {
   await execTransaction(async (tx) => {
     //  miscellaneous (no dependencies)
     await Enrollments.seedTerms(tx);
@@ -38,21 +25,7 @@ export const seedDatabase = async (
     await Enrollments.seedCourses(tx);
     const classes = await Enrollments.seedClasses(tx); //  * dependent on auth-professors
 
-    const { include } = args ?? {
-      include: {
-        attendance: true,
-        enrollments: true,
-        offerings: true,
-        sessions: true,
-        uniformCompliance: true,
-      },
-    };
-
-    if (!include?.offerings) return;
-
     const classOfferings = await Enrollments.seedClassOfferings(tx);
-
-    if (!include.enrollments) return;
 
     const enrollments = await Enrollments.seedEnrollments(tx); //  * dependent on auth-students
 
@@ -66,8 +39,6 @@ export const seedDatabase = async (
       classOfferings,
       dbOrTx: tx,
     });
-
-    if (!include?.attendance) return;
 
     const attendanceDateRange = {
       startDate: "2025-09-30",
@@ -83,15 +54,13 @@ export const seedDatabase = async (
       dbOrTx: tx,
     });
 
-    if (!include?.uniformCompliance) return;
-
     await UniformCompliance.seedRecords({
       ...attendanceDateRange,
       offerings: classOfferings,
       enrollments,
       dbOrTx: tx,
     });
-  }, args?.tx);
+  }, tx);
 };
 
 seedDatabase();
