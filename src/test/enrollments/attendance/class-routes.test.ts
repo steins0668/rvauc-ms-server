@@ -214,13 +214,13 @@ describe("Class Attendance Routes", () => {
         expect(res.body.success).toBe(false);
       });
 
-      it("should return 404 for student not found", async () => {
+      it("should return 403 for class forbidden (invalid student)", async () => {
         const id = ids.class.student.valid;
         const res = await request(app)
           .get(`/enrollments/attendance/records/class/${id}`)
           .set("Authorization", `Bearer ${tokens.studentInvalid}`);
 
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(403);
         expect(res.body).toHaveProperty("success");
         expect(res.body.success).toBe(false);
       });
