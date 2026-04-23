@@ -7,7 +7,8 @@ describe("Class Attendance Test Suite", () => {
   const tokens = {
     prof: "",
     student: "",
-    studentInvalidId: "",
+    studentInvalid: "",
+    professorInvalid: "",
   };
 
   beforeAll(async () => {
@@ -49,7 +50,7 @@ describe("Class Attendance Test Suite", () => {
       },
     });
 
-    tokens.studentInvalidId = createJwt({
+    tokens.studentInvalid = createJwt({
       payloadType: "full",
       tokenType: "access",
       payload: {
@@ -66,6 +67,24 @@ describe("Class Attendance Test Suite", () => {
         studentNumber: "101-0001",
         yearLevel: 3,
         block: "A",
+      },
+    });
+
+    tokens.professorInvalid = createJwt({
+      payloadType: "full",
+      tokenType: "access",
+      payload: {
+        id: 1000,
+        email: "bea.belarmino@lu.edu.ph",
+        username: "BeaBela6",
+        surname: "Belarmino",
+        firstName: "Bea",
+        gender: "female",
+        contactNumber: "09171234506",
+        middleName: "",
+        role: "professor",
+        college: "College of Computing Science",
+        facultyRank: "professor",
       },
     });
   });
@@ -89,6 +108,17 @@ describe("Class Attendance Test Suite", () => {
     const res = await request(app)
       .get(url)
       .set("Authorization", `Bearer ${tokens.prof}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
+  it("GET session records (professor view) - forbidden | unassociated class session | invalid professor", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/157";
+    const res = await request(app)
+      .get(url)
+      .set("Authorization", `Bearer ${tokens.professorInvalid}`);
 
     expect(res.status).toBe(403);
     expect(res.body).toHaveProperty("success");
@@ -142,6 +172,16 @@ describe("Class Attendance Test Suite", () => {
     const res = await request(app)
       .get("/enrollments/attendance/records/class/7")
       .set("Authorization", `Bearer ${tokens.student}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
+  it("GET class records (student view) - student not found", async () => {
+    const res = await request(app)
+      .get("/enrollments/attendance/records/class/6")
+      .set("Authorization", `Bearer ${tokens.studentInvalid}`);
 
     expect(res.status).toBe(404);
     expect(res.body).toHaveProperty("success");
