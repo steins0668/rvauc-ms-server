@@ -1,97 +1,73 @@
-import { randomUUID } from "crypto";
 import request from "supertest";
 import { app } from "../../../app";
-import { Core as AuthCore } from "../../../features/auth/core";
-import { SessionManager } from "../../../features/auth/sub-features/session-management/services/session-manager";
-import { createTokens } from "../../../features/auth/core/utils/create-tokens.util";
+import { createJwt } from "../../../features/auth/core/utils/create-tokens.util/create-jwt.util";
 import { Schemas } from "../../../features/enrollments/subfeatures/attendance/schemas";
 
 describe("Class Attendance Test Suite", () => {
   const tokens = {
     prof: "",
     student: "",
+    studentInvalidId: "",
   };
 
   beforeAll(async () => {
-    const sessionManager = await SessionManager.createService();
-
-    const prof = {
-      id: 6,
-      roleId: 1,
-      email: "bea.belarmino@lu.edu.ph",
-      username: "BeaBela6",
-      surname: "Belarmino",
-      firstName: "Bea",
-      gender: "female",
-      contactNumber: "09171234506",
-    };
-
-    const payloadProf: AuthCore.Schemas.Payloads.AccessToken.Professor = {
-      ...prof,
-      middleName: "",
-      role: "professor",
-      college: "College of Computing Science",
-      facultyRank: "professor",
-    };
-
-    const sessionNumberProf = sessionManager.generateSessionNumber(prof.id);
-
-    const tokenProf = createTokens({
-      type: "full",
-      access: payloadProf,
-      refresh: {
-        sessionNumber: sessionNumberProf,
-        userId: prof.id,
-        jti: randomUUID(),
+    tokens.prof = createJwt({
+      payloadType: "full",
+      tokenType: "access",
+      payload: {
+        id: 6,
+        email: "bea.belarmino@lu.edu.ph",
+        username: "BeaBela6",
+        surname: "Belarmino",
+        firstName: "Bea",
+        gender: "female",
+        contactNumber: "09171234506",
+        middleName: "",
+        role: "professor",
+        college: "College of Computing Science",
+        facultyRank: "professor",
       },
     });
 
-    expect(tokenProf.success).toBe(true);
-
-    if (!tokenProf.success) throw new Error("Expected token creation success.");
-
-    tokens.prof = tokenProf.result.accessToken;
-
-    const student = {
-      id: 7,
-      email: "lee.agaton@gmail.com",
-      username: "LeeA7",
-      surname: "Agaton",
-      firstName: "Lee Archelaus",
-      gender: "male",
-      contactNumber: "09171234507",
-    };
-
-    const payloadStudent: AuthCore.Schemas.Payloads.AccessToken.Student = {
-      ...student,
-      middleName: "",
-      role: "student",
-      department: "Department Of Computer Science",
-      studentNumber: "101-0001",
-      yearLevel: 3,
-      block: "A",
-    };
-
-    const sessionNumberStudent = sessionManager.generateSessionNumber(
-      student.id,
-    );
-
-    const tokentStudent = createTokens({
-      type: "full",
-      access: payloadStudent,
-      refresh: {
-        sessionNumber: sessionNumberStudent,
-        userId: student.id,
-        jti: randomUUID(),
+    tokens.student = createJwt({
+      payloadType: "full",
+      tokenType: "access",
+      payload: {
+        id: 7,
+        email: "lee.agaton@gmail.com",
+        username: "LeeA7",
+        surname: "Agaton",
+        firstName: "Lee Archelaus",
+        gender: "male",
+        contactNumber: "09171234507",
+        middleName: "",
+        role: "student",
+        department: "Department Of Computer Science",
+        studentNumber: "101-0001",
+        yearLevel: 3,
+        block: "A",
       },
     });
 
-    expect(tokentStudent.success).toBe(true);
-
-    if (!tokentStudent.success)
-      throw new Error("Expected token creation success.");
-
-    tokens.student = tokentStudent.result.accessToken;
+    tokens.studentInvalidId = createJwt({
+      payloadType: "full",
+      tokenType: "access",
+      payload: {
+        id: 999,
+        email: "lee.agaton@gmail.com",
+        username: "LeeA7",
+        surname: "Agaton",
+        firstName: "Lee Archelaus",
+        gender: "male",
+        contactNumber: "09171234507",
+        middleName: "",
+        role: "student",
+        department: "Department Of Computer Science",
+        studentNumber: "101-0001",
+        yearLevel: 3,
+        block: "A",
+      },
+    });
   });
 
   it(`GET session records (professor view) - success`, async () => {
