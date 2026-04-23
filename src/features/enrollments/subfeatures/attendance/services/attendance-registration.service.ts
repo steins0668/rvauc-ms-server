@@ -74,11 +74,12 @@ export namespace AttendanceRegistration {
     async mutateSessionRecords(args: {
       values: {
         classSessionId: number;
-        professorId?: number | undefined;
+        professorId: number;
       } & Schemas.RequestBody.RecordSubmission;
       tx?: TxContext | undefined;
     }) {
       const { values } = args;
+      const { classSessionId, professorId } = values;
 
       //  * remove duplicate records
       const uniqueRecords = new Map<number, (typeof values.records)[number]>();
@@ -89,14 +90,15 @@ export namespace AttendanceRegistration {
 
       const txPromise = execTransaction(async (tx) => {
         //  * fetch session details
-        const session = await this._classSessionQuery.ensureMinimalShape({
-          where: (cs, { eq }) => eq(cs.id, values.classSessionId),
-          dbOrTx: tx,
-        });
+        const { class: cls, session } =
+          await this._classSessionQuery.ensureValidSessionForProfessor({
+            values: { id: classSessionId, professorId },
+            dbOrTx: tx,
+          });
 
         const enrolleeIds = await this._enrollmentQuery
           .getEnrolledIdsForClass({
-            classId: session.classId,
+            classId: cls.id,
             tx,
           })
           .then((r) => new Set(r.map((r) => r.id)));
@@ -115,7 +117,7 @@ export namespace AttendanceRegistration {
           ? await this._attendanceCommand.upsertStatusAndRecordDateTime({
               tx,
               values: {
-                classId: session.classId,
+                classId: cls.id,
                 classSessionId: session.id,
                 datePh: session.datePh,
                 createdAt: createdOrUpdatedAt,

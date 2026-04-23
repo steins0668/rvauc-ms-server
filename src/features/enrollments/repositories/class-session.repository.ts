@@ -180,6 +180,37 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     });
   }
 
+  async getWithClassForValidation(args: {
+    values: { id: number };
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { id } = args.values;
+    const context = args.dbOrTx ?? this._dbContext;
+
+    const { classes: c, classSessions: cs } = Schema;
+    const { eq } = RepositoryUtil.filters;
+
+    return await context
+      .select({
+        class: {
+          id: c.id,
+          professorId: c.professorId,
+        },
+        session: {
+          id: cs.id,
+          status: cs.status,
+          datePh: cs.datePh,
+          startTimeMs: cs.startTimeMs,
+          endTimeMs: cs.endTimeMs,
+        },
+      })
+      .from(cs)
+      .innerJoin(c, eq(c.id, cs.classId))
+      .where(eq(cs.id, id))
+      .limit(1)
+      .then((r) => r[0]);
+  }
+
   async getMinimalShape(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:

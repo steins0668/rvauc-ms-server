@@ -140,6 +140,34 @@ export namespace ClassSessionQuery {
 
     /**
      * @description
+     * Retrieves a class session with minimal information for operations validation
+     */
+    async ensureValidSessionForProfessor(
+      args: Parameters<
+        Repositories.ClassSession["getWithClassForValidation"]
+      >[0] & { values: { professorId: number } },
+    ) {
+      let result;
+      try {
+        result = await this._classSessionRepo.getWithClassForValidation(args);
+      } catch (err) {
+        throw Service.normalizeQueryError(err);
+      }
+
+      if (!result) throw Service.sessionNotFoundError();
+
+      if (result.class.professorId !== args.values.professorId)
+        throw new Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_CLASS_SESSION_FORBIDDEN_ERROR",
+          message:
+            "This professor is not associated with the specified class session.",
+        });
+
+      return result;
+    }
+
+    /**
+     * @description
      * Retrieves a class session with minimal shape.
      * Throws if not found.
      */
