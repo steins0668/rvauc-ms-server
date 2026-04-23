@@ -85,9 +85,6 @@ describe("RFID Scan Route", () => {
             room: "406",
           });
 
-        console.log(`Status: ${res.status}`);
-        console.debug(JSON.stringify(res.body, null, 2));
-
         expect(res.status).toBe(201);
         expect(res.body).toHaveProperty("success");
         expect(res.body.success).toBe(true);
@@ -106,9 +103,6 @@ describe("RFID Scan Route", () => {
             date: "2025-12-01T09:00:00+08:00",
             room: "406",
           });
-
-        console.log(`Status: ${res.status}`);
-        console.debug(JSON.stringify(res.body, null, 2));
 
         expect(res.status).toBe(200);
         expect(res.body).toHaveProperty("success");
@@ -130,9 +124,6 @@ describe("RFID Scan Route", () => {
             room: "406",
           });
 
-        console.log(`Status: ${res.status}`);
-        console.debug(JSON.stringify(res.body, null, 2));
-
         expect(res.status).toBe(401);
         expect(res.body).toHaveProperty("success");
         expect(res.body.success).toBe(false);
@@ -147,9 +138,6 @@ describe("RFID Scan Route", () => {
             room: "406",
           });
 
-        console.log(`Status: ${res.status}`);
-        console.debug(JSON.stringify(res.body, null, 2));
-
         expect(res.status).toBe(401);
         expect(res.body).toHaveProperty("success");
         expect(res.body.success).toBe(false);
@@ -163,9 +151,6 @@ describe("RFID Scan Route", () => {
             date: "2025-12-01T09:00:00+08:00",
             room: "406",
           });
-
-        console.log(`Status: ${res.status}`);
-        console.debug(JSON.stringify(res.body, null, 2));
 
         expect(res.status).toBe(401);
         expect(res.body).toHaveProperty("success");
