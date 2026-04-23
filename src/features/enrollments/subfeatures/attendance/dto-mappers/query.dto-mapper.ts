@@ -86,6 +86,7 @@ export namespace Query {
     recordsAndSummary: Awaited<
       ReturnType<Services.AttendanceQuery.Service["fetchRecordsAndSummary"]>
     >,
+    sessionCount: number,
   ) {
     const { records, summary } = recordsAndSummary;
 
@@ -100,7 +101,7 @@ export namespace Query {
       }),
       summary: {
         ...summary,
-        missingRecords: 0, // ! temporary until class session tracking is implemented
+        missingRecords: sessionCount - summary.totalRecords, // ! temporary until class session tracking is implemented
       },
     };
 

@@ -205,6 +205,20 @@ export namespace ClassSessionQuery {
       }
     }
 
+    /**
+     * @description
+     * Counts class sessions that match a specified class id and date.
+     */
+    async countForClassIdAndDate(
+      args: Parameters<Repositories.ClassSession["countForClassIdAndDate"]>[0],
+    ) {
+      try {
+        return await this._classSessionRepo.countForClassIdAndDate(args);
+      } catch (err) {
+        throw Service.normalizeQueryError(err);
+      }
+    }
+
     private static sessionNotFoundError(msg?: string) {
       const message = msg ?? "The specified class session was not found.";
 

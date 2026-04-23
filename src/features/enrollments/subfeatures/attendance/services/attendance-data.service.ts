@@ -1,6 +1,6 @@
 import { createContext, DbOrTx } from "../../../../../db/create-context";
 import { Schema } from "../../../../../models";
-import { RepositoryUtil, ResultBuilder } from "../../../../../utils";
+import { Clock, RepositoryUtil, ResultBuilder } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Repositories as CoreRepositories } from "../../../repositories";
@@ -203,12 +203,21 @@ export namespace AttendanceData {
       const { classId } = args.values;
 
       let enrollment;
+      let sessionCount: number;
       let recordsAndSummary: Awaited<
         ReturnType<AttendanceQuery.Service["fetchRecordsAndSummary"]>
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
         enrollment = await this._enrollmentQuery.ensureForClassAndStudent(args);
+
+        sessionCount = await this._classSessionQuery.countForClassIdAndDate({
+          values: {
+            classId,
+            startTimeMs: Clock.now(new Date()).getTime(),
+          },
+          dbOrTx: args.dbOrTx,
+        });
 
         recordsAndSummary = await this._attendanceQuery.fetchRecordsAndSummary({
           values: {
@@ -248,8 +257,10 @@ export namespace AttendanceData {
       }
 
       try {
-        const dto =
-          DtoMappers.Query.classAttendanceStudentView(recordsAndSummary);
+        const dto = DtoMappers.Query.classAttendanceStudentView(
+          recordsAndSummary,
+          sessionCount,
+        );
         return ResultBuilder.success(dto);
       } catch (err) {
         return ResultBuilder.fail(

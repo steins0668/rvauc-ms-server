@@ -23,6 +23,22 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     });
   }
 
+  async countForClassIdAndDate(args: {
+    values: { classId: number; startTimeMs: number };
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const context = args.dbOrTx ?? this._dbContext;
+    const { classId, startTimeMs } = args.values;
+
+    const cs = classSessions;
+    const { and, eq, lte } = RepositoryUtil.filters;
+
+    return await context.$count(
+      cs,
+      and(eq(cs.classId, classId), lte(cs.startTimeMs, startTimeMs)),
+    );
+  }
+
   async getOfferingActiveSession(args: {
     values: { classOfferingId: number; date: Date };
     mode: "now" | "now-or-next";
