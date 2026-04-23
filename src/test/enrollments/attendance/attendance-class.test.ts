@@ -381,6 +381,39 @@ describe("Class Attendance Test Suite", () => {
     expect(res.body.success).toBe(false);
   });
 
+  it("POST session records (professor) - forbidden | invalid professor", async () => {
+    const url = "/enrollments/attendance/records/class/offering/session/157";
+    const res = await request(app)
+      .post(url)
+      .set("Authorization", `Bearer ${tokens.professorInvalid}`)
+      .send({
+        records: [
+          {
+            //  * student id 7
+            recordedDate: "2025-12-03T07:40:00+08:00",
+            enrollmentId: 6,
+            status: "late",
+          },
+          {
+            //  * student id 8
+            recordedDate: "2025-12-03T07:35:00+08:00",
+            enrollmentId: 12,
+            status: "late",
+          },
+          {
+            //  * student id 9
+            recordedDate: "2025-12-03T07:00:00+08:00",
+            enrollmentId: 18,
+            status: "absent",
+          },
+        ],
+      });
+
+    expect(res.status).toBe(403);
+    expect(res.body).toHaveProperty("success");
+    expect(res.body.success).toBe(false);
+  });
+
   it("POST session records (professor) - unauthorized | no token", async () => {
     const url = "/enrollments/attendance/records/class/offering/session/157";
     const res = await request(app)
