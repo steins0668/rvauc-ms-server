@@ -33,6 +33,7 @@
     "test:attendance:class": "jest \"class-routes.test.ts\"",
     "test:attendance:student": "jest \"student-routes.test.ts\"",
     "test:attendance:rfid": "npm run db:reset:attendance && jest \"rfid-route.test.ts\"",
+    "--no-reset test:attendance:rfid": "jest \"rfid-route.test.ts\"",
     "build": "tsc",
     "start": "node dist/index.js",
     "db:generate": "tsc && drizzle-kit generate --config=./config/drizzle.config.ts",
