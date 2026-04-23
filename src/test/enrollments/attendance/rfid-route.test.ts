@@ -7,6 +7,7 @@ import { Schemas as CoreSchemas } from "../../../features/enrollments/core/schem
 describe("RFID Scan Route", () => {
   const minimalTokens = {
     student: "",
+    studentInvalid: "",
   };
 
   const tokens = {
@@ -20,6 +21,26 @@ describe("RFID Scan Route", () => {
       payloadType: "minimal",
       payload: {
         id: 7,
+        email: "lee.agaton@gmail.com",
+        username: "LeeA7",
+        surname: "Agaton",
+        firstName: "Lee Archelaus",
+        gender: "male",
+        contactNumber: "09171234507",
+        middleName: "",
+        role: "student",
+        department: "Department Of Computer Science",
+        studentNumber: "101-0001",
+        yearLevel: 3,
+        block: "A",
+      },
+    });
+
+    minimalTokens.studentInvalid = createJwt({
+      tokenType: "access",
+      payloadType: "minimal",
+      payload: {
+        id: 100,
         email: "lee.agaton@gmail.com",
         username: "LeeA7",
         surname: "Agaton",
@@ -76,6 +97,20 @@ describe("RFID Scan Route", () => {
 
   describe("POST rfid scan", () => {
     describe("as student(minimal token type)", () => {
+      it(`should return 403 for room mismatch`, async () => {
+        const res = await request(app)
+          .post("/enrollments/attendance/new-rfid-scan")
+          .set("Authorization", `Bearer ${minimalTokens.student}`)
+          .send({
+            date: "2025-12-01T09:00:00+08:00",
+            room: "409",
+          });
+
+        expect(res.status).toBe(403);
+        expect(res.body).toHaveProperty("success");
+        expect(res.body.success).toBe(false);
+      });
+
       it(`should return 201 for new attendance record`, async () => {
         const res = await request(app)
           .post("/enrollments/attendance/new-rfid-scan")
@@ -112,6 +147,34 @@ describe("RFID Scan Route", () => {
 
         CoreSchemas.Dto.class_.parse(result.class);
         Schemas.Dto.insertedAttendance.parse(result.attendance);
+      });
+
+      it(`should return 409 for no face to face class`, async () => {
+        const res = await request(app)
+          .post("/enrollments/attendance/new-rfid-scan")
+          .set("Authorization", `Bearer ${minimalTokens.student}`)
+          .send({
+            date: "2025-12-02T09:00:00+08:00",
+            room: "406",
+          });
+
+        expect(res.status).toBe(409);
+        expect(res.body).toHaveProperty("success");
+        expect(res.body.success).toBe(false);
+      });
+
+      it(`should return 404 for invalid student`, async () => {
+        const res = await request(app)
+          .post("/enrollments/attendance/new-rfid-scan")
+          .set("Authorization", `Bearer ${minimalTokens.studentInvalid}`)
+          .send({
+            date: "2025-12-01T09:00:00+08:00",
+            room: "406",
+          });
+
+        expect(res.status).toBe(404);
+        expect(res.body).toHaveProperty("success");
+        expect(res.body.success).toBe(false);
       });
     });
 
