@@ -49,9 +49,11 @@ export namespace ClassSessionRuntime {
       const { values, role, tx } = args;
 
       try {
-        return role === "student"
-          ? await this.getForStudent({ values, role, tx })
-          : await this.getForProfessor({ values, role, tx });
+        return ResultBuilder.success(
+          role === "student"
+            ? await this.getForStudent({ values, role, tx })
+            : await this.getForProfessor({ values, role, tx }),
+        );
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
