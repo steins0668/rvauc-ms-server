@@ -5,7 +5,7 @@ export namespace Schemas {
   export namespace RequestQuery {
     export const userSchedule = z
       .strictObject({
-        timeMs: z.coerce.number().default(Clock.now().getTime()),
+        timeMs: z.coerce.number().default(Clock.now(new Date()).getTime()),
       })
       .strip();
 
