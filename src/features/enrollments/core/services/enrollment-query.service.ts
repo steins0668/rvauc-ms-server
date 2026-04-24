@@ -66,6 +66,26 @@ export namespace EnrollmentQuery {
 
     /**
      * @description
+     * Retrieves all enrollments of a student for a term.
+     * Additionally includes details of scheduled classes for the provided date and time if available.
+     */
+    async getEnrollmentsWithSchedule(
+      args: Parameters<
+        Repositories.Enrollment["getEnrollmentsWithSchedule"]
+      >[0],
+    ) {
+      let r;
+      try {
+        r = await this._enrollmentRepo.getEnrollmentsWithSchedule(args);
+      } catch (err) {
+        throw Service.normalizeQueryError({ err });
+      }
+
+      return r;
+    }
+
+    /**
+     * @description
      * Verifies and retrieves a single enrollment for a given class and student pair.
      *
      * This is a strict existence check used for authorization or validation flows,

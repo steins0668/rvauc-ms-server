@@ -1,8 +1,8 @@
 import { ResultSet } from "@libsql/client/.";
-import { sql, SQL } from "drizzle-orm";
+import { min, sql, SQL } from "drizzle-orm";
 import { SQLiteSelectBase } from "drizzle-orm/sqlite-core";
 import { DbContext, DbOrTx, TxContext } from "../../../db/create-context";
-import { Schema } from "../../../models";
+import { classSessions, Schema } from "../../../models";
 import { enrollments } from "../../../models";
 import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
@@ -24,6 +24,77 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
     const { enrollments } = Schema;
 
     return await (dbOrTx ?? this._dbContext).$count(enrollments, where);
+  }
+
+  async getEnrollmentsWithSchedule(args: {
+    values: {
+      studentId: number;
+      datePh: string;
+      timeMs: number;
+      termId: number;
+    };
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { studentId, termId, datePh, timeMs } = args.values;
+    const context = args.dbOrTx ?? this._dbContext;
+
+    const {
+      classes: cls,
+      courses: c,
+      classSessions: cs,
+      enrollments: e,
+      classOfferings: o,
+      rooms: r,
+      users: u,
+    } = Schema;
+    const { and, eq } = RepositoryUtil.filters;
+    const { asc } = RepositoryUtil.orderOperators;
+
+    const weight = sql<number>`
+      CASE
+        WHEN ${cs.startTimeMs} <= ${timeMs}
+        AND ${cs.endTimeMs} > ${timeMs}
+        THEN 0
+        WHEN ${cs.startTimeMs} > ${timeMs}
+        THEN 1
+        ELSE 2
+      END
+    `.as("weight");
+
+    return await context
+      .select({
+        weight,
+        enrollment: { id: e.id, status: e.status },
+        class: { id: cls.id, classNumber: cls.classNumber },
+        course: { id: c.id, name: c.name, code: c.code },
+        offering: {
+          id: o.id,
+          weekDay: o.weekDay,
+          startTimeText: o.startTimeText,
+          endTimeText: o.endTimeText,
+        },
+        session: {
+          id: cs.id,
+          startTimeMs: cs.startTimeMs,
+          endTimeMs: cs.endTimeMs,
+        },
+        room: { name: r.name, building: r.building },
+        professor: {
+          id: u.id,
+          surname: u.surname,
+          firstName: u.firstName,
+          middleName: u.middleName,
+        },
+      })
+      .from(e)
+      .innerJoin(cls, eq(cls.id, e.classId))
+      .innerJoin(c, eq(c.id, cls.courseId))
+      .innerJoin(u, eq(u.id, cls.professorId))
+      .leftJoin(cs, and(eq(cs.classId, cls.id), eq(cs.datePh, datePh)))
+      .leftJoin(o, and(eq(o.id, cs.classOfferingId)))
+      .leftJoin(r, eq(r.id, o.roomId))
+      .where(and(eq(e.studentId, studentId), eq(cls.termId, termId)))
+      .orderBy(asc(c.name), asc(weight), asc(o.startTime));
   }
 
   async getEnrolledIdsForClass(args: {
