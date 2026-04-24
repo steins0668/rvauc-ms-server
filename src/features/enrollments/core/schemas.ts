@@ -104,71 +104,8 @@ export namespace Schemas {
       })
       .strip();
 
-    export const classListElementBase = z
-      .strictObject({
-        class: z
-          .strictObject({ id: z.number(), classNumber: z.string() })
-          .strip(),
-        course: z
-          .strictObject({
-            id: z.number(),
-            name: z.string(),
-            code: z.string(),
-          })
-          .strip(),
-        offering: z.nullable(
-          z
-            .strictObject({
-              id: z.number(),
-              weekDay: z.string(),
-              startTime: z.string(),
-              endTime: z.string(),
-              room: z.nullable(
-                z
-                  .strictObject({
-                    name: z.string(),
-                    building: z.string().nullable(),
-                  })
-                  .strip(),
-              ),
-            })
-            .strip(),
-        ),
-      })
-      .strip();
-
-    export const classList = z.discriminatedUnion("role", [
-      z
-        .strictObject({
-          role: z.literal(Auth.Core.Data.Records.roles.student),
-          classes: z.array(
-            z
-              .strictObject({
-                ...classListElementBase.shape,
-                professor: z
-                  .strictObject({
-                    id: z.number(),
-                    surname: z.string(),
-                    firstName: z.string(),
-                    middleName: z.string(),
-                  })
-                  .strip(),
-              })
-              .strip(),
-          ),
-        })
-        .strip(),
-      z
-        .strictObject({
-          role: z.literal(Auth.Core.Data.Records.roles.professor),
-          classes: z.array(classListElementBase),
-        })
-        .strip(),
-    ]);
-
     export type ScheduledSessionWithProfessor = z.infer<
       typeof scheduledSessionWithProfessor
     >;
-    export type ClassList = z.infer<typeof classList>;
   }
 }

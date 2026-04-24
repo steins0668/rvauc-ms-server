@@ -3,8 +3,11 @@ import { Controllers } from "./controllers";
 import { validateRequest } from "../../../../middlewares";
 import { Schemas } from "./schemas";
 import { Auth } from "../../../auth";
+import { Middlewares } from "./middlewares";
 
 export const Routes = Router();
+
+Routes.use(Middlewares.attachClassScheduleService);
 
 /**
  * GET
