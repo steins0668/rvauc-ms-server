@@ -147,10 +147,21 @@ export namespace Errors {
       return mapped ?? normalized;
     }
 
-    export function internalError(message: string) {
+    export function internalError(message?: string) {
       return new ErrorClass({
         name: "ENROLLMENT_DATA_INTERNAL_ERROR",
         message: message ?? "Something went wrong.",
+      });
+    }
+
+    export function dtoConversionError(args: {
+      message?: string;
+      err?: unknown;
+    }) {
+      return new ErrorClass({
+        name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+        message: args.message ?? "Failed mapping data to dto.",
+        cause: args.err,
       });
     }
 

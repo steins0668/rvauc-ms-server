@@ -1,4 +1,6 @@
+import { Auth } from "../../auth";
 import { Repositories } from "../repositories";
+import { Errors } from "./errors";
 import { Schemas } from "./schemas";
 import { Services } from "./services";
 
@@ -43,30 +45,58 @@ export namespace DtoMappers {
     }
 
     export namespace ClassList {
-      export function map(
+      export function mapStudentView(
         rawList: Awaited<
           ReturnType<
             Services.EnrollmentQuery.Service["getEnrollmentsWithSchedule"]
           >
         >,
       ): Schemas.Dto.ClassList {
-        const mapped: Schemas.Dto.ClassList = rawList.map((i) => {
-          const { offering: o, room: r } = i;
-
-          return {
-            ...i,
-            offering: o
-              ? {
-                  ...o,
-                  startTime: o.startTimeText,
-                  endTime: o.endTimeText,
-                  room: r,
-                }
-              : null,
+        try {
+          const mapped: Schemas.Dto.ClassList = {
+            role: "student",
+            classes: rawList.map(normalizeClassRow),
           };
-        });
 
-        return Schemas.Dto.classList.parse(mapped);
+          return Schemas.Dto.classList.parse(mapped);
+        } catch (err) {
+          throw Errors.EnrollmentData.dtoConversionError({ err });
+        }
+      }
+
+      export function mapProfessorView(
+        rawList: Awaited<
+          ReturnType<
+            Services.ClassQuery.Service["getProfessorClassesWithSchedule"]
+          >
+        >,
+      ): Schemas.Dto.ClassList {
+        try {
+          const mapped: Schemas.Dto.ClassList = {
+            role: "professor",
+            classes: rawList.map(normalizeClassRow),
+          };
+
+          return Schemas.Dto.classList.parse(mapped);
+        } catch (err) {
+          throw Errors.EnrollmentData.dtoConversionError({ err });
+        }
+      }
+
+      function normalizeClassRow<T extends { offering: any; room: any }>(i: T) {
+        const { offering: o, room: r } = i;
+
+        return {
+          ...i,
+          offering: o
+            ? {
+                ...o,
+                startTime: o.startTimeText,
+                endTime: o.endTimeText,
+                room: r,
+              }
+            : null,
+        };
       }
     }
     export namespace ClassSessionRuntime {

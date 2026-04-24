@@ -1,4 +1,5 @@
 import z from "zod";
+import { Auth } from "../../auth";
 
 export namespace Schemas {
   export namespace Dto {
@@ -107,48 +108,67 @@ export namespace Schemas {
       })
       .strip();
 
-    export const classList = z.array(
-      z
-        .strictObject({
-          class: z
-            .strictObject({ id: z.number(), classNumber: z.string() })
-            .strip(),
-          course: z
+    export const classListElementBase = z
+      .strictObject({
+        class: z
+          .strictObject({ id: z.number(), classNumber: z.string() })
+          .strip(),
+        course: z
+          .strictObject({
+            id: z.number(),
+            name: z.string(),
+            code: z.string(),
+          })
+          .strip(),
+        offering: z.nullable(
+          z
             .strictObject({
               id: z.number(),
-              name: z.string(),
-              code: z.string(),
+              weekDay: z.string(),
+              startTime: z.string(),
+              endTime: z.string(),
+              room: z.nullable(
+                z
+                  .strictObject({
+                    name: z.string(),
+                    building: z.string().nullable(),
+                  })
+                  .strip(),
+              ),
             })
             .strip(),
-          offering: z.nullable(
+        ),
+      })
+      .strip();
+
+    export const classList = z.discriminatedUnion("role", [
+      z
+        .strictObject({
+          role: z.literal(Auth.Core.Data.Records.roles.student),
+          classes: z.array(
             z
               .strictObject({
-                id: z.number(),
-                weekDay: z.string(),
-                startTime: z.string(),
-                endTime: z.string(),
-                room: z.nullable(
-                  z
-                    .strictObject({
-                      name: z.string(),
-                      building: z.string().nullable(),
-                    })
-                    .strip(),
-                ),
+                ...classListElementBase.shape,
+                professor: z
+                  .strictObject({
+                    id: z.number(),
+                    surname: z.string(),
+                    firstName: z.string(),
+                    middleName: z.string(),
+                  })
+                  .strip(),
               })
               .strip(),
           ),
-          professor: z
-            .strictObject({
-              id: z.number(),
-              surname: z.string(),
-              firstName: z.string(),
-              middleName: z.string(),
-            })
-            .strip(),
         })
         .strip(),
-    );
+      z
+        .strictObject({
+          role: z.literal(Auth.Core.Data.Records.roles.professor),
+          classes: z.array(classListElementBase),
+        })
+        .strip(),
+    ]);
 
     export type ScheduledClass = z.infer<typeof scheduledClass>;
     export type ScheduledClasses = z.infer<typeof scheduledClasses>;
