@@ -29,6 +29,18 @@ export namespace ClassQuery {
       return cls;
     }
 
+    async getProfessorClassesWithSchedule(
+      args: Parameters<
+        Repositories.Class["getProfessorClassesWithSchedule"]
+      >[0],
+    ) {
+      try {
+        return await this._classRepo.getProfessorClassesWithSchedule(args);
+      } catch (err) {
+        throw Service.normalizeQueryError(err);
+      }
+    }
+
     /**
      * @description
      * Queries classes and returns a class including course with name and code.
