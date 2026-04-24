@@ -315,12 +315,11 @@ export namespace AttendanceRegistration {
               "This student is not allowed to take attendance in a different room for the current class.",
           });
 
-        const enrollment = await this._enrollmentQuery.ensureForClassAndStudent(
-          {
+        const enrollment =
+          await this._enrollmentQuery.ensureEnrolledForClassAndStudent({
             values: { studentId, classId: cls.id },
             dbOrTx: tx,
-          },
-        );
+          });
 
         return { runtime: { ...runtime, room: r }, enrollment };
       } catch (err) {
@@ -333,7 +332,7 @@ export namespace AttendanceRegistration {
           fallback: { ...internalError, err },
           map: (err, create) => {
             const inconsistentStateErr = (
-              field: "student" | "enrollment",
+              field: "student" | "enrollment" | "class",
               err: unknown,
             ) =>
               create({
@@ -345,10 +344,19 @@ export namespace AttendanceRegistration {
             switch (err.name) {
               case "ENROLLMENT_DATA_QUERY_ERROR":
                 return create({ ...internalError, cause: err });
+              case "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR":
+                return inconsistentStateErr("class", err);
               case "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR":
                 return inconsistentStateErr("student", err);
               case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
                 return inconsistentStateErr("enrollment", err);
+              case "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR":
+                return create({
+                  name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
+                  message:
+                    "This student is not allowed to take attendance here.",
+                  cause: err,
+                });
             }
           },
         });

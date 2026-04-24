@@ -94,6 +94,43 @@ export namespace EnrollmentQuery {
      *
      * Returns minimal enrollment data (no relational graph hydration).
      * Throws if no matching enrollment exists.
+     * Throws if enrollment status != enrolled.
+     */
+    async ensureEnrolledForClassAndStudent(args: {
+      values: {
+        classId: number;
+        studentId: number;
+      };
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      let enrollment;
+
+      try {
+        enrollment = await this._enrollmentRepo.getForClassAndStudent(args);
+      } catch (err) {
+        throw Service.normalizeQueryError({ err });
+      }
+
+      this.assertValidEnrollment(enrollment);
+
+      if (enrollment.status !== Data.enrollmentStatus.enrolled)
+        throw new Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR",
+          message: "The specified student is not enrolled.",
+        });
+
+      return enrollment;
+    }
+
+    /**
+     * @description
+     * Verifies and retrieves a single enrollment for a given class and student pair.
+     *
+     * This is a strict existence check used for authorization or validation flows,
+     * ensuring that the student is officially enrolled in the specified class.
+     *
+     * Returns minimal enrollment data (no relational graph hydration).
+     * Throws if no matching enrollment exists.
      */
     async ensureForClassAndStudent(args: {
       values: {
@@ -217,12 +254,6 @@ export namespace EnrollmentQuery {
         throw new Errors.EnrollmentData.ErrorClass({
           name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
           message: "The specified enrollment does not exist.",
-        });
-
-      if (e.status !== Data.enrollmentStatus.enrolled)
-        throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR",
-          message: "The specified student is not enrolled.",
         });
     }
 

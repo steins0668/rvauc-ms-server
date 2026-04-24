@@ -209,7 +209,8 @@ export namespace AttendanceData {
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
-        enrollment = await this._enrollmentQuery.ensureForClassAndStudent(args);
+        enrollment =
+          await this._enrollmentQuery.ensureEnrolledForClassAndStudent(args);
 
         sessionCount = await this._classSessionQuery.countForClassIdAndDate({
           values: {
@@ -242,6 +243,7 @@ export namespace AttendanceData {
               switch (err.name) {
                 case "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR":
                 case "ENROLLMENT_DATA_STUDENT_NOT_FOUND_ERROR":
+                case "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR":
                 case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
                   return create({
                     name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
