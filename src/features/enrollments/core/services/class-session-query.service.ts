@@ -210,45 +210,6 @@ export namespace ClassSessionQuery {
 
     /**
      * @description
-     * Retrieves a class session with minimal shape.
-     * Throws if not found.
-     */
-    async ensureMinimalShape(
-      args: Pick<
-        NonNullable<
-          Parameters<Repositories.ClassSession["getMinimalShape"]>[0]
-        >,
-        "where" | "orderBy" | "dbOrTx"
-      >,
-    ) {
-      const session = await this.getMinimalShape({
-        ...args,
-        constraints: { limit: 1 },
-      }).then((r) => r[0]);
-
-      if (!session) throw Service.sessionNotFoundError();
-
-      return session;
-    }
-
-    /**
-     * @description
-     * Retrieves a class session with minimal shape.
-     */
-    async getMinimalShape(
-      args: NonNullable<
-        Parameters<Repositories.ClassSession["getMinimalShape"]>[0]
-      >,
-    ) {
-      try {
-        return await this._classSessionRepo.getMinimalShape(args);
-      } catch (err) {
-        throw Service.normalizeQueryError(err);
-      }
-    }
-
-    /**
-     * @description
      * Counts class sessions that match a specified class id and date.
      */
     async countForClassIdAndDate(
