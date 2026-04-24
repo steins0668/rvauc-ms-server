@@ -199,24 +199,23 @@ export namespace AttendanceRegistration {
     }) {
       const { recordedDate } = args.values;
       const txPromise = execTransaction(async (tx) => {
-        const { clsRuntime, enrollment } =
-          await this.ensureEnrollmentForRuntime({
-            values: args.values,
-            tx,
-          });
+        const { runtime, enrollment } = await this.ensureEnrollmentForRuntime({
+          values: args.values,
+          tx,
+        });
 
         const status = Utils.Policy.Attendance.getAttendanceStatus({
           values: {
             attendanceTime: recordedDate.getTime(),
-            session: clsRuntime.session,
+            session: runtime.session,
           },
         });
 
         const inserted = await this._attendanceCommand.persistSessionAttendance(
           {
             values: {
-              classId: clsRuntime.offering.class.id,
-              classSessionId: clsRuntime.session.id,
+              classId: runtime.class.id,
+              classSessionId: runtime.session.id,
               status,
               enrollmentId: enrollment.id,
               recordedDate,
@@ -225,7 +224,7 @@ export namespace AttendanceRegistration {
           },
         );
 
-        return { clsRuntime, inserted };
+        return { runtime, inserted };
       }, args.tx);
 
       let txResult;
@@ -253,7 +252,7 @@ export namespace AttendanceRegistration {
 
       try {
         const dto = DtoMappers.Mutation.sessionAttendanceResult(
-          txResult.clsRuntime,
+          txResult.runtime,
           txResult.inserted,
         );
 
@@ -283,23 +282,33 @@ export namespace AttendanceRegistration {
       const { termId, studentId, recordedDate, room } = args.values;
 
       try {
-        const clsRuntime = await this._classRuntimeResolver.resolve({
+        const runtime = await this._classRuntimeResolver.resolveActiveClass({
           values: { termId, userId: studentId, date: recordedDate },
           role: "student",
           mode: "now",
-          sessionPolicy: "strict-scheduled",
           tx,
         });
 
-        const { offering } = clsRuntime;
+        const { class: cls, session, room: r } = runtime;
 
-        if (offering.rooms === null)
+        if (session.status === Core.Data.classSessionStatus.cancelled) {
+          const { datePh } = runtime.session;
+          const { startTimeText } = runtime.offering;
+          const { name: courseName } = runtime.course;
+
+          throw new Core.Errors.EnrollmentData.ErrorClass({
+            name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
+            message: `The schedule for ${courseName} on ${datePh} ${startTimeText} was cancelled.`,
+          });
+        }
+
+        if (r === null)
           throw new Core.Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_NO_FACE_TO_FACE_CLASS_ERROR",
             message: "This class doesn't have a designated room. ",
           });
 
-        if (offering.rooms.name !== room)
+        if (r.name !== room)
           throw new Core.Errors.EnrollmentData.ErrorClass({
             name: "ENROLLMENT_DATA_ROOM_MISMATCH_ERROR",
             message:
@@ -308,12 +317,12 @@ export namespace AttendanceRegistration {
 
         const enrollment = await this._enrollmentQuery.ensureForClassAndStudent(
           {
-            values: { studentId, classId: clsRuntime.offering.class.id },
+            values: { studentId, classId: cls.id },
             dbOrTx: tx,
           },
         );
 
-        return { clsRuntime, enrollment };
+        return { runtime: { ...runtime, room: r }, enrollment };
       } catch (err) {
         const internalError = {
           name: "ENROLLMENT_DATA_INTERNAL_ERROR",

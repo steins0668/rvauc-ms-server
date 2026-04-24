@@ -178,11 +178,39 @@ export namespace Schemas {
         .strictObject({
           class: z
             .strictObject({
-              ...Core.Schemas.Dto.class_.shape,
-              course: Core.Schemas.Dto.course,
-              offering: Core.Schemas.Dto.classOffering,
-              professor: Core.Schemas.Dto.professor,
-              session: Core.Schemas.Dto.classSession,
+              classNumber: z.string(),
+            })
+            .strip(),
+          course: z
+            .strictObject({
+              name: z.string(),
+              code: z.string(),
+            })
+            .strip(),
+          offering: z
+            .strictObject({
+              weekDay: z.string(),
+              startTime: z.string(),
+              endTime: z.string(),
+            })
+            .strip(),
+          room: z
+            .strictObject({
+              name: z.string(),
+              building: z.string().nullable(),
+            })
+            .strip(),
+          session: z
+            .strictObject({
+              status: z.string(),
+              date: z.string(),
+            })
+            .strip(),
+          professor: z
+            .strictObject({
+              surname: z.string(),
+              firstName: z.string(),
+              middleName: z.string(),
             })
             .strip(),
           attendance: insertedAttendance,

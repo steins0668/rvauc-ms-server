@@ -108,6 +108,11 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     const [result] = await context
       .select({
         ...baseShape,
+        session: {
+          ...baseShape.session,
+          startTimeMs: cs.startTimeMs,
+          endTimeMs: cs.endTimeMs,
+        },
         enrollment: { id: e.id, status: e.status },
         professor: {
           id: u.id,

@@ -5,9 +5,11 @@ import { Services } from "../services";
 
 export namespace Mutation {
   export function sessionAttendanceResult(
-    classRuntime: Awaited<
-      ReturnType<Core.Services.ClassRuntimeResolver.Service["resolve"]>
-    >,
+    runtime: Awaited<
+      ReturnType<
+        Core.Services.ClassSessionQuery.Service["getStudentActiveClass"]
+      >
+    > & { room: { name: string; building: string | null } },
     attendance: NonNullable<
       Awaited<
         ReturnType<
@@ -16,40 +18,24 @@ export namespace Mutation {
       >
     >,
   ): Schemas.Dto.ClassAttendance.SessionAttendanceResult {
-    const { offering: co, session: cs } = classRuntime;
-    const { class: cls, rooms: r } = co;
-    const { course: crs, professor: p } = cls;
+    const { offering: co, session: cs } = runtime;
+    const { class: cls, room: r } = runtime;
+    const { course: crs, professor: p } = runtime;
 
     return {
-      class: {
-        id: cls.id,
-        classNumber: cls.classNumber,
-        course: crs,
-        offering: {
-          id: co.id,
-          weekDay: co.weekDay,
-          room: r?.name ?? "N/A",
-          startTimeText: co.startTimeText,
-          endTimeText: co.endTimeText,
-          startTime: co.startTime,
-          endTime: co.endTime,
-        },
-        professor: {
-          surname: p.user.surname,
-          firstName: p.user.firstName,
-          middleName: p.user.middleName,
-          gender: p.user.gender,
-          college: p.college.name,
-          facultyRank: p.facultyRank,
-        },
-        session: {
-          id: cs.id,
-          classOfferingId: cs.classOfferingId,
-          status: cs.status,
-          datePh: cs.datePh,
-          startTimeMs: cs.startTimeMs,
-          endTimeMs: cs.endTimeMs,
-        },
+      class: { classNumber: cls.classNumber },
+      course: crs,
+      offering: {
+        weekDay: co.weekDay,
+        startTime: co.startTimeText,
+        endTime: co.endTimeText,
+      },
+      room: { name: r.name, building: r.building },
+      session: { status: cs.status, date: cs.datePh },
+      professor: {
+        surname: p.surname,
+        firstName: p.firstName,
+        middleName: p.middleName,
       },
       attendance: {
         id: attendance.id,
