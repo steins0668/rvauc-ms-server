@@ -10,12 +10,23 @@ export namespace Middlewares {
     req.classSchedService = await Services.ClassSchedule.createService();
     next();
   }
+
+  export async function attachClassSessionRuntimeService(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    req.classSessionRuntimeService =
+      await Services.ClassSessionRuntime.create();
+    next();
+  }
 }
 
 declare global {
   namespace Express {
     interface Request {
       classSchedService: Services.ClassSchedule.Service;
+      classSessionRuntimeService: Services.ClassSessionRuntime.Service;
     }
   }
 }

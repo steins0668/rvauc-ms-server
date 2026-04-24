@@ -68,44 +68,6 @@ export namespace Schemas {
       })
       .strip();
 
-    export const enrollmentMinimal = z
-      .strictObject({
-        id: z.number(),
-        studentId: z.number(),
-        status: z.string(),
-      })
-      .strip();
-
-    export type Class_ = z.infer<typeof class_>;
-    export type ClassOffering = z.infer<typeof classOffering>;
     export type ClassSession = z.infer<typeof classSession>;
-    export type Course = z.infer<typeof course>;
-    export type EnrollmentMinimal = z.infer<typeof enrollmentMinimal>;
-    export type Professor = z.infer<typeof professor>;
-    export type Student = z.infer<typeof student>;
-
-    export const scheduledClass = z
-      .strictObject({
-        ...class_.shape,
-        course: course,
-        offering: classOffering,
-      })
-      .strip();
-    export const scheduledClassWithProfessor = z
-      .strictObject({
-        ...scheduledClass.shape,
-        professor: professor,
-      })
-      .strip();
-    export const scheduledSessionWithProfessor = z
-      .strictObject({
-        ...scheduledClassWithProfessor.shape,
-        session: classSession,
-      })
-      .strip();
-
-    export type ScheduledSessionWithProfessor = z.infer<
-      typeof scheduledSessionWithProfessor
-    >;
   }
 }

@@ -6,7 +6,6 @@ import { Schedule } from "./subfeatures/schedule";
 export const Routes = Router();
 
 Routes.use(Core.Middlewares.attachClassSessionDataService);
-Routes.use(Core.Middlewares.attachClassSessionRuntimeService);
 Routes.use(Core.Middlewares.attachTermDataService);
 
 Routes.use("/attendance", Attendance.Routes);

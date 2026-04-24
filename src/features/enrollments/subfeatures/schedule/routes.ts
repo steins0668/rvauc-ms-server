@@ -8,6 +8,7 @@ import { Middlewares } from "./middlewares";
 export const Routes = Router();
 
 Routes.use(Middlewares.attachClassScheduleService);
+Routes.use(Middlewares.attachClassSessionRuntimeService);
 
 /**
  * GET
