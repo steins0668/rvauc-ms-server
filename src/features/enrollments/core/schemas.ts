@@ -91,16 +91,12 @@ export namespace Schemas {
         offering: classOffering,
       })
       .strip();
-    export const scheduledClasses = z.array(scheduledClass);
     export const scheduledClassWithProfessor = z
       .strictObject({
         ...scheduledClass.shape,
         professor: professor,
       })
       .strip();
-    export const scheduledClassesWithProfessor = z.array(
-      scheduledClassWithProfessor,
-    );
     export const scheduledSessionWithProfessor = z
       .strictObject({
         ...scheduledClassWithProfessor.shape,
@@ -170,14 +166,6 @@ export namespace Schemas {
         .strip(),
     ]);
 
-    export type ScheduledClass = z.infer<typeof scheduledClass>;
-    export type ScheduledClasses = z.infer<typeof scheduledClasses>;
-    export type ScheduledClassWithProfessor = z.infer<
-      typeof scheduledClassWithProfessor
-    >;
-    export type ScheduledClassesWithProfessor = z.infer<
-      typeof scheduledClassesWithProfessor
-    >;
     export type ScheduledSessionWithProfessor = z.infer<
       typeof scheduledSessionWithProfessor
     >;
