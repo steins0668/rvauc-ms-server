@@ -1,6 +1,4 @@
 import z from "zod";
-import { Data } from "./data";
-import { ClassSession } from "../repositories/class-session.repository";
 
 export namespace Schemas {
   export namespace Dto {
@@ -109,6 +107,49 @@ export namespace Schemas {
       })
       .strip();
 
+    export const classList = z.array(
+      z
+        .strictObject({
+          class: z
+            .strictObject({ id: z.number(), classNumber: z.string() })
+            .strip(),
+          course: z
+            .strictObject({
+              id: z.number(),
+              name: z.string(),
+              code: z.string(),
+            })
+            .strip(),
+          offering: z.nullable(
+            z
+              .strictObject({
+                id: z.number(),
+                weekDay: z.string(),
+                startTime: z.string(),
+                endTime: z.string(),
+                room: z.nullable(
+                  z
+                    .strictObject({
+                      name: z.string(),
+                      building: z.string().nullable(),
+                    })
+                    .strip(),
+                ),
+              })
+              .strip(),
+          ),
+          professor: z
+            .strictObject({
+              id: z.number(),
+              surname: z.string(),
+              firstName: z.string(),
+              middleName: z.string(),
+            })
+            .strip(),
+        })
+        .strip(),
+    );
+
     export type ScheduledClass = z.infer<typeof scheduledClass>;
     export type ScheduledClasses = z.infer<typeof scheduledClasses>;
     export type ScheduledClassWithProfessor = z.infer<
@@ -120,5 +161,6 @@ export namespace Schemas {
     export type ScheduledSessionWithProfessor = z.infer<
       typeof scheduledSessionWithProfessor
     >;
+    export type ClassList = z.infer<typeof classList>;
   }
 }
