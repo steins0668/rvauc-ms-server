@@ -4,20 +4,43 @@ import { AttendanceData } from "../../../features/enrollments/subfeatures/attend
 import { Schemas } from "../../../features/enrollments/subfeatures/attendance/schemas";
 import { Errors } from "../../../features/enrollments/core/errors";
 import { AttendanceRegistration } from "../../../features/enrollments/subfeatures/attendance/services/attendance-registration.service";
+import { BaseError } from "../../../error";
+
+const assertSuccess: (success: boolean) => asserts success is true = (
+  success: boolean,
+): asserts success is true => {
+  if (!success) throw new Error("Expected operation to succeed.");
+};
+function documentIfFail<E extends BaseError<string>>(
+  val: { success: true; result: any } | { success: false; error: E },
+) {
+  if (!val.success) console.error(JSON.stringify(val.error, null, 2));
+}
+const assertFail: (success: boolean) => asserts success is false = (
+  success: boolean,
+): asserts success is false => {
+  if (success) throw new Error("Expected operation to fail.");
+};
+function documentErrorMismatch<E extends BaseError<string>>(
+  err: E,
+  errName: string,
+) {
+  console.error(
+    JSON.stringify(
+      new BaseError({
+        name: "ERROR_NAME_MISMATCH",
+        message: `Error name does not match ${errName}.`,
+        cause: err,
+      }),
+      null,
+      2,
+    ),
+  );
+}
 
 describe("Attendance Services", () => {
   let dataService: AttendanceData.Service;
   let regService: AttendanceRegistration.Service;
-  const assertSuccess: (success: boolean) => asserts success is true = (
-    success: boolean,
-  ): asserts success is true => {
-    if (!success) throw new Error("Expected operation to succeed.");
-  };
-  const assertFail: (success: boolean) => asserts success is false = (
-    success: boolean,
-  ): asserts success is false => {
-    if (success) throw new Error("Expected operation to fail.");
-  };
   const ids = {
     professor: {
       valid: 6,
@@ -77,6 +100,8 @@ describe("Attendance Services", () => {
           },
         });
 
+        documentIfFail(op);
+
         expect(op.success).toBe(true);
 
         assertSuccess(op.success);
@@ -109,6 +134,8 @@ describe("Attendance Services", () => {
 
         const errorName: ErrorName = "ENROLLMENT_DATA_FORBIDDEN_ERROR";
 
+        documentErrorMismatch(error, errorName);
+
         expect(error.name).toBe(errorName);
       });
 
@@ -134,6 +161,8 @@ describe("Attendance Services", () => {
         type ErrorName = Errors.EnrollmentData.ErrorName;
 
         const errorName: ErrorName = "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+
+        documentErrorMismatch(error, errorName);
 
         expect(error.name).toBe(errorName);
       });
@@ -161,6 +190,8 @@ describe("Attendance Services", () => {
 
         const errorName: ErrorName = "ENROLLMENT_DATA_FORBIDDEN_ERROR";
 
+        documentErrorMismatch(error, errorName);
+
         expect(error.name).toBe(errorName);
       });
 
@@ -187,6 +218,8 @@ describe("Attendance Services", () => {
 
         const errorName: ErrorName = "ENROLLMENT_DATA_FORBIDDEN_ERROR";
 
+        documentErrorMismatch(error, errorName);
+
         expect(error.name).toBe(errorName);
       });
     });
@@ -205,6 +238,8 @@ describe("Attendance Services", () => {
             },
           },
         });
+
+        documentIfFail(op);
 
         expect(op.success).toBe(true);
 
@@ -235,6 +270,8 @@ describe("Attendance Services", () => {
 
         const { error } = op;
 
+        documentErrorMismatch(error, errorName);
+
         expect(error.name).toBe(errorName);
       });
 
@@ -260,6 +297,8 @@ describe("Attendance Services", () => {
 
         const { error } = op;
 
+        documentErrorMismatch(error, errorName);
+
         expect(error.name).toBe(errorName);
       });
     });
@@ -278,6 +317,8 @@ describe("Attendance Services", () => {
             },
           },
         });
+
+        documentIfFail(op);
 
         expect(op.success).toBe(true);
 
@@ -310,6 +351,8 @@ describe("Attendance Services", () => {
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
 
+        documentErrorMismatch(error, errorName);
+
         expect(error.name).toBe(errorName);
       });
 
@@ -334,6 +377,8 @@ describe("Attendance Services", () => {
         const { error } = op;
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+
+        documentErrorMismatch(error, errorName);
 
         expect(error.name).toBe(errorName);
       });
@@ -360,6 +405,8 @@ describe("Attendance Services", () => {
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
 
+        documentErrorMismatch(error, errorName);
+
         expect(error.name).toBe(errorName);
       });
 
@@ -384,6 +431,8 @@ describe("Attendance Services", () => {
         const { error } = op;
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+
+        documentErrorMismatch(error, errorName);
 
         expect(error.name).toBe(errorName);
       });
@@ -410,6 +459,8 @@ describe("Attendance Services", () => {
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
 
+        documentErrorMismatch(error, errorName);
+
         expect(error.name).toBe(errorName);
       });
 
@@ -434,6 +485,8 @@ describe("Attendance Services", () => {
         const { error } = op;
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+
+        documentErrorMismatch(error, errorName);
 
         expect(error.name).toBe(errorName);
       });
@@ -469,6 +522,8 @@ describe("Attendance Services", () => {
             ],
           },
         });
+
+        documentIfFail(op);
 
         expect(op.success).toBe(true);
 
@@ -509,6 +564,8 @@ describe("Attendance Services", () => {
           },
         });
 
+        documentIfFail(op);
+
         expect(op.success).toBe(true);
 
         assertSuccess(op.success);
@@ -547,6 +604,8 @@ describe("Attendance Services", () => {
             ],
           },
         });
+
+        documentIfFail(op);
 
         expect(op.success).toBe(true);
 
@@ -594,6 +653,8 @@ describe("Attendance Services", () => {
           },
         });
 
+        documentIfFail(op);
+
         expect(op.success).toBe(true);
 
         assertSuccess(op.success);
@@ -640,6 +701,8 @@ describe("Attendance Services", () => {
             ],
           },
         });
+
+        documentIfFail(op);
 
         expect(op.success).toBe(true);
 
@@ -703,6 +766,8 @@ describe("Attendance Services", () => {
 
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+
+        documentErrorMismatch(op.error, errorName);
       });
 
       it("should fail for forbidden (invalid class session) ", async () => {
@@ -739,6 +804,8 @@ describe("Attendance Services", () => {
 
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+
+        documentErrorMismatch(op.error, errorName);
       });
 
       it("should fail for forbidden (non-existent professor) ", async () => {
@@ -775,6 +842,8 @@ describe("Attendance Services", () => {
 
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+
+        documentErrorMismatch(op.error, errorName);
       });
 
       it("should fail for forbidden (invalid professor) ", async () => {
@@ -811,6 +880,8 @@ describe("Attendance Services", () => {
 
         const errorName: Errors.EnrollmentData.ErrorName =
           "ENROLLMENT_DATA_FORBIDDEN_ERROR";
+
+        documentErrorMismatch(op.error, errorName);
       });
     });
   });
