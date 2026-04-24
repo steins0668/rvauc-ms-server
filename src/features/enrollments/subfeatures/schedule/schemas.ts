@@ -117,29 +117,27 @@ export namespace Schemas {
       })
       .strip();
 
-    export const scheduledClass = z
+    export const classWithScheduleBase = z
       .strictObject({
         ...class_.shape,
         course: course,
         offering: classOffering,
       })
       .strip();
-    export const scheduledClassWithProfessor = z
+    export const classWithScheduleStudentView = z
       .strictObject({
-        ...scheduledClass.shape,
+        ...classWithScheduleBase.shape,
         professor: professor,
       })
       .strip();
-    export const scheduledSessionWithProfessor = z
+    export const sessionStudentView = z
       .strictObject({
-        ...scheduledClassWithProfessor.shape,
+        ...classWithScheduleStudentView.shape,
         session: classSession,
       })
       .strip();
 
-    export type ScheduledSessionWithProfessor = z.infer<
-      typeof scheduledSessionWithProfessor
-    >;
+    export type SessionStudentView = z.infer<typeof sessionStudentView>;
   }
   export namespace RequestQuery {
     export const userSchedule = z

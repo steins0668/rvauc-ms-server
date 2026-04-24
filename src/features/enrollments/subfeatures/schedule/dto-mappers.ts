@@ -74,7 +74,7 @@ export namespace DtoMappers {
             ReturnType<CoreRepositories.ClassSession["getMinimalShape"]>
           >[0]
         >,
-      ): Schemas.Dto.ScheduledSessionWithProfessor {
+      ): Schemas.Dto.SessionStudentView {
         const { class: cls, rooms: r } = co;
         const { course: crs, professor: p } = co.class;
 
