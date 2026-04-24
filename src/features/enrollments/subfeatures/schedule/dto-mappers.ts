@@ -61,51 +61,70 @@ export namespace DtoMappers {
     }
 
     export namespace ClassSessionRuntime {
-      export function map(
-        co: NonNullable<
-          Awaited<
-            ReturnType<
-              CoreRepositories.ClassOffering["queryWithClassAndProfessor"]
-            >
-          >[0]
+      export function mapStudentView(
+        runtime: Awaited<
+          ReturnType<
+            Core.Services.ClassSessionQuery.Service["getStudentActiveClass"]
+          >
         >,
-        cs: NonNullable<
-          Awaited<
-            ReturnType<CoreRepositories.ClassSession["getMinimalShape"]>
-          >[0]
-        >,
-      ): Schemas.Dto.SessionStudentView {
-        const { class: cls, rooms: r } = co;
-        const { course: crs, professor: p } = co.class;
+      ): Core.Schemas.Dto.RuntimeStudentView {
+        const {
+          class: cls,
+          room: r,
+          session: cs,
+          course: c,
+          professor: p,
+          offering: co,
+        } = runtime;
 
         return {
-          id: cls.id,
-          classNumber: cls.classNumber,
-          course: crs,
+          class: { classNumber: cls.classNumber },
+          course: c,
           offering: {
-            id: co.id,
             weekDay: co.weekDay,
-            room: r?.name ?? "N/A",
-            startTimeText: co.startTimeText,
-            endTimeText: co.endTimeText,
-            startTime: co.startTime,
-            endTime: co.endTime,
+            startTime: co.startTimeText,
+            endTime: co.endTimeText,
+          },
+          room: r,
+          session: {
+            status: cs.status,
+            date: cs.datePh,
           },
           professor: {
-            surname: p.user.surname,
-            firstName: p.user.firstName,
-            middleName: p.user.middleName,
-            gender: p.user.gender,
-            college: p.college.name,
-            facultyRank: p.facultyRank,
+            surname: p.surname,
+            firstName: p.firstName,
+            middleName: p.middleName,
           },
+        };
+      }
+
+      export function mapProfessorView(
+        runtime: Awaited<
+          ReturnType<
+            Core.Services.ClassSessionQuery.Service["getProfessorActiveClass"]
+          >
+        >,
+      ): Core.Schemas.Dto.RuntimeProfessorView {
+        const {
+          class: cls,
+          room: r,
+          session: cs,
+          course: c,
+          offering: co,
+        } = runtime;
+
+        return {
+          class: { classNumber: cls.classNumber },
+          course: c,
+          offering: {
+            weekDay: co.weekDay,
+            startTime: co.startTimeText,
+            endTime: co.endTimeText,
+          },
+          room: r,
           session: {
-            id: cs.id,
-            classOfferingId: cs.classOfferingId,
             status: cs.status,
-            datePh: cs.datePh,
-            startTimeMs: cs.startTimeMs,
-            endTimeMs: cs.endTimeMs,
+            date: cs.datePh,
           },
         };
       }

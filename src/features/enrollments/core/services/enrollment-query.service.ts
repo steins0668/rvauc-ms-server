@@ -1,5 +1,6 @@
 import { DbOrTx } from "../../../../db/create-context";
 import { Repositories } from "../../repositories";
+import { Data } from "../data";
 import { Errors } from "../errors";
 
 export namespace EnrollmentQuery {
@@ -216,6 +217,12 @@ export namespace EnrollmentQuery {
         throw new Errors.EnrollmentData.ErrorClass({
           name: "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR",
           message: "The specified enrollment does not exist.",
+        });
+
+      if (e.status !== Data.enrollmentStatus.enrolled)
+        throw new Errors.EnrollmentData.ErrorClass({
+          name: "ENROLLMENT_DATA_STUDENT_NOT_ENROLLED_ERROR",
+          message: "The specified student is not enrolled.",
         });
     }
 

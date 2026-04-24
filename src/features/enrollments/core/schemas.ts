@@ -69,5 +69,59 @@ export namespace Schemas {
       .strip();
 
     export type ClassSession = z.infer<typeof classSession>;
+
+    const runtimeBase = z
+      .strictObject({
+        class: z
+          .strictObject({
+            classNumber: z.string(),
+          })
+          .strip(),
+        course: z
+          .strictObject({
+            name: z.string(),
+            code: z.string(),
+          })
+          .strip(),
+        offering: z
+          .strictObject({
+            weekDay: z.string(),
+            startTime: z.string(),
+            endTime: z.string(),
+          })
+          .strip(),
+        room: z
+          .strictObject({
+            name: z.string(),
+            building: z.string().nullable(),
+          })
+          .strip()
+          .nullable(),
+        session: z
+          .strictObject({
+            status: z.string(),
+            date: z.string(),
+          })
+          .strip(),
+      })
+      .strip();
+
+    export const runtimeProfessorView = runtimeBase;
+
+    export const runtimeStudentView = z
+      .strictObject({
+        ...runtimeBase.shape,
+        professor: z
+          .strictObject({
+            surname: z.string(),
+            firstName: z.string(),
+            middleName: z.string(),
+          })
+          .strip(),
+      })
+      .strip();
+
+    export type RuntimeProfessorView = z.infer<typeof runtimeProfessorView>;
+    export type RuntimeStudentView = z.infer<typeof runtimeStudentView>;
   }
 }

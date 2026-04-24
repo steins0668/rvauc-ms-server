@@ -176,41 +176,11 @@ export namespace Schemas {
 
       export const sessionAttendanceResult = z
         .strictObject({
-          class: z
-            .strictObject({
-              classNumber: z.string(),
-            })
-            .strip(),
-          course: z
-            .strictObject({
-              name: z.string(),
-              code: z.string(),
-            })
-            .strip(),
-          offering: z
-            .strictObject({
-              weekDay: z.string(),
-              startTime: z.string(),
-              endTime: z.string(),
-            })
-            .strip(),
+          ...Core.Schemas.Dto.runtimeStudentView.shape,
           room: z
             .strictObject({
               name: z.string(),
               building: z.string().nullable(),
-            })
-            .strip(),
-          session: z
-            .strictObject({
-              status: z.string(),
-              date: z.string(),
-            })
-            .strip(),
-          professor: z
-            .strictObject({
-              surname: z.string(),
-              firstName: z.string(),
-              middleName: z.string(),
             })
             .strip(),
           attendance: insertedAttendance,

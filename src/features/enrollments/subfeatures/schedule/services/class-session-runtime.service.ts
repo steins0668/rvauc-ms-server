@@ -35,67 +35,6 @@ export namespace ClassSessionRuntime {
 
     /**
      * @description
-     * Retrieves class session runtime details of the ongoing class.
-     */
-    async getForNow(args: {
-      values: {
-        date: Date;
-        termId: number;
-        userId: number;
-      };
-      role: keyof typeof roles;
-      tx?: TxContext | undefined;
-    }) {
-      let offering;
-      let session;
-
-      try {
-        const result = await this._classRuntimeResolver.resolve({
-          ...args,
-          mode: "now",
-        });
-
-        offering = result.offering;
-        session = result.session;
-      } catch (err) {
-        const internalError = {
-          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
-          message: "Failed resolving class offering and/or session.",
-        } as const;
-
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.translateError({
-            fallback: { ...internalError, err },
-            map: (err, create) => {
-              switch (err.name) {
-                case "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR":
-                  return create({ ...internalError, cause: err });
-              }
-            },
-          }),
-        );
-      }
-
-      try {
-        const parsed = DtoMappers.Query.ClassSessionRuntime.map(
-          offering,
-          session,
-        );
-
-        return ResultBuilder.success({ class: parsed });
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw query data into enrollment DTO",
-            err,
-          }),
-        );
-      }
-    }
-
-    /**
-     * @description
      * Retrieves class session runtime details of the ongoing class or the next scheduled class.
      */
     async getForNowOrNext(args: {
@@ -107,51 +46,70 @@ export namespace ClassSessionRuntime {
       role: keyof typeof roles;
       tx?: TxContext | undefined;
     }) {
-      let offering;
-      let session;
+      const { values, role, tx } = args;
 
       try {
-        const result = await this._classRuntimeResolver.resolve({
-          ...args,
-          mode: "now-or-next",
-        });
-
-        offering = result.offering;
-        session = result.session;
-      } catch (err) {
-        const internalError = {
-          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
-          message: "Failed resolving class offering and/or session.",
-        } as const;
-
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.translateError({
-            fallback: { ...internalError, err },
-            map: (err, create) => {
-              switch (err.name) {
-                case "ENROLLMENT_DATA_INCONSISTENT_STATE_ERROR":
-                  return create({ ...internalError, cause: err });
-              }
-            },
-          }),
-        );
-      }
-
-      try {
-        const parsed = DtoMappers.Query.ClassSessionRuntime.map(
-          offering,
-          session,
-        );
-
-        return ResultBuilder.success({ class: parsed });
+        return role === "student"
+          ? await this.getForStudent({ values, role, tx })
+          : await this.getForProfessor({ values, role, tx });
       } catch (err) {
         return ResultBuilder.fail(
           Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw query data into enrollment DTO",
+            name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+            message: `Failed resolving runtime for ${args.role}`,
             err,
           }),
         );
+      }
+    }
+
+    private async getForStudent(args: {
+      values: {
+        date: Date;
+        termId: number;
+        userId: number;
+      };
+      role: typeof roles.student;
+      tx?: TxContext | undefined;
+    }) {
+      const runtime = await this._classRuntimeResolver.resolveActiveClass({
+        ...args,
+        mode: "now-or-next",
+      });
+
+      try {
+        return DtoMappers.Query.ClassSessionRuntime.mapStudentView(runtime);
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.collapseError({
+          name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+          message: "Failed mapping data to dto.",
+          err,
+        });
+      }
+    }
+
+    private async getForProfessor(args: {
+      values: {
+        date: Date;
+        termId: number;
+        userId: number;
+      };
+      role: typeof roles.professor;
+      tx?: TxContext | undefined;
+    }) {
+      const runtime = await this._classRuntimeResolver.resolveActiveClass({
+        ...args,
+        mode: "now-or-next",
+      });
+
+      try {
+        return DtoMappers.Query.ClassSessionRuntime.mapProfessorView(runtime);
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.collapseError({
+          name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+          message: "Failed mapping data to dto.",
+          err,
+        });
       }
     }
   }
