@@ -40,6 +40,48 @@ export namespace ClassSessionQuery {
 
     /**
      * @description
+     * Retrieves the professor's currently ongoing class,
+     * or the next scheduled class depending on the requested mode.
+     * Includes class, course, and schedule details.
+     */
+    async getProfessorActiveClass(
+      args: Parameters<Repositories.ClassSession["getProfessorActiveClass"]>[0],
+    ) {
+      let result;
+      try {
+        result = await this._classSessionRepo.getProfessorActiveClass(args);
+      } catch (err) {
+        throw Service.normalizeQueryError(err);
+      }
+
+      Service.ensureResult(result);
+
+      return result;
+    }
+
+    /**
+     * @description
+     * Retrieves the student's currently ongoing class,
+     * or the next scheduled class depending on the requested mode.
+     * Includes class, course, schedule, and professor details.
+     */
+    async getStudentActiveClass(
+      args: Parameters<Repositories.ClassSession["getStudentActiveClass"]>[0],
+    ) {
+      let result;
+      try {
+        result = await this._classSessionRepo.getStudentActiveClass(args);
+      } catch (err) {
+        throw Service.normalizeQueryError(err);
+      }
+
+      Service.ensureResult(result);
+
+      return result;
+    }
+
+    /**
+     * @description
      * Retrieves the current active session based on two modes:
      * 1. `now` - The session must be ongoing.
      * 2. `now-or-next` - The session must be ongoing OR is scheduled next for the current day.
@@ -217,6 +259,12 @@ export namespace ClassSessionQuery {
       } catch (err) {
         throw Service.normalizeQueryError(err);
       }
+    }
+
+    private static ensureResult<T>(
+      result: T,
+    ): asserts result is NonNullable<T> {
+      if (result === undefined) throw Service.sessionNotFoundError();
     }
 
     private static sessionNotFoundError(msg?: string) {

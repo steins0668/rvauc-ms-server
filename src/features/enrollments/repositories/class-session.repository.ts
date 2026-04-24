@@ -39,6 +39,142 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     );
   }
 
+  async getProfessorActiveClass(args: {
+    values: {
+      termId: number;
+      professorId: number;
+      datePh: string;
+      timeMs: number;
+    };
+    mode: "now" | "now-or-next";
+    tx?: TxContext | undefined;
+  }) {
+    const context = args.tx ?? this._dbContext;
+
+    const {
+      classes: cls,
+      classOfferings: co,
+      classSessions: cs,
+      courses: c,
+      rooms: r,
+    } = Schema;
+    const { and, eq } = RepositoryUtil.filters;
+    const { asc } = RepositoryUtil.orderOperators;
+
+    const baseShape = this.getActiveClassQueryBaseShape();
+    const baseFilter = this.getActiveClassQueryBaseFilters(args);
+
+    const [result] = await context
+      .select(baseShape)
+      .from(cls)
+      .innerJoin(c, eq(c.id, cls.courseId))
+      .innerJoin(co, eq(co.classId, cls.id))
+      .innerJoin(cs, eq(cs.classOfferingId, co.id))
+      .leftJoin(r, eq(r.id, co.roomId))
+      .where(and(eq(cls.professorId, args.values.professorId), baseFilter))
+      .orderBy(asc(cs.startTimeMs))
+      .limit(1);
+
+    return result;
+  }
+
+  async getStudentActiveClass(args: {
+    values: {
+      termId: number;
+      studentId: number;
+      datePh: string;
+      timeMs: number;
+    };
+    mode: "now" | "now-or-next";
+    tx?: TxContext | undefined;
+  }) {
+    const context = args.tx ?? this._dbContext;
+
+    const {
+      classes: cls,
+      classOfferings: co,
+      classSessions: cs,
+      courses: c,
+      enrollments: e,
+      users: u,
+      rooms: r,
+    } = Schema;
+    const { and, eq } = RepositoryUtil.filters;
+    const { asc } = RepositoryUtil.orderOperators;
+
+    const baseShape = this.getActiveClassQueryBaseShape();
+    const baseFilter = this.getActiveClassQueryBaseFilters(args);
+
+    const [result] = await context
+      .select({
+        ...baseShape,
+        enrollment: { id: e.id, status: e.status },
+        professor: {
+          id: u.id,
+          surname: u.surname,
+          firstName: u.firstName,
+          middleName: u.middleName,
+        },
+      })
+      .from(cls)
+      .innerJoin(c, eq(c.id, cls.courseId))
+      .innerJoin(co, eq(co.classId, cls.id))
+      .innerJoin(cs, eq(cs.classOfferingId, co.id))
+      .innerJoin(u, eq(u.id, cls.professorId))
+      .innerJoin(e, eq(e.classId, cls.id))
+      .leftJoin(r, eq(r.id, co.roomId))
+      .where(and(eq(e.studentId, args.values.studentId), baseFilter))
+      .orderBy(asc(cs.startTimeMs))
+      .limit(1);
+
+    return result;
+  }
+
+  private getActiveClassQueryBaseShape() {
+    const {
+      classes: cls,
+      classOfferings: co,
+      classSessions: cs,
+      courses: c,
+      rooms: r,
+    } = Schema;
+
+    return {
+      class: { id: cls.id, classNumber: cls.classNumber },
+      course: { name: c.name, code: c.code },
+      offering: {
+        id: co.id,
+        weekDay: co.weekDay,
+        startTimeText: co.startTimeText,
+        endTimeText: co.endTimeText,
+      },
+      session: { id: cs.id, datePh: cs.datePh, status: cs.status },
+      room: { name: r.name, building: r.building },
+    };
+  }
+
+  private getActiveClassQueryBaseFilters(args: {
+    values: { termId: number; datePh: string; timeMs: number };
+    mode: "now" | "now-or-next";
+  }) {
+    const { termId, datePh, timeMs } = args.values;
+
+    const { classes: cls, classSessions: cs } = Schema;
+    const { and, eq, gt, lte, or } = RepositoryUtil.filters;
+
+    const ongoingFilter = and(
+      lte(cs.startTimeMs, timeMs),
+      gt(cs.endTimeMs, timeMs),
+    );
+
+    const timeFilter =
+      args.mode === "now"
+        ? ongoingFilter
+        : or(ongoingFilter, gt(cs.startTimeMs, timeMs));
+
+    return and(eq(cls.termId, termId), eq(cs.datePh, datePh), timeFilter);
+  }
+
   async getOfferingActiveSession(args: {
     values: { classOfferingId: number; date: Date };
     mode: "now" | "now-or-next";
