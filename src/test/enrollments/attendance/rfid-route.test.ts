@@ -126,8 +126,7 @@ describe("RFID Scan Route", () => {
 
         const { result } = res.body;
 
-        CoreSchemas.Dto.class_.parse(result.class);
-        Schemas.Dto.insertedAttendance.parse(result.attendance);
+        Schemas.Dto.ClassAttendance.sessionAttendanceResult.parse(result);
       });
 
       it(`should return 200 for duplicate record`, async () => {
@@ -145,8 +144,7 @@ describe("RFID Scan Route", () => {
 
         const { result } = res.body;
 
-        CoreSchemas.Dto.class_.parse(result.class);
-        Schemas.Dto.insertedAttendance.parse(result.attendance);
+        Schemas.Dto.ClassAttendance.sessionAttendanceResult.parse(result);
       });
 
       it(`should return 409 for no face to face class`, async () => {
