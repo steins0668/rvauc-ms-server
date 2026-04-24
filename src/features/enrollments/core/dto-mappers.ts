@@ -1,5 +1,6 @@
 import { Repositories } from "../repositories";
 import { Schemas } from "./schemas";
+import { Services } from "./services";
 
 export namespace DtoMappers {
   export namespace Query {
@@ -41,6 +42,33 @@ export namespace DtoMappers {
       }
     }
 
+    export namespace ClassList {
+      export function map(
+        rawList: Awaited<
+          ReturnType<
+            Services.EnrollmentQuery.Service["getEnrollmentsWithSchedule"]
+          >
+        >,
+      ): Schemas.Dto.ClassList {
+        const mapped: Schemas.Dto.ClassList = rawList.map((i) => {
+          const { offering: o, room: r } = i;
+
+          return {
+            ...i,
+            offering: o
+              ? {
+                  ...o,
+                  startTime: o.startTimeText,
+                  endTime: o.endTimeText,
+                  room: r,
+                }
+              : null,
+          };
+        });
+
+        return Schemas.Dto.classList.parse(mapped);
+      }
+    }
     export namespace ClassSessionRuntime {
       export function map(
         co: NonNullable<
