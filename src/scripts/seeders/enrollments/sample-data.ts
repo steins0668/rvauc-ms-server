@@ -281,6 +281,26 @@ export namespace SampleData {
       startTimeText: "1:00 PM",
       endTimeText: "3:00 PM",
     },
+    {
+      id: 18,
+      classId: 6,
+      weekDay: "fri",
+      roomId: 2,
+      startTime: 61200,
+      endTime: 64800,
+      startTimeText: "5:00 PM",
+      endTimeText: "6:00 PM",
+    },
+    {
+      id: 19,
+      classId: 6,
+      weekDay: "fri",
+      roomId: 2,
+      startTime: 55800,
+      endTime: 59400,
+      startTimeText: "3:30 PM",
+      endTimeText: "4:30 PM",
+    },
   ];
 
   export const generateClassSessions = (args: {
