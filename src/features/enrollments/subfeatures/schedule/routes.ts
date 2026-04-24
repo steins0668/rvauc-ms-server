@@ -2,6 +2,7 @@ import { Router } from "express";
 import { Controllers } from "./controllers";
 import { validateRequest } from "../../../../middlewares";
 import { Schemas } from "./schemas";
+import { Core } from "../../core";
 import { Auth } from "../../../auth";
 import { Middlewares } from "./middlewares";
 
@@ -13,10 +14,11 @@ Routes.use(Middlewares.attachClassSessionRuntimeService);
 /**
  * GET
  *
- * @returns {Core.Schemas.Dto.ScheduledSessionWithProfessor}
+ * @returns {Core.Schemas.Dto.RuntimeProfessorView} for professors
+ * @returns {Core.Schemas.Dto.RuntimeStudentView} for students
  */
 Routes.get(
-  "/get-schedule/current-or-next",
+  "/current-or-next",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({ query: Schemas.RequestQuery.userSchedule }),
   Controllers.handleGetCurrentOrNext,
@@ -25,10 +27,10 @@ Routes.get(
 /**
  * GET
  *
- * @returns {Core.Schemas.Dto.ScheduledClassesWithProfessor}
+ * @returns {Schemas.Dto.ClassList}
  */
 Routes.get(
-  "/get-class-list",
+  "/class-list",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({ query: Schemas.RequestQuery.userSchedule }),
   Controllers.handleGetClassList,
