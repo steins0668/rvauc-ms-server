@@ -73,12 +73,12 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
           startTimeText: o.startTimeText,
           endTimeText: o.endTimeText,
         },
+        room: { name: r.name, building: r.building },
         session: {
           id: cs.id,
           startTimeMs: cs.startTimeMs,
           endTimeMs: cs.endTimeMs,
         },
-        room: { name: r.name, building: r.building },
         professor: {
           id: u.id,
           surname: u.surname,

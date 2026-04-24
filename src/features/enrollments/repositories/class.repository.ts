@@ -56,12 +56,12 @@ export class Class extends Repository<Types.Tables.Class> {
           startTimeText: o.startTimeText,
           endTimeText: o.endTimeText,
         },
+        room: { name: r.name, building: r.building },
         session: {
           id: cs.id,
           startTimeMs: cs.startTimeMs,
           endTimeMs: cs.endTimeMs,
         },
-        room: { name: r.name, building: r.building },
       })
       .from(cls)
       .innerJoin(c, eq(c.id, cls.courseId))
