@@ -1,5 +1,4 @@
 import { Core } from "../../core";
-import { Repositories as CoreRepositories } from "../../repositories";
 import { Schemas } from "./schemas";
 
 export namespace DtoMappers {
@@ -18,7 +17,7 @@ export namespace DtoMappers {
             classes: rawList.map(normalizeClassRow),
           };
 
-          return Schemas.Dto.classList.parse(mapped);
+          return mapped;
         } catch (err) {
           throw Core.Errors.EnrollmentData.dtoConversionError({ err });
         }
@@ -37,7 +36,7 @@ export namespace DtoMappers {
             classes: rawList.map(normalizeClassRow),
           };
 
-          return Schemas.Dto.classList.parse(mapped);
+          return mapped;
         } catch (err) {
           throw Core.Errors.EnrollmentData.dtoConversionError({ err });
         }
@@ -131,6 +130,36 @@ export namespace DtoMappers {
             runtimeStatus: cs.runtimeStatus,
           },
         };
+      }
+    }
+
+    export namespace WeeklySchedule {
+      export function map(
+        rawSchedule: Awaited<
+          ReturnType<
+            Core.Services.ClassOfferingQuery.Service["getWeeklyScheduleForClass"]
+          >
+        >,
+      ): Schemas.Dto.WeeklySchedule {
+        try {
+          const dto: Schemas.Dto.WeeklySchedule = {
+            schedule: rawSchedule.map((s) => ({
+              id: s.id,
+              weekDay: s.weekDay,
+              weekDayNumeric: s.weekDayNumeric,
+              startTime: s.startTimeText,
+              endTime: s.endTimeText,
+            })),
+          };
+
+          return dto;
+        } catch (err) {
+          throw Core.Errors.EnrollmentData.collapseError({
+            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+            message: "Failed mapping raw schedule to dto.",
+            err,
+          });
+        }
       }
     }
   }
