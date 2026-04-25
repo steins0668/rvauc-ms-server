@@ -47,6 +47,7 @@ export namespace Schemas {
           .strictObject({
             status: z.string(),
             date: z.string(),
+            runtimeStatus: z.string().nullable(),
           })
           .strip(),
       })

@@ -6,6 +6,7 @@ import { Repository } from "../../../services";
 import { BaseRepositoryType } from "../../../types";
 import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
+import { Core } from "../core";
 
 export class ClassSession extends Repository<Types.Tables.ClassSession> {
   public constructor(context: DbContext) {
@@ -45,7 +46,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     const { and, eq } = RepositoryUtil.filters;
     const { asc } = RepositoryUtil.orderOperators;
 
-    const baseShape = this.getActiveClassQueryBaseShape();
+    const baseShape = this.getActiveClassQueryBaseShape(args.values.timeMs);
     const baseFilter = this.getActiveClassQueryBaseFilters(args);
 
     const [result] = await context
@@ -86,7 +87,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     const { and, eq } = RepositoryUtil.filters;
     const { asc } = RepositoryUtil.orderOperators;
 
-    const baseShape = this.getActiveClassQueryBaseShape();
+    const baseShape = this.getActiveClassQueryBaseShape(args.values.timeMs);
     const baseFilter = this.getActiveClassQueryBaseFilters(args);
 
     const [result] = await context
@@ -119,7 +120,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     return result;
   }
 
-  private getActiveClassQueryBaseShape() {
+  private getActiveClassQueryBaseShape(timeMs: number) {
     const {
       classes: cls,
       classOfferings: co,
@@ -137,7 +138,23 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
         startTimeText: co.startTimeText,
         endTimeText: co.endTimeText,
       },
-      session: { id: cs.id, datePh: cs.datePh, status: cs.status },
+      session: {
+        id: cs.id,
+        datePh: cs.datePh,
+        status: cs.status,
+        runtimeStatus: sql<"ongoing" | "next" | null>`
+          CASE
+            WHEN ${cs.status} != ${Core.Data.classSessionStatus.scheduled}
+              THEN null
+            WHEN ${cs.startTimeMs} <= ${timeMs}
+              AND ${cs.endTimeMs} > ${timeMs}
+              THEN 'ongoing'
+            WHEN ${cs.startTimeMs} > ${timeMs}
+              THEN 'next'
+            ELSE null
+          END
+        `,
+      },
       room: { name: r.name, building: r.building },
     };
   }

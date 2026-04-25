@@ -90,6 +90,7 @@ export namespace DtoMappers {
           session: {
             status: cs.status,
             date: cs.datePh,
+            runtimeStatus: cs.runtimeStatus,
           },
           professor: {
             surname: p.surname,
@@ -127,6 +128,7 @@ export namespace DtoMappers {
           session: {
             status: cs.status,
             date: cs.datePh,
+            runtimeStatus: cs.runtimeStatus,
           },
         };
       }
