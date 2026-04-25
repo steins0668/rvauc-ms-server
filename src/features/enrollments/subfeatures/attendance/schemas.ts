@@ -77,7 +77,6 @@ export namespace Schemas {
       .strictObject({
         id: z.number(),
         status: z.string(),
-        date: z.string(),
         time: z.string(),
       })
       .strip();
@@ -104,7 +103,31 @@ export namespace Schemas {
 
     export namespace ClassAttendance {
       export const studentView = z
-        .strictObject({ attendanceRecords: z.array(base), summary: summary })
+        .strictObject({
+          attendanceRecords: z.array(
+            z
+              .strictObject({
+                record: base,
+                offering: z
+                  .strictObject({
+                    id: z.number(),
+                    weekDay: z.string(),
+                    startTime: z.string(),
+                    endTime: z.string(),
+                  })
+                  .strip(),
+                session: z
+                  .strictObject({
+                    id: z.number(),
+                    status: z.string(),
+                    date: z.string(),
+                  })
+                  .strip(),
+              })
+              .strip(),
+          ),
+          summary: summary,
+        })
         .strip();
       export type StudentView = z.infer<typeof studentView>;
 

@@ -205,7 +205,9 @@ export namespace AttendanceData {
       let enrollment;
       let sessionCount: number;
       let recordsAndSummary: Awaited<
-        ReturnType<AttendanceQuery.Service["fetchRecordsAndSummary"]>
+        ReturnType<
+          AttendanceQuery.Service["fetchRecordsAndSummaryWithSessionAndOffering"]
+        >
       > = this.EMPTY_ATTENDANCE_RESULT;
 
       try {
@@ -220,17 +222,20 @@ export namespace AttendanceData {
           dbOrTx: args.dbOrTx,
         });
 
-        recordsAndSummary = await this._attendanceQuery.fetchRecordsAndSummary({
-          values: {
-            classId,
-            enrollmentIds: [enrollment.id],
-          },
-          constraints: {
-            limit: RepositoryUtil.resolveLimit(args.constraints),
-            offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
-          },
-          dbOrTx: args.dbOrTx,
-        });
+        recordsAndSummary =
+          await this._attendanceQuery.fetchRecordsAndSummaryWithSessionAndOffering(
+            {
+              values: {
+                classId,
+                enrollmentIds: [enrollment.id],
+              },
+              constraints: {
+                limit: RepositoryUtil.resolveLimit(args.constraints),
+                offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
+              },
+              dbOrTx: args.dbOrTx,
+            },
+          );
       } catch (err) {
         const internalError = Core.Errors.EnrollmentData.internalError(
           "Failed retrieving class attendance records for student.",

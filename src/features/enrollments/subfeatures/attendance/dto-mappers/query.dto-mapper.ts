@@ -74,24 +74,41 @@ export namespace Query {
 
   export function classAttendanceStudentView(
     recordsAndSummary: Awaited<
-      ReturnType<Services.AttendanceQuery.Service["fetchRecordsAndSummary"]>
+      ReturnType<
+        Services.AttendanceQuery.Service["fetchRecordsAndSummaryWithSessionAndOffering"]
+      >
     >,
     sessionCount: number,
   ) {
     const { records, summary } = recordsAndSummary;
 
-    const dto = {
+    const dto: Schemas.Dto.ClassAttendance.StudentView = {
       attendanceRecords: records.map((ar) => {
+        const { classSession } = ar;
+        const { classOffering } = classSession;
+
         return {
-          id: ar.id,
-          status: ar.status,
-          date: ar.datePh,
-          time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
+          offering: {
+            id: classOffering.id,
+            weekDay: classOffering.weekDay,
+            startTime: classOffering.startTimeText,
+            endTime: classOffering.endTimeText,
+          },
+          session: {
+            id: classSession.id,
+            status: classSession.status,
+            date: classSession.datePh,
+          },
+          record: {
+            id: ar.id,
+            status: ar.status,
+            time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
+          },
         };
       }),
       summary: {
         ...summary,
-        missingRecords: sessionCount - summary.totalRecords, // ! temporary until class session tracking is implemented
+        missingRecords: sessionCount - summary.totalRecords,
       },
     };
 
