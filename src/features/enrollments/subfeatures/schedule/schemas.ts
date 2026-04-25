@@ -10,7 +10,6 @@ export namespace Schemas {
           .strip(),
         course: z
           .strictObject({
-            id: z.number(),
             name: z.string(),
             code: z.string(),
           })
@@ -18,7 +17,6 @@ export namespace Schemas {
         offering: z.nullable(
           z
             .strictObject({
-              id: z.number(),
               weekDay: z.string(),
               startTime: z.string(),
               endTime: z.string(),

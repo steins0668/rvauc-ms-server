@@ -51,9 +51,8 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
         weight,
         enrollment: { id: e.id, status: e.status },
         class: { id: cls.id, classNumber: cls.classNumber },
-        course: { id: c.id, name: c.name, code: c.code },
+        course: { name: c.name, code: c.code },
         offering: {
-          id: o.id,
           weekDay: o.weekDay,
           startTimeText: o.startTimeText,
           endTimeText: o.endTimeText,
