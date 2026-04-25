@@ -104,7 +104,7 @@ export namespace Schemas {
     export namespace ClassAttendance {
       export const studentView = z
         .strictObject({
-          attendanceRecords: z.array(
+          history: z.array(
             z
               .strictObject({
                 record: base,
@@ -230,7 +230,7 @@ export namespace Schemas {
     }
 
     export namespace StudentAttendance {
-      export const attendanceRecords = z.array(
+      export const history = z.array(
         z
           .strictObject({
             record: base,
@@ -265,7 +265,7 @@ export namespace Schemas {
             firstName: z.string(),
             middleName: z.string(),
           }),
-          attendanceRecords,
+          history: history,
           summary: summary,
         })
         .strip();

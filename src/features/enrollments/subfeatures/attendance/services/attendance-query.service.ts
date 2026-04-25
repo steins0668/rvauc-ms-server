@@ -151,12 +151,12 @@ export namespace AttendanceQuery {
       dbOrTx?: DbOrTx | undefined;
     }) {
       try {
-        const records =
+        const history =
           await this._attendanceRecordRepo.fetchHistoryForEnrollment(args);
         const summary =
           await this._attendanceRecordRepo.fetchSummaryForEnrollment(args);
 
-        return { records, summary };
+        return { history, summary };
       } catch (err) {
         throw Core.Errors.EnrollmentData.normalizeError({
           name: "ENROLLMENT_DATA_QUERY_ERROR",

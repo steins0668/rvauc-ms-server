@@ -91,10 +91,10 @@ export namespace Query {
       >
     >,
   ) {
-    const { records, summary } = recordsAndSummary;
+    const { history, summary } = recordsAndSummary;
 
     const dto: Schemas.Dto.ClassAttendance.StudentView = {
-      attendanceRecords: records.map((r) => {
+      history: history.map((r) => {
         const { offering, session } = r;
 
         const { id, status, recordedAt } = r.record ?? {};
@@ -142,7 +142,7 @@ export namespace Query {
     >,
   ): Schemas.Dto.StudentAttendance.ProfessorView {
     const { student, enrollment } = enrollmentDetails;
-    const { records, summary } = historyAndSummary;
+    const { history, summary } = historyAndSummary;
 
     try {
       return {
@@ -157,7 +157,7 @@ export namespace Query {
           firstName: student.firstName,
           middleName: student.middleName,
         },
-        attendanceRecords: records.map((row) => {
+        history: history.map((row) => {
           const { session: cs, offering: co, record: ar } = row;
 
           const { id, status, recordedAt } = ar ?? {};
