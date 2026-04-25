@@ -128,10 +128,12 @@ export namespace Schemas {
               })
               .strip(),
           ),
-          summary: {
-            ...summaryBase.shape,
-            totalSessions: z.number(),
-          },
+          summary: z
+            .strictObject({
+              ...summaryBase.shape,
+              totalSessions: z.number(),
+            })
+            .strip(),
         })
         .strip();
       export type StudentView = z.infer<typeof studentView>;
@@ -178,10 +180,12 @@ export namespace Schemas {
               date: z.string(),
             })
             .strip(),
-          summary: {
-            ...summaryBase.shape,
-            totalEnrollments: z.number(),
-          },
+          summary: z
+            .strictObject({
+              ...summaryBase.shape,
+              totalEnrollments: z.number(),
+            })
+            .strip(),
         })
         .strip();
       export type ProfessorView = z.infer<typeof professorView>;
@@ -280,10 +284,12 @@ export namespace Schemas {
             middleName: z.string(),
           }),
           history: history,
-          summary: {
-            ...summaryBase.shape,
-            totalSessions: z.number(),
-          },
+          summary: z
+            .strictObject({
+              ...summaryBase.shape,
+              totalSessions: z.number(),
+            })
+            .strip(),
         })
         .strip();
 
