@@ -85,8 +85,8 @@ export namespace DtoMappers {
             weekDay: co.weekDay,
             startTime: co.startTimeText,
             endTime: co.endTimeText,
+            room: r,
           },
-          room: r,
           session: {
             status: cs.status,
             date: cs.datePh,
@@ -122,8 +122,8 @@ export namespace DtoMappers {
             weekDay: co.weekDay,
             startTime: co.startTimeText,
             endTime: co.endTimeText,
+            room: r,
           },
-          room: r,
           session: {
             status: cs.status,
             date: cs.datePh,
