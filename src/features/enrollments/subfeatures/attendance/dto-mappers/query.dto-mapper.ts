@@ -70,13 +70,13 @@ export namespace Query {
   }
 
   export function classAttendanceStudentView(
-    recordsAndSummary: Awaited<
+    historyAndSummary: Awaited<
       ReturnType<
         Services.AttendanceQuery.Service["fetchHistoryAndSummaryForEnrollment"]
       >
     >,
   ) {
-    const { history, summary } = recordsAndSummary;
+    const { history, summary } = historyAndSummary;
 
     const dto: Schemas.Dto.ClassAttendance.StudentView = {
       history: history.map((r) => {
