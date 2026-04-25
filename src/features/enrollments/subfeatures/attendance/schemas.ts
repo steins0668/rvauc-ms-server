@@ -90,7 +90,7 @@ export namespace Schemas {
       .strip();
     export type InsertedAttendance = z.infer<typeof insertedAttendance>;
 
-    export const summary = z
+    export const summaryBase = z
       .strictObject({
         present: z.number(),
         absent: z.number(),
@@ -129,7 +129,7 @@ export namespace Schemas {
               .strip(),
           ),
           summary: {
-            ...summary.shape,
+            ...summaryBase.shape,
             totalSessions: z.number(),
           },
         })
@@ -179,7 +179,7 @@ export namespace Schemas {
             })
             .strip(),
           summary: {
-            ...summary.shape,
+            ...summaryBase.shape,
             totalEnrollments: z.number(),
           },
         })
@@ -281,7 +281,7 @@ export namespace Schemas {
           }),
           history: history,
           summary: {
-            ...summary.shape,
+            ...summaryBase.shape,
             totalSessions: z.number(),
           },
         })
