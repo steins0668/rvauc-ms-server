@@ -428,6 +428,13 @@
       "when": 1777105097556,
       "tag": "0060_yellow_psynapse",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "6",
+      "when": 1777123877778,
+      "tag": "0061_public_pixie",
+      "breakpoints": true
     }
   ]
 }

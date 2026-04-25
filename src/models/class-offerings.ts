@@ -13,6 +13,7 @@ export const classOfferings = sqliteTable(
         onUpdate: "cascade",
       }),
     weekDay: text("week_day").notNull(),
+    weekDayNumeric: integer("week_day_numeric").default(0).notNull(),
     roomId: integer("room_id").references(() => rooms.id, {
       onDelete: "restrict",
       onUpdate: "cascade",

@@ -1,0 +1,1 @@
+ALTER TABLE `class_offerings` ADD `week_day_numeric` integer DEFAULT 0 NOT NULL;
