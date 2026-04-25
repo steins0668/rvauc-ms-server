@@ -1,24 +1,11 @@
-import { SQLWrapper } from "drizzle-orm";
 import { DbOrTx } from "../../../../../db/create-context";
-import { Schema } from "../../../../../models";
 import { BaseRepositoryType } from "../../../../../types";
-import { RepositoryUtil } from "../../../../../utils";
 import { Core } from "../../../core";
 import { Repositories } from "../repositories";
 
 export namespace AttendanceQuery {
   export class Service {
     private readonly _attendanceRecordRepo: Repositories.AttendanceRecord;
-    private readonly EMPTY_ATTENDANCE_RESULT = {
-      records: [],
-      summary: {
-        present: 0,
-        absent: 0,
-        late: 0,
-        excused: 0,
-        totalRecords: 0,
-      },
-    };
 
     constructor(args: { attendanceRecordRepo: Repositories.AttendanceRecord }) {
       this._attendanceRecordRepo = args.attendanceRecordRepo;

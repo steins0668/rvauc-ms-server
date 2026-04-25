@@ -1,6 +1,5 @@
 import { createContext, DbOrTx } from "../../../../../db/create-context";
-import { Schema } from "../../../../../models";
-import { Clock, RepositoryUtil, ResultBuilder } from "../../../../../utils";
+import { RepositoryUtil, ResultBuilder } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
 import { Repositories as CoreRepositories } from "../../../repositories";
@@ -37,16 +36,6 @@ export namespace AttendanceData {
     private readonly _classQuery: Core.Services.ClassQuery.Service;
     private readonly _classSessionQuery: Core.Services.ClassSessionQuery.Service;
     private readonly _enrollmentQuery: Core.Services.EnrollmentQuery.Service;
-    private readonly EMPTY_ATTENDANCE_RESULT = {
-      records: [],
-      summary: {
-        present: 0,
-        absent: 0,
-        late: 0,
-        excused: 0,
-        totalRecords: 0,
-      },
-    };
 
     constructor(args: {
       attendanceQueryService: AttendanceQuery.Service;
