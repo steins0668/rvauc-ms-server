@@ -23,14 +23,14 @@ export namespace Mutation {
     const { course: crs, professor: p } = runtime;
 
     return {
-      class: { classNumber: cls.classNumber },
+      class: { id: cls.id, classNumber: cls.classNumber },
       course: crs,
       offering: {
         weekDay: co.weekDay,
         startTime: co.startTimeText,
         endTime: co.endTimeText,
+        room: { name: r.name, building: r.building },
       },
-      room: { name: r.name, building: r.building },
       session: { status: cs.status, date: cs.datePh },
       professor: {
         surname: p.surname,

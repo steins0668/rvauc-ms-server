@@ -227,12 +227,12 @@ export namespace Schemas {
 
       export const sessionAttendanceResult = z
         .strictObject({
-          ...Core.Schemas.Dto.runtimeStudentView.shape,
-          room: z
-            .strictObject({
-              name: z.string(),
-              building: z.string().nullable(),
-            })
+          ...Core.Schemas.Dto.runtimeStudentView.omit({
+            session: true,
+            enrollment: true,
+          }).shape,
+          session: z
+            .strictObject({ status: z.string(), date: z.string })
             .strip(),
           attendance: insertedAttendance,
         })
