@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { DbContext, DbOrTx } from "../../../db/create-context";
+import { DbContext, DbOrTx, TxContext } from "../../../db/create-context";
 import { classes, Schema } from "../../../models";
 import { Repository } from "../../../services";
 import { RepositoryUtil } from "../../../utils";
@@ -8,6 +8,43 @@ import { Types } from "../types";
 export class Class extends Repository<Types.Tables.Class> {
   public constructor(context: DbContext) {
     super(context, classes);
+  }
+
+  async getProfessorOwnedClass(args: {
+    values: { classId: number; userId: number };
+    tx?: TxContext | undefined;
+  }) {
+    const { classId, userId: professorId } = args.values;
+    const context = args.tx ?? this._dbContext;
+
+    const { classes: cls } = Schema;
+    const { and, eq } = RepositoryUtil.filters;
+
+    return await context
+      .select({ id: cls.id })
+      .from(cls)
+      .where(and(eq(cls.id, classId), eq(cls.professorId, professorId)))
+      .limit(1)
+      .then((r) => r.length > 0);
+  }
+
+  async getStudentEnrolledClass(args: {
+    values: { classId: number; userId: number };
+    tx?: TxContext | undefined;
+  }) {
+    const { classId, userId: studentId } = args.values;
+    const context = args.tx ?? this._dbContext;
+
+    const { classes: cls, enrollments: e } = Schema;
+    const { and, eq } = RepositoryUtil.filters;
+
+    return await context
+      .select({ id: cls.id })
+      .from(cls)
+      .innerJoin(e, eq(e.classId, cls.id))
+      .where(and(eq(cls.id, classId), eq(e.studentId, studentId)))
+      .limit(1)
+      .then((r) => r.length > 0);
   }
 
   async getProfessorClassesWithSchedule(args: {
