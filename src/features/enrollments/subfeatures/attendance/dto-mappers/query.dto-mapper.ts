@@ -120,10 +120,8 @@ export namespace Query {
   }
 
   export function studentAttendanceProfessorView(
-    enrollment: Awaited<
-      ReturnType<
-        Core.Services.EnrollmentQuery.Service["ensureEnrollmentsWithStudentGraph"]
-      >
+    enrollmentDetails: Awaited<
+      ReturnType<Core.Services.EnrollmentQuery.Service["ensureForProfessor"]>
     >,
     historyAndSummary: Awaited<
       ReturnType<
@@ -131,7 +129,7 @@ export namespace Query {
       >
     >,
   ): Schemas.Dto.StudentAttendance.ProfessorView {
-    const { student } = enrollment;
+    const { student, enrollment } = enrollmentDetails;
     const { records, summary } = historyAndSummary;
 
     try {
@@ -143,9 +141,9 @@ export namespace Query {
         student: {
           id: student.id,
           studentNumber: student.studentNumber,
-          surname: student.user.surname,
-          firstName: student.user.firstName,
-          middleName: student.user.middleName,
+          surname: student.surname,
+          firstName: student.firstName,
+          middleName: student.middleName,
         },
         attendanceRecords: records.map((row) => {
           const { session: cs, offering: co, record: ar } = row;

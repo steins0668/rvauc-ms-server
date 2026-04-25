@@ -256,19 +256,11 @@ export namespace AttendanceData {
       },
     ) {
       try {
-        const enrollment =
-          await this._enrollmentQuery.ensureEnrollmentsWithStudentGraph({
-            where: (e, { and, eq }) =>
-              and(
-                eq(e.id, args.values.enrollmentId),
-                eq(e.classId, args.values.classId),
-              ),
-            dbOrTx: args.dbOrTx,
-          });
+        const result = await this._enrollmentQuery.ensureForProfessor(args);
 
         const historyAndSummary =
           await this._attendanceQuery.fetchHistoryAndSummaryForEnrollment({
-            values: { enrollmentId: enrollment.id },
+            values: { enrollmentId: result.enrollment.id },
             constraints: {
               limit: RepositoryUtil.resolveLimit(args.constraints),
               offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
@@ -278,7 +270,7 @@ export namespace AttendanceData {
 
         return ResultBuilder.success(
           DtoMappers.Query.studentAttendanceProfessorView(
-            enrollment,
+            result,
             historyAndSummary,
           ),
         );
@@ -292,7 +284,6 @@ export namespace AttendanceData {
             fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
-                case "ENROLLMENT_DATA_CLASS_NOT_FOUND_ERROR":
                 case "ENROLLMENT_DATA_ENROLLMENT_NOT_FOUND_ERROR":
                   return create({
                     name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
