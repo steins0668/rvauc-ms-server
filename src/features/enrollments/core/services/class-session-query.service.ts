@@ -1,5 +1,4 @@
 import { Repositories } from "../../repositories";
-import { Data } from "../data";
 import { Errors } from "../errors";
 
 export namespace ClassSessionQuery {
@@ -82,67 +81,6 @@ export namespace ClassSessionQuery {
 
     /**
      * @description
-     * Retrieves the current active session based on two modes:
-     * 1. `now` - The session must be ongoing.
-     * 2. `now-or-next` - The session must be ongoing OR is scheduled next for the current day.
-     * Throws if session is not found.
-     * Throws if session is cancelled.
-     */
-    async ensureOfferingActiveSessionNotCancelled(
-      args: Parameters<
-        Repositories.ClassSession["getOfferingActiveSession"]
-      >[0],
-    ) {
-      const session = await this.ensureOfferingActiveSession(args);
-
-      if (session.status === Data.classSessionStatus.cancelled)
-        throw new Errors.EnrollmentData.ErrorClass({
-          name: "ENROLLMENT_DATA_NO_ACTIVE_CLASS_ERROR",
-          message: "The specified class session was cancelled.",
-        });
-
-      return session;
-    }
-
-    /**
-     * @description
-     * Retrieves the current active session based on two modes:
-     * 1. `now` - The session must be ongoing.
-     * 2. `now-or-next` - The session must be ongoing OR is scheduled next for the current day.
-     * Throws if session is not found.
-     */
-    async ensureOfferingActiveSession(
-      args: Parameters<
-        Repositories.ClassSession["getOfferingActiveSession"]
-      >[0],
-    ) {
-      const session = await this.getOfferingActiveSession(args);
-
-      if (!session) throw Service.sessionNotFoundError();
-
-      return session;
-    }
-
-    /**
-     * @description
-     * Retrieves the current active session based on two modes:
-     * 1. `now` - The session must be ongoing.
-     * 2. `now-or-next` - The session must be ongoing OR is scheduled next for the current day.
-     */
-    async getOfferingActiveSession(
-      args: Parameters<
-        Repositories.ClassSession["getOfferingActiveSession"]
-      >[0],
-    ) {
-      try {
-        return await this._classSessionRepo.getOfferingActiveSession(args);
-      } catch (err) {
-        throw Service.normalizeQueryError(err);
-      }
-    }
-
-    /**
-     * @description
      * Retrieves a class session with its class and class offering relations.
      * Throws if not found.
      */
@@ -206,20 +144,6 @@ export namespace ClassSessionQuery {
         });
 
       return result;
-    }
-
-    /**
-     * @description
-     * Counts class sessions that match a specified class id and date.
-     */
-    async countForClassIdAndDate(
-      args: Parameters<Repositories.ClassSession["countForClassIdAndDate"]>[0],
-    ) {
-      try {
-        return await this._classSessionRepo.countForClassIdAndDate(args);
-      } catch (err) {
-        throw Service.normalizeQueryError(err);
-      }
     }
 
     private static ensureResult<T>(

@@ -13,60 +13,6 @@ export namespace EnrollmentQuery {
 
     /**
      * @description
-     * Retrieves enrollments using a projection-based SQL query (explicit joins),
-     * returning a flattened UI-ready dataset with student information included.
-     *
-     * This is a VIEW-LEVEL query intended for:
-     * - list screens with pagination
-     * - deterministic sorting (e.g., alphabetical ordering)
-     * - API responses requiring stable, minimal, serializable shapes
-     *
-     * Key properties:
-     * - Flat structure (no nested relations)
-     * - Explicit joins (no ORM graph hydration)
-     * - Optimized for sorting across joined columns
-     *
-     * Not suitable for:
-     * - domain modeling
-     * - relational traversal
-     * - business logic that depends on full entity graphs
-     */
-    async getEnrollmentsWithStudentDetails(
-      args: NonNullable<
-        Parameters<Repositories.Enrollment["getEnrollmentStudentListView"]>[0]
-      >,
-    ) {
-      let enrollments;
-
-      try {
-        enrollments =
-          await this._enrollmentRepo.getEnrollmentStudentListView(args);
-      } catch (err) {
-        throw Service.normalizeQueryError({
-          message: "Failed retrieving enrollments for class.",
-          err,
-        });
-      }
-
-      let totalEnrollments;
-
-      try {
-        totalEnrollments = await this._enrollmentRepo.countEnrollments({
-          where: args.where,
-          dbOrTx: args.dbOrTx,
-        });
-      } catch (err) {
-        throw Service.normalizeQueryError({
-          message: "Failed counting enrollments for class.",
-          err,
-        });
-      }
-
-      return { enrollments: [...enrollments], totalEnrollments };
-    }
-
-    /**
-     * @description
      * Retrieves all enrollments of a student for a term.
      * Additionally includes details of scheduled classes for the provided date and time if available.
      */
@@ -124,65 +70,6 @@ export namespace EnrollmentQuery {
 
     /**
      * @description
-     * Verifies and retrieves a single enrollment for a given class and student pair.
-     *
-     * This is a strict existence check used for authorization or validation flows,
-     * ensuring that the student is officially enrolled in the specified class.
-     *
-     * Returns minimal enrollment data (no relational graph hydration).
-     * Throws if no matching enrollment exists.
-     */
-    async ensureForClassAndStudent(args: {
-      values: {
-        classId: number;
-        studentId: number;
-      };
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      let enrollment;
-
-      try {
-        enrollment = await this._enrollmentRepo.getForClassAndStudent(args);
-      } catch (err) {
-        throw Service.normalizeQueryError({ err });
-      }
-
-      this.assertValidEnrollment(enrollment);
-
-      return enrollment;
-    }
-
-    /**
-     * @description
-     * Retrieves a single enrollment (limit 1) using the projection-based enrollment query
-     * with student details included.
-     *
-     * This is a convenience method for scenarios where:
-     * - a specific enrollment must be validated or fetched
-     * - full student context is still required
-     *
-     * Throws if no matching enrollment is found.
-     */
-    async ensureEnrollmentsWithStudentGraph(
-      args: Pick<
-        NonNullable<
-          Parameters<Repositories.Enrollment["queryWithStudentDetails"]>[0]
-        >,
-        "where" | "orderBy" | "dbOrTx"
-      >,
-    ) {
-      const enrollment = await this.getEnrollmentsWithStudentGraph({
-        ...args,
-        constraints: { limit: 1 },
-      }).then((r) => r[0]);
-
-      if (!enrollment) throw Service.enrollmentNotFoundError();
-
-      return enrollment;
-    }
-
-    /**
-     * @description
      * Retrieves an enrollment that is linked to a professor's class.
      * Throws if enrollment is not found.
      */
@@ -205,36 +92,6 @@ export namespace EnrollmentQuery {
     ) {
       try {
         return await this._enrollmentRepo.getByIdForProfessor(args);
-      } catch (err) {
-        throw Service.normalizeQueryError({ err });
-      }
-    }
-
-    /**
-     * @description
-     * Retrieves enrollments using ORM relational graph hydration.
-     * Returns nested entities (student → user → department → college).
-     *
-     * This is a DOMAIN-LEVEL query intended for:
-     * - service-layer logic requiring rich entity relationships
-     * - workflows that operate on full object graphs
-     *
-     * Key properties:
-     * - Nested relational structure
-     * - ORM-managed joins
-     * - Developer-friendly domain modeling
-     *
-     * Not suitable for:
-     * - list views requiring strict ordering across joins
-     * - UI pagination-heavy endpoints
-     */
-    async getEnrollmentsWithStudentGraph(
-      args: NonNullable<
-        Parameters<Repositories.Enrollment["queryWithStudentDetails"]>[0]
-      >,
-    ) {
-      try {
-        return await this._enrollmentRepo.queryWithStudentDetails(args);
       } catch (err) {
         throw Service.normalizeQueryError({ err });
       }

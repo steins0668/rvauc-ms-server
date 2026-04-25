@@ -23,22 +23,6 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     });
   }
 
-  async countForClassIdAndDate(args: {
-    values: { classId: number; startTimeMs: number };
-    dbOrTx?: DbOrTx | undefined;
-  }) {
-    const context = args.dbOrTx ?? this._dbContext;
-    const { classId, startTimeMs } = args.values;
-
-    const cs = classSessions;
-    const { and, eq, lte } = RepositoryUtil.filters;
-
-    return await context.$count(
-      cs,
-      and(eq(cs.classId, classId), lte(cs.startTimeMs, startTimeMs)),
-    );
-  }
-
   async getProfessorActiveClass(args: {
     values: {
       termId: number;
@@ -178,47 +162,6 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
         : or(ongoingFilter, gt(cs.startTimeMs, timeMs));
 
     return and(eq(cls.termId, termId), eq(cs.datePh, datePh), timeFilter);
-  }
-
-  async getOfferingActiveSession(args: {
-    values: { classOfferingId: number; date: Date };
-    mode: "now" | "now-or-next";
-    tx?: TxContext | undefined;
-  }) {
-    const { mode } = args;
-    const { classOfferingId, date } = args.values;
-
-    return await this.getMinimalShape({
-      constraints: { limit: 1 },
-      where: (cs, { and, eq, gt, lte, or }) => {
-        const conditions: (SQLWrapper | undefined)[] = [
-          eq(cs.classOfferingId, classOfferingId),
-        ];
-
-        const ms = date.getTime();
-
-        switch (mode) {
-          case "now":
-            //  ! class currently in session
-            conditions.push(and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms)));
-            break;
-          case "now-or-next":
-            conditions.push(
-              or(
-                //  ! class currently in sesion
-                and(lte(cs.startTimeMs, ms), gt(cs.endTimeMs, ms)),
-                //  ! next class
-                gt(cs.startTimeMs, ms),
-              ),
-            );
-            break;
-        }
-
-        return and(...conditions);
-      },
-      orderBy: (cs, { asc }) => asc(cs.startTimeMs),
-      dbOrTx: args.tx,
-    }).then((r) => r[0]);
   }
 
   async getWithClassAndOffering(args: {
@@ -407,44 +350,9 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     });
   }
 
-  getContext<T>(args: Types.Repository.ContextArgs.ClassSession<T>) {
-    const context = args.dbOrTx ?? this._dbContext;
-
-    return args.fn({
-      table: classSessions,
-      context,
-      converter: ClassSession.buildWhereClause,
-      order: ClassSession.sqlOrderBy,
-      sql,
-    });
-  }
-
-  getSubQuery<T>(args: Types.Repository.SubQueryArgs.ClassSession<T>) {
-    const selectBase = (args.dbOrTx ?? this._dbContext)
-      .select()
-      .from(classSessions);
-
-    return args.fn({
-      table: classSessions,
-      selectBase,
-      converter: ClassSession.buildWhereClause,
-      order: ClassSession.sqlOrderBy,
-    });
-  }
-
   async execQuery<T>(args: Types.Repository.QueryArgs.ClassSession<T>) {
     const query = (args.dbOrTx ?? this._dbContext).query.classSessions;
     return await args.fn(query, ClassSession.buildWhereClause);
-  }
-
-  async execUpdate<T>(args: Types.Repository.UpdateArgs.ClassSession<T>) {
-    const update = (args.dbOrTx ?? this._dbContext).update(classSessions);
-    return await args.fn(update, ClassSession.buildWhereClause);
-  }
-
-  async execDelete<T>(args: Types.Repository.DeleteArgs.ClassSession<T>) {
-    const deleteBase = (args.dbOrTx ?? this._dbContext).delete(classSessions);
-    return await args.fn(deleteBase, ClassSession.buildWhereClause);
   }
 
   /**
@@ -456,11 +364,5 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
     filter?: Types.Repository.QueryFilters.ClassSession,
   ): SQL | undefined {
     return undefined;
-  }
-
-  public static sqlOrderBy(
-    builder: Types.Repository.OrderBuilders.ClassSession,
-  ) {
-    return builder(classSessions, RepositoryUtil.orderOperators);
   }
 }
