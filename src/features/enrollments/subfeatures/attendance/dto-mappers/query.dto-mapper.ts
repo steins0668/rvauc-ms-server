@@ -106,7 +106,7 @@ export namespace Query {
           },
         };
       }),
-      summary,
+      summary: summary,
     };
     try {
       return Schemas.Dto.ClassAttendance.studentView.parse(dto);
@@ -120,67 +120,63 @@ export namespace Query {
   }
 
   export function studentAttendanceProfessorView(
-    cls: Awaited<
-      ReturnType<Core.Services.ClassQuery.Service["ensureClassWithCourse"]>
-    >,
     enrollment: Awaited<
       ReturnType<
         Core.Services.EnrollmentQuery.Service["ensureEnrollmentsWithStudentGraph"]
       >
     >,
-    recordsAndSummary: Awaited<
+    historyAndSummary: Awaited<
       ReturnType<
-        Services.AttendanceQuery.Service["fetchRecordsAndSummaryWithSessionAndOffering"]
+        Services.AttendanceQuery.Service["fetchHistoryAndSummaryForEnrollment"]
       >
     >,
   ): Schemas.Dto.StudentAttendance.ProfessorView {
     const { student } = enrollment;
-    const { course } = cls;
-    const { records, summary } = recordsAndSummary;
+    const { records, summary } = historyAndSummary;
 
-    return {
-      class: {
-        id: cls.id,
-        classNumber: cls.classNumber,
-        course: { code: course.code, name: course.name },
-      },
-      enrollment: {
-        id: enrollment.id,
-        status: enrollment.status,
+    try {
+      return {
+        enrollment: {
+          id: enrollment.id,
+          status: enrollment.status,
+        },
         student: {
+          id: student.id,
           studentNumber: student.studentNumber,
-          department: student.department.name,
-          yearLevel: student.yearLevel,
-          block: student.block,
           surname: student.user.surname,
           firstName: student.user.firstName,
           middleName: student.user.middleName,
-          gender: student.user.gender,
         },
-      },
-      attendanceRecords: records.map((ar) => {
-        const { classSession: cs } = ar;
-        const { classOffering: co } = cs;
+        attendanceRecords: records.map((row) => {
+          const { session: cs, offering: co, record: ar } = row;
 
-        return {
-          classOffering: {
-            id: co.id,
-            weekDay: co.weekDay,
-            room: co.rooms?.name ?? "N/A",
-            startTimeText: co.startTimeText,
-            endTimeText: co.endTimeText,
-            startTime: co.startTime,
-            endTime: co.endTime,
-          },
-          record: {
-            id: ar.id,
-            status: ar.status,
-            date: ar.datePh,
-            time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
-          },
-        };
-      }),
-      summary: { ...summary, missingRecords: 0 }, //  todo: update this to have logic for trackign misssing records
-    };
+          const { id, status, recordedAt } = ar ?? {};
+
+          return {
+            offering: {
+              id: co.id,
+              weekDay: co.weekDay,
+              startTime: co.startTimeText,
+              endTime: co.endTimeText,
+            },
+            session: { id: cs.id, status: cs.status, date: cs.datePh },
+            record: {
+              id: id ?? -1,
+              status: status ?? Data.attendanceStatus.absent,
+              time: recordedAt
+                ? TimeUtil.toPhTime(new Date(recordedAt))
+                : "N/A",
+            },
+          };
+        }),
+        summary: summary,
+      };
+    } catch (err) {
+      throw Core.Errors.EnrollmentData.normalizeError({
+        name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+        message: "Failed to convert raw attendance to dto.",
+        err,
+      });
+    }
   }
 }

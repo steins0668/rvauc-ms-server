@@ -162,7 +162,12 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
       columns: { id: true, status: true, classId: true },
       with: {
         student: {
-          columns: { studentNumber: true, yearLevel: true, block: true },
+          columns: {
+            id: true,
+            studentNumber: true,
+            yearLevel: true,
+            block: true,
+          },
           with: {
             user: {
               columns: {

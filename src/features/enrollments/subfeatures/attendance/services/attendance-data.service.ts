@@ -214,7 +214,9 @@ export namespace AttendanceData {
             dbOrTx: args.dbOrTx,
           });
 
-        return DtoMappers.Query.classAttendanceStudentView(recordsAndSummary);
+        return ResultBuilder.success(
+          DtoMappers.Query.classAttendanceStudentView(recordsAndSummary),
+        );
       } catch (err) {
         const internalError = Core.Errors.EnrollmentData.internalError(
           "Failed retrieving class attendance records for student.",
@@ -253,25 +255,8 @@ export namespace AttendanceData {
         };
       },
     ) {
-      let enrollment;
-      let cls;
-      let recordsAndSummary: Awaited<
-        ReturnType<
-          AttendanceQuery.Service["fetchRecordsAndSummaryWithSessionAndOffering"]
-        >
-      > = this.EMPTY_ATTENDANCE_RESULT;
-
       try {
-        cls = await this._classQuery.ensureClassWithCourse({
-          where: (c, { and, eq }) =>
-            and(
-              eq(c.id, args.values.classId),
-              eq(c.professorId, args.values.professorId),
-            ),
-          dbOrTx: args.dbOrTx,
-        });
-
-        enrollment =
+        const enrollment =
           await this._enrollmentQuery.ensureEnrollmentsWithStudentGraph({
             where: (e, { and, eq }) =>
               and(
@@ -281,16 +266,18 @@ export namespace AttendanceData {
             dbOrTx: args.dbOrTx,
           });
 
-        recordsAndSummary =
-          await this._attendanceQuery.fetchRecordsAndSummaryWithSessionAndOffering(
-            {
-              values: {
-                classId: cls.id,
-                enrollmentIds: [enrollment.id],
-              },
-              dbOrTx: args.dbOrTx,
-            },
-          );
+        const historyAndSummary =
+          await this._attendanceQuery.fetchHistoryAndSummaryForEnrollment({
+            values: { enrollmentId: enrollment.id },
+            dbOrTx: args.dbOrTx,
+          });
+
+        return ResultBuilder.success(
+          DtoMappers.Query.studentAttendanceProfessorView(
+            enrollment,
+            historyAndSummary,
+          ),
+        );
       } catch (err) {
         const internalError = Core.Errors.EnrollmentData.internalError(
           "Failed retrieving class attendance of student for professor.",
@@ -312,24 +299,6 @@ export namespace AttendanceData {
                   return create({ ...internalError, cause: err });
               }
             },
-          }),
-        );
-      }
-
-      try {
-        return ResultBuilder.success(
-          DtoMappers.Query.studentAttendanceProfessorView(
-            cls,
-            enrollment,
-            recordsAndSummary,
-          ),
-        );
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw attendance dto.",
-            err,
           }),
         );
       }

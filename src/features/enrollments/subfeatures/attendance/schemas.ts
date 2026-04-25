@@ -233,33 +233,43 @@ export namespace Schemas {
       export const attendanceRecords = z.array(
         z
           .strictObject({
-            classOffering: Core.Schemas.Dto.classOffering,
             record: base,
+            offering: z
+              .strictObject({
+                id: z.number(),
+                weekDay: z.string(),
+                startTime: z.string(),
+                endTime: z.string(),
+              })
+              .strip(),
+            session: z
+              .strictObject({
+                id: z.number(),
+                status: z.string(),
+                date: z.string(),
+              })
+              .strip(),
           })
           .strip(),
       );
 
       export const professorView = z
         .strictObject({
-          class: z
-            .strictObject({
-              ...Core.Schemas.Dto.class_.shape,
-              course: Core.Schemas.Dto.course,
-            })
-            .strip(),
           enrollment: z
-            .strictObject({
-              id: z.number(),
-              status: z.string(),
-              student: Core.Schemas.Dto.student,
-            })
+            .strictObject({ id: z.number(), status: z.string() })
             .strip(),
+          student: z.strictObject({
+            id: z.number(),
+            studentNumber: z.string(),
+            surname: z.string(),
+            firstName: z.string(),
+            middleName: z.string(),
+          }),
           attendanceRecords,
           summary: summary,
         })
         .strip();
 
-      export type AttendanceRecords = z.infer<typeof attendanceRecords>;
       export type ProfessorView = z.infer<typeof professorView>;
     }
   }
