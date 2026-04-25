@@ -338,7 +338,7 @@ export namespace SampleData {
           endTimeMs,
           createdAt: nowISO,
           updatedAt: nowISO,
-          status: Enrollments.Core.Data.enrollmentStatus.enrolled,
+          status: Enrollments.Core.Data.classSessionStatus.scheduled,
         });
       }
 
