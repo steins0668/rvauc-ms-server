@@ -45,13 +45,10 @@ export namespace Query {
           : "N/A";
 
         return {
-          enrollment: {
-            id: e.id,
-            status: e.status,
-            student: {
-              ...student,
-              department: student.department ?? "No department.",
-            },
+          enrollment: { id: e.id, status: e.status },
+          student: {
+            ...student,
+            department: student.department ?? "No department.",
           },
           record: {
             id: enrollmentAttendance?.id ?? 0,
@@ -61,20 +58,13 @@ export namespace Query {
           },
         };
       }),
-      class: {
-        id: cls.id,
-        classNumber: cls.classNumber,
-        course,
-        offering: {
-          id: offering.id,
-          weekDay: offering.weekDay,
-          room: offering.rooms?.name ?? "N/A",
-          startTimeText: offering.startTimeText,
-          endTimeText: offering.endTimeText,
-          startTime: offering.startTime,
-          endTime: offering.endTime,
-        },
+      offering: {
+        id: offering.id,
+        weekDay: offering.weekDay,
+        startTime: offering.startTimeText,
+        endTime: offering.endTimeText,
       },
+      session: { id: session.id, status: session.status, date: session.datePh },
       summary: {
         ...summary,
         missingRecords: totalEnrollments - summary.totalRecords,

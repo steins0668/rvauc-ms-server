@@ -240,7 +240,7 @@ export class ClassSession extends Repository<Types.Tables.ClassSession> {
       offset: RepositoryUtil.resolveOffset(args.constraints),
       where: args.where,
       orderBy: args.orderBy,
-      columns: {},
+      columns: { id: true, status: true, datePh: true },
       with: {
         class: {
           columns: { id: true, classNumber: true, professorId: true },

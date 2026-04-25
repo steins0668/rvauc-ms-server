@@ -108,15 +108,6 @@ export namespace Schemas {
         .strip();
       export type StudentView = z.infer<typeof studentView>;
 
-      const { class_, course, classOffering } = Core.Schemas.Dto;
-      const classWithSchedule = z
-        .strictObject({
-          ...class_.shape,
-          course: course,
-          offering: classOffering,
-        })
-        .strip();
-
       export const professorView = z
         .strictObject({
           attendanceRecords: z.array(
@@ -127,13 +118,35 @@ export namespace Schemas {
                   .strictObject({
                     id: z.number(),
                     status: z.string(),
-                    student: Core.Schemas.Dto.student,
+                  })
+                  .strip(),
+                student: z
+                  .strictObject({
+                    id: z.number(),
+                    studentNumber: z.string(),
+                    surname: z.string(),
+                    firstName: z.string(),
+                    middleName: z.string(),
                   })
                   .strip(),
               })
               .strip(),
           ),
-          class: classWithSchedule,
+          offering: z
+            .strictObject({
+              id: z.number(),
+              weekDay: z.string(),
+              startTime: z.string(),
+              endTime: z.string(),
+            })
+            .strip(),
+          session: z
+            .strictObject({
+              id: z.number(),
+              status: z.string(),
+              date: z.string(),
+            })
+            .strip(),
           summary: summary,
         })
         .strip();
