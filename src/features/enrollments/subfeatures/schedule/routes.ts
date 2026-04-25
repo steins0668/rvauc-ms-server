@@ -35,3 +35,15 @@ Routes.get(
   validateRequest({ query: Schemas.RequestQuery.userSchedule }),
   Controllers.handleGetClassList,
 );
+
+/**
+ * GET
+ *
+ * @returns {Schemas.Dto.WeeklySchedule}
+ */
+Routes.get(
+  "/weekly/class/:classId",
+  Auth.Core.Middlewares.validateJwt("full"),
+  validateRequest({ params: Schemas.RequestParams.classId }),
+  Controllers.handleGetWeeklySchedule,
+);
