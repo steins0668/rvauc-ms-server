@@ -399,7 +399,7 @@ describe("Class Attendance Routes", () => {
         expect(rejected?.reasons).toContain("OUT_OF_SCHEDULE");
       });
 
-      it("should return 404 for class session not found", async () => {
+      it("should return 403 for non-existent class session", async () => {
         const id = ids.session.professor.notFound;
         const url = `/enrollments/attendance/records/class/offering/session/${id}`;
         const res = await request(app)
@@ -428,7 +428,7 @@ describe("Class Attendance Routes", () => {
             ],
           });
 
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(403);
         expect(res.body).toHaveProperty("success");
         expect(res.body.success).toBe(false);
       });
