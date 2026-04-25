@@ -42,6 +42,10 @@ export namespace Schemas {
             z
               .strictObject({
                 ...classListElementBase.shape,
+                enrollment: z.strictObject({
+                  id: z.number(),
+                  status: z.string(),
+                }),
                 professor: z
                   .strictObject({
                     id: z.number(),
