@@ -113,7 +113,6 @@ export namespace Schemas {
                 }),
                 offering: z
                   .strictObject({
-                    id: z.number(),
                     weekDay: z.string(),
                     startTime: z.string(),
                     endTime: z.string(),
