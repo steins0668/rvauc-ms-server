@@ -138,6 +138,36 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
       .then((r) => r[0]);
   }
 
+  async getByIdForProfessor(args: {
+    values: { enrollmentId: number; professorId: number };
+    dbOrTx?: DbOrTx | undefined;
+  }) {
+    const { enrollmentId, professorId } = args.values;
+    const context = args.dbOrTx ?? this._dbContext;
+
+    const { classes: cls, enrollments: e, students: s, users: u } = Schema;
+    const { and, eq } = RepositoryUtil.filters;
+
+    return await context
+      .select({
+        enrollment: { id: e.id, status: e.status },
+        student: {
+          id: s.id,
+          studentNumber: s.studentNumber,
+          surname: u.surname,
+          middleName: u.middleName,
+          firstName: u.firstName,
+        },
+      })
+      .from(e)
+      .innerJoin(cls, eq(cls.id, e.classId))
+      .innerJoin(s, eq(s.id, e.studentId))
+      .innerJoin(u, eq(u.id, s.id))
+      .where(and(eq(e.id, enrollmentId), eq(cls.professorId, professorId)))
+      .limit(1)
+      .then((r) => r[0]);
+  }
+
   async queryWithStudentDetails(args: {
     constraints?: BaseRepositoryType.QueryConstraints;
     where?:

@@ -183,6 +183,35 @@ export namespace EnrollmentQuery {
 
     /**
      * @description
+     * Retrieves an enrollment that is linked to a professor's class.
+     * Throws if enrollment is not found.
+     */
+    async ensureForProfessor(
+      args: Parameters<Repositories.Enrollment["getByIdForProfessor"]>[0],
+    ) {
+      const enrollment = await this.getForProfessor(args);
+
+      if (!enrollment) throw Service.enrollmentNotFoundError();
+
+      return enrollment;
+    }
+
+    /**
+     * @description
+     * Retrieves an enrollment that is linked to a professor's class.
+     */
+    async getForProfessor(
+      args: Parameters<Repositories.Enrollment["getByIdForProfessor"]>[0],
+    ) {
+      try {
+        return await this._enrollmentRepo.getByIdForProfessor(args);
+      } catch (err) {
+        throw Service.normalizeQueryError({ err });
+      }
+    }
+
+    /**
+     * @description
      * Retrieves enrollments using ORM relational graph hydration.
      * Returns nested entities (student → user → department → college).
      *
