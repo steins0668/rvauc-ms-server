@@ -19,10 +19,7 @@ export async function handleViewSessions(req: Request, res: Response) {
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!isAllowedPayload || auth.payload.role !== "professor") {
-    logger.log(
-      "info",
-      `Invalid payload attempted to access ${req.method} ${req.originalUrl}`,
-    );
+    logger.log("info", "Invalid payload attempted to access route.");
 
     return res.status(403).json({
       success: false,

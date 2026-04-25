@@ -11,7 +11,7 @@ export namespace Controllers {
     if (!isAllowed) {
       requestLogger.log("info", "Invalid payload attempted to access route.");
 
-      return res.status(401).json({
+      return res.status(403).json({
         success: false,
         message: "You are not allowed to access this resource.",
       });
@@ -48,7 +48,7 @@ export namespace Controllers {
     if (!isAllowed) {
       requestLogger.log("info", "Invalid payload attempted to access route.");
 
-      return res.status(401).json({
+      return res.status(403).json({
         success: false,
         message: "You are not allowed to access this resource.",
       });

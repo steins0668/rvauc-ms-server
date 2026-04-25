@@ -22,7 +22,7 @@ export async function handleViewRecords(req: Request, res: Response) {
   if (!isAllowedPayload) {
     logger.log("info", "Invalid payload attempted to access route.");
 
-    return res.status(401).json({
+    return res.status(403).json({
       success: false,
       message: "You are not allowed to access this resource.",
     });

@@ -51,10 +51,7 @@ export function handleViewRecords<
       !isAllowedPayload ||
       !allowedRoles.includes(auth.payload.role as TRole)
     ) {
-      logger.log(
-        "info",
-        `Invalid payload attempted to access ${req.method} ${req.originalUrl}`,
-      );
+      logger.log("info", "Invalid payload attempted to access route.");
 
       return res.status(403).json({
         success: false,

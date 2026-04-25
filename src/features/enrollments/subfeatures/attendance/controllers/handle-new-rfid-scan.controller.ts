@@ -24,10 +24,7 @@ export async function handleNewRfidScan(
   );
 
   if (!isAllowedPayload || auth.payload.role !== "student") {
-    logger.log(
-      "info",
-      `Invalid payload attempted to access ${req.method} ${req.originalUrl}`,
-    );
+    logger.log("info", "Invalid payload attempted to access route.");
 
     return res.status(403).json({
       success: false,

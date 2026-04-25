@@ -17,10 +17,7 @@ export async function handleGetWeeklySchedule(req: Request, res: Response) {
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!isAllowedPayload) {
-    logger.log(
-      "info",
-      `Invalid payload attempted to access ${req.originalUrl}`,
-    );
+    logger.log("info", "Invalid payload attempted to access route.");
 
     return res.status(403).json({
       success: false,
