@@ -128,7 +128,10 @@ export namespace Schemas {
               })
               .strip(),
           ),
-          summary: summary,
+          summary: {
+            ...summary.shape,
+            totalSessions: z.number(),
+          },
         })
         .strip();
       export type StudentView = z.infer<typeof studentView>;
@@ -175,7 +178,10 @@ export namespace Schemas {
               date: z.string(),
             })
             .strip(),
-          summary: summary,
+          summary: {
+            ...summary.shape,
+            totalEnrollments: z.number(),
+          },
         })
         .strip();
       export type ProfessorView = z.infer<typeof professorView>;
@@ -274,7 +280,10 @@ export namespace Schemas {
             middleName: z.string(),
           }),
           history: history,
-          summary: summary,
+          summary: {
+            ...summary.shape,
+            totalSessions: z.number(),
+          },
         })
         .strip();
 
