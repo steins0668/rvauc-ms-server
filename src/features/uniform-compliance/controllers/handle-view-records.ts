@@ -21,10 +21,7 @@ export async function handleViewRecords(req: Request, res: Response) {
   const validPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!validPayload) {
-    logger.log(
-      "info",
-      "Invalid payload attempted to access `uniform-compliance/view-records`."
-    );
+    logger.log("info", "Invalid payload attempted to access route.");
 
     return res.status(401).json({
       success: false,
@@ -78,7 +75,7 @@ async function resolveRecords(args: {
           new Errors.ComplianceData.ErrorClass({
             name: "COMPLIANCE_DATA_QUERY_RECORD_ERROR",
             message: "Role not implemented yet.",
-          })
+          }),
         );
     }
   } catch (err) {
@@ -87,7 +84,7 @@ async function resolveRecords(args: {
         name: "COMPLIANCE_DATA_QUERY_RECORD_ERROR",
         message: "Failed to get records.",
         err,
-      })
+      }),
     );
   }
 }
@@ -174,7 +171,7 @@ type RawRecords = FetchRecordsResult extends
   : never;
 
 function toDTORecord(
-  rawRecords: RawRecords
+  rawRecords: RawRecords,
 ):
   | Types.ComplianceResult.Success<Schemas.ComplianceData.RecordDTO[]>
   | Types.ComplianceResult.Fail {
@@ -228,7 +225,7 @@ function toDTORecord(
         name: "COMPLIANCE_DATA_DTO_CONVERSION_ERROR",
         message: "Failed converting records to DTO.",
         err,
-      })
+      }),
     );
   }
 }

@@ -25,10 +25,7 @@ export async function handleGetCurrentOrNext(req: Request, res: Response) {
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!isAllowedPayload) {
-    logger.log(
-      "info",
-      "Invalid payload attempted to access `enrollments/schedule/get-schedule`.",
-    );
+    logger.log("info", "Invalid payload attempted to access route.");
 
     return res.status(403).json({
       success: false,

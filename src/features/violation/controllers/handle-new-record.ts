@@ -19,10 +19,7 @@ export async function handleNewRecord(
   const isAllowedPayload = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
   if (!isAllowedPayload) {
-    logger.log(
-      "info",
-      "Invalid payload attempted to access `violation/new-record`.",
-    );
+    logger.log("info", "Invalid payload attempted to access route.");
 
     return res.status(401).json({
       success: false,

@@ -30,10 +30,7 @@ export async function handleNewRecord(
   );
 
   if (!isAllowedPayload) {
-    logger.log(
-      "info",
-      "Invalid payload attempted to access `uniform-compliance/new-record`.",
-    );
+    logger.log("info", "Invalid payload attempted to access route.");
 
     return res.status(401).json({
       success: false,

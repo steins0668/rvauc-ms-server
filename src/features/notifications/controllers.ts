@@ -9,10 +9,7 @@ export namespace Controllers {
     const isAllowed = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
     if (!isAllowed) {
-      requestLogger.log(
-        "info",
-        "Invalid payload attempted to access `notifications/get-notifications`.",
-      );
+      requestLogger.log("info", "Invalid payload attempted to access route.");
 
       return res.status(401).json({
         success: false,
@@ -49,10 +46,7 @@ export namespace Controllers {
     const isAllowed = Auth.Core.Utils.ensureAllowedPayload(auth, "full");
 
     if (!isAllowed) {
-      requestLogger.log(
-        "info",
-        "Invalid payload attempted to access `notifications/get-notifications`.",
-      );
+      requestLogger.log("info", "Invalid payload attempted to access route.");
 
       return res.status(401).json({
         success: false,
