@@ -78,7 +78,7 @@ export namespace DtoMappers {
         } = runtime;
 
         return {
-          class: { classNumber: cls.classNumber },
+          class: { id: cls.id, classNumber: cls.classNumber },
           course: c,
           offering: {
             weekDay: co.weekDay,
@@ -114,7 +114,7 @@ export namespace DtoMappers {
         } = runtime;
 
         return {
-          class: { classNumber: cls.classNumber },
+          class: { id: cls.id, classNumber: cls.classNumber },
           course: c,
           offering: {
             weekDay: co.weekDay,

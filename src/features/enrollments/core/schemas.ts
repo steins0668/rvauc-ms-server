@@ -19,6 +19,7 @@ export namespace Schemas {
       .strictObject({
         class: z
           .strictObject({
+            id: z.number(),
             classNumber: z.string(),
           })
           .strip(),
