@@ -17,7 +17,7 @@ export namespace DtoMappers {
             classes: rawList.map(normalizeClassRow),
           };
 
-          return mapped;
+          return Schemas.Dto.classList.parse(mapped);
         } catch (err) {
           throw Core.Errors.EnrollmentData.dtoConversionError({ err });
         }
@@ -36,7 +36,7 @@ export namespace DtoMappers {
             classes: rawList.map(normalizeClassRow),
           };
 
-          return mapped;
+          return Schemas.Dto.classList.parse(mapped);
         } catch (err) {
           throw Core.Errors.EnrollmentData.dtoConversionError({ err });
         }

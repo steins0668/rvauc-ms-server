@@ -50,10 +50,12 @@ export namespace Schemas {
                     middleName: z.string(),
                   })
                   .strip(),
-                enrollment: z.strictObject({
-                  id: z.number(),
-                  status: z.string(),
-                }),
+                enrollment: z
+                  .strictObject({
+                    id: z.number(),
+                    status: z.string(),
+                  })
+                  .strip(),
               })
               .strip(),
           ),
