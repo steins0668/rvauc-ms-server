@@ -68,7 +68,33 @@ export namespace Schemas {
     ]);
 
     export type ClassList = z.infer<typeof classList>;
+
+    export const weeklySchedule = z
+      .strictObject({
+        schedule: z.array(
+          z
+            .strictObject({
+              id: z.number(),
+              weekDay: z.string(),
+              weekDayNumeric: z.number(),
+              startTime: z.string(),
+              endTime: z.string(),
+            })
+            .strip(),
+        ),
+      })
+      .strip();
+
+    export type WeeklySchedule = z.infer<typeof weeklySchedule>;
   }
+
+  export namespace RequestParams {
+    export const classId = z
+      .strictObject({ classId: z.coerce.number() })
+      .strip();
+    export type ClassId = z.infer<typeof classId>;
+  }
+
   export namespace RequestQuery {
     export const userSchedule = z
       .strictObject({
