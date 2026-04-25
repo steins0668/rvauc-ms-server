@@ -1,0 +1,1 @@
+CREATE INDEX `idx_class_offerings_class_id` ON `class_offerings` (`class_id`);

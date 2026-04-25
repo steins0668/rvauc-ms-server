@@ -1,0 +1,1 @@
+DROP INDEX `idx_class_offerings_week_day_class_id`;
