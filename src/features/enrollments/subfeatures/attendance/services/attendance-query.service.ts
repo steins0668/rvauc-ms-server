@@ -70,54 +70,6 @@ export namespace AttendanceQuery {
 
     /**
      * @description
-     * Queries attendance records matching a set of enrollment ids, and optional class id or class session id
-     * Includes class session and class offering details for each attendance record.
-     */
-    async fetchRecordsAndSummaryWithSessionAndOffering(args: {
-      values: {
-        classId?: number;
-        classSessionId?: number;
-        enrollmentIds: number[];
-      };
-      constraints?: BaseRepositoryType.QueryConstraints;
-      dbOrTx?: DbOrTx | undefined;
-    }) {
-      const { enrollmentIds } = args.values;
-
-      if (!enrollmentIds.length) return this.EMPTY_ATTENDANCE_RESULT;
-
-      const where = this.whereAttendanceRecordsAndSummary(args);
-
-      let records;
-
-      try {
-        records =
-          await this._attendanceRecordRepo.queryMinimalShapeWithSessionAndOffering(
-            {
-              constraints: args.constraints,
-              where,
-              orderBy: (ar, { desc }) => desc(ar.recordedMs),
-              dbOrTx: args.dbOrTx,
-            },
-          );
-      } catch (err) {
-        throw Core.Errors.EnrollmentData.normalizeError({
-          name: "ENROLLMENT_DATA_QUERY_ERROR",
-          message: "Failed retreiving attendance records.",
-          err,
-        });
-      }
-
-      let summary = await this.fetchSummary({
-        where,
-        dbOrTx: args.dbOrTx,
-      });
-
-      return { records, summary };
-    }
-
-    /**
-     * @description
      * Fetches attendance records and summary for a class session.
      * Includes enrollment and student details for each record.
      */
