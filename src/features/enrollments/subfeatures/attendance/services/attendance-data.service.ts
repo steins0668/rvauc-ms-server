@@ -105,55 +105,18 @@ export namespace AttendanceData {
       const { values } = args;
       const { classSessionId } = values;
 
-      let session;
-      let classEnrollments;
-      let recordsAndSummary: Awaited<
-        ReturnType<AttendanceQuery.Service["fetchRecordsAndSummary"]>
-      > = this.EMPTY_ATTENDANCE_RESULT;
-
       try {
-        const constraints = {
-          limit: RepositoryUtil.resolveLimit(args.constraints),
-          offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
-        };
+        const session = await this.ensureSessionForProfessor(args);
 
-        session = await this.ensureSessionForProfessor(args);
-
-        const { enrollments: e, users: u } = Schema;
-        const { eq } = RepositoryUtil.filters;
-        const { asc } = RepositoryUtil.orderOperators;
-
-        classEnrollments =
-          await this._enrollmentQuery.getEnrollmentsWithStudentDetails({
-            constraints,
-            where: eq(e.classId, session.class.id),
-            orderBy: [
-              asc(u.surname),
-              asc(u.firstName),
-              asc(u.middleName),
-              asc(u.id),
-            ],
+        const recordsAndSummary =
+          await this._attendanceQuery.fetchSessionRecordsAndSummary({
+            values: { classSessionId },
             dbOrTx: args.dbOrTx,
           });
-
-        const { enrollments } = classEnrollments;
-
-        if (enrollments.length) {
-          //  * get attendance records for enrollments in the class session
-          const enrollmentIds = enrollments.map((e) => e.id);
-
-          recordsAndSummary =
-            await this._attendanceQuery.fetchRecordsAndSummary({
-              values: { classSessionId, enrollmentIds },
-              constraints,
-              dbOrTx: args.dbOrTx,
-            });
-        }
 
         return ResultBuilder.success(
           DtoMappers.Query.classAttendanceProfessorView(
             session,
-            classEnrollments,
             recordsAndSummary,
           ),
         );

@@ -13,49 +13,37 @@ export namespace Query {
         >
       >
     >,
-    classEnrollments: Awaited<
-      ReturnType<
-        Core.Services.EnrollmentQuery.Service["getEnrollmentsWithStudentDetails"]
-      >
-    >,
     recordsAndSummary: Awaited<
-      ReturnType<Services.AttendanceQuery.Service["fetchRecordsAndSummary"]>
+      ReturnType<
+        Services.AttendanceQuery.Service["fetchSessionRecordsAndSummary"]
+      >
     >,
   ): Schemas.Dto.ClassAttendance.ProfessorView {
     const { classOffering: offering } = session;
-    const { course, ...cls } = session.class;
-    const { enrollments, totalEnrollments } = classEnrollments;
     const { records, summary } = recordsAndSummary;
-
-    const attendanceMap = new Map<number, (typeof records)[number]>();
-
-    for (const r of records) attendanceMap.set(r.enrollmentId, r);
 
     try {
       return {
-        attendanceRecords: enrollments.map((e) => {
-          const { student } = e;
+        attendanceRecords: records.map((r) => {
+          const { enrollment: e, student: s, record } = r;
 
-          const enrollmentAttendance = attendanceMap.get(e.id);
-
-          const status =
-            enrollmentAttendance?.status ?? Data.attendanceStatus.absent;
-          const date = enrollmentAttendance?.datePh ?? "N/A";
-          const time = enrollmentAttendance?.recordedAt
-            ? TimeUtil.toPhTime(new Date(enrollmentAttendance.recordedAt))
-            : "N/A";
+          const { id, status, recordedAt } = record ?? {};
 
           return {
             enrollment: { id: e.id, status: e.status },
             student: {
-              ...student,
-              department: student.department ?? "No department.",
+              id: s.id,
+              studentNumber: s.studentNumber,
+              surname: s.surname,
+              firstName: s.firstName,
+              middleName: s.middleName,
             },
             record: {
-              id: enrollmentAttendance?.id ?? 0,
-              status,
-              date,
-              time,
+              id: id ?? -1,
+              status: status ?? Data.attendanceStatus.absent,
+              time: recordedAt
+                ? TimeUtil.toPhTime(new Date(recordedAt))
+                : "N/A",
             },
           };
         }),
@@ -70,10 +58,7 @@ export namespace Query {
           status: session.status,
           date: session.datePh,
         },
-        summary: {
-          ...summary,
-          missingRecords: totalEnrollments - summary.totalRecords,
-        },
+        summary: summary,
       };
     } catch (err) {
       throw Core.Errors.EnrollmentData.normalizeError({
