@@ -73,7 +73,7 @@ export namespace AttendanceQuery {
      * Fetches attendance records and summary for a class session.
      * Includes enrollment and student details for each record.
      */
-    async fetchSessionRecords(
+    async fetchSessionRecordsAndSummary(
       args: Parameters<Repositories.AttendanceRecord["fetchSessionRecords"]>[0],
     ) {
       try {
