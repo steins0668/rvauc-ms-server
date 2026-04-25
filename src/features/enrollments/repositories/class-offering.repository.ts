@@ -3,11 +3,37 @@ import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { DbContext, TxContext } from "../../../db/create-context";
 import { classOfferings, Schema } from "../../../models";
 import { Repository } from "../../../services";
+import { RepositoryUtil } from "../../../utils";
 import { Types } from "../types";
 
 export class ClassOffering extends Repository<Types.Tables.ClassOffering> {
   public constructor(context: DbContext) {
     super(context, classOfferings);
+  }
+
+  async getWeeklyScheduleForClass(args: {
+    values: { classId: number };
+    tx?: TxContext | undefined;
+  }) {
+    const { classId } = args.values;
+    const context = args.tx ?? this._dbContext;
+
+    const { classOfferings: co, enrollments: e } = Schema;
+    const { and, eq } = RepositoryUtil.filters;
+    const { asc } = RepositoryUtil.orderOperators;
+
+    return await context
+      .select({
+        id: co.id,
+        weekDay: co.weekDay,
+        weekDayNumeric: co.weekDayNumeric,
+        startTimeText: co.startTimeText,
+        endTimeText: co.endTimeText,
+      })
+      .from(e)
+      .innerJoin(co, eq(co.classId, e.classId))
+      .where(eq(e.id, classId))
+      .orderBy(asc(co.weekDayNumeric), asc(co.startTime));
   }
 
   async getMinimalShapesForWeekday(args: {
