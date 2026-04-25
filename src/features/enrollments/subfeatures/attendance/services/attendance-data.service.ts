@@ -249,7 +249,6 @@ export namespace AttendanceData {
     private async getStudentAttendanceProfessorView(
       args: QueryArgs & {
         values: {
-          classId: number;
           enrollmentId: number;
           professorId: number;
         };

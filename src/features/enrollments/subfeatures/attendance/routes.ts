@@ -153,10 +153,10 @@ Routes.post(
  * @returns {Schemas.Dto.StudentAttendance.ProfessorView} for professors on success
  */
 Routes.get(
-  "/records/class/:classId/enrollment/:enrollmentId",
+  "/records/enrollment/:enrollmentId",
   Auth.Core.Middlewares.validateJwt("full"),
   validateRequest({
-    params: classId.extend(enrollmentId.shape),
+    params: enrollmentId,
     query: Schemas.RequestQuery.attendanceRecord,
   }),
   Controllers.handleViewRecords({
@@ -164,14 +164,14 @@ Routes.get(
     scope: "student",
     extractInput: (req) => {
       const { validated } = req as StrictValidatedRequest<
-        Schemas.RequestParams.ClassId & Schemas.RequestParams.EnrollmentId,
+        Schemas.RequestParams.EnrollmentId,
         {},
         {},
         {}
       >;
       const { params } = validated;
 
-      return { classId: params.classId, enrollmentId: params.enrollmentId };
+      return { enrollmentId: params.enrollmentId };
     },
   }),
 );

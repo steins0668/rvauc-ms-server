@@ -25,17 +25,18 @@ function documentErrorMismatch<E extends BaseError<string>>(
   err: E,
   errName: string,
 ) {
-  console.error(
-    JSON.stringify(
-      new BaseError({
-        name: "ERROR_NAME_MISMATCH",
-        message: `Error name does not match ${errName}.`,
-        cause: err,
-      }),
-      null,
-      2,
-    ),
-  );
+  if (err.name !== errName)
+    console.error(
+      JSON.stringify(
+        new BaseError({
+          name: "ERROR_NAME_MISMATCH",
+          message: `Error name does not match ${errName}.`,
+          cause: err,
+        }),
+        null,
+        2,
+      ),
+    );
 }
 
 describe("Attendance Services", () => {
@@ -312,7 +313,6 @@ describe("Attendance Services", () => {
             scope: "student",
             values: {
               professorId: ids.professor.valid,
-              classId: ids.class.professor.valid,
               enrollmentId: ids.enrollment.professor.valid,
             },
           },
@@ -329,33 +329,6 @@ describe("Attendance Services", () => {
         );
       });
 
-      it("should fail for forbidden (non-existent class)", async () => {
-        const op = await dataService.getAttendance({
-          queryContext: {
-            roleScope: "professor-student",
-            role: "professor",
-            scope: "student",
-            values: {
-              professorId: ids.professor.valid,
-              classId: ids.class.professor.notFound,
-              enrollmentId: ids.enrollment.professor.valid,
-            },
-          },
-        });
-
-        expect(op.success).toBe(false);
-
-        assertFail(op.success);
-
-        const { error } = op;
-        const errorName: Errors.EnrollmentData.ErrorName =
-          "ENROLLMENT_DATA_FORBIDDEN_ERROR";
-
-        documentErrorMismatch(error, errorName);
-
-        expect(error.name).toBe(errorName);
-      });
-
       it("should fail for forbidden (non-existent professor)", async () => {
         const op = await dataService.getAttendance({
           queryContext: {
@@ -364,34 +337,6 @@ describe("Attendance Services", () => {
             scope: "student",
             values: {
               professorId: ids.professor.notFound,
-              classId: ids.class.professor.valid,
-              enrollmentId: ids.enrollment.professor.valid,
-            },
-          },
-        });
-
-        expect(op.success).toBe(false);
-
-        assertFail(op.success);
-
-        const { error } = op;
-        const errorName: Errors.EnrollmentData.ErrorName =
-          "ENROLLMENT_DATA_FORBIDDEN_ERROR";
-
-        documentErrorMismatch(error, errorName);
-
-        expect(error.name).toBe(errorName);
-      });
-
-      it("should fail for forbidden (invalid class)", async () => {
-        const op = await dataService.getAttendance({
-          queryContext: {
-            roleScope: "professor-student",
-            role: "professor",
-            scope: "student",
-            values: {
-              professorId: ids.professor.valid,
-              classId: ids.class.professor.invalid,
               enrollmentId: ids.enrollment.professor.valid,
             },
           },
@@ -418,7 +363,6 @@ describe("Attendance Services", () => {
             scope: "student",
             values: {
               professorId: ids.professor.invalid,
-              classId: ids.class.professor.valid,
               enrollmentId: ids.enrollment.professor.valid,
             },
           },
@@ -445,7 +389,6 @@ describe("Attendance Services", () => {
             scope: "student",
             values: {
               professorId: ids.professor.valid,
-              classId: ids.class.professor.valid,
               enrollmentId: ids.enrollment.professor.invalid,
             },
           },
@@ -472,7 +415,6 @@ describe("Attendance Services", () => {
             scope: "student",
             values: {
               professorId: ids.professor.valid,
-              classId: ids.class.professor.valid,
               enrollmentId: ids.enrollment.professor.notFound,
             },
           },

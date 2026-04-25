@@ -107,9 +107,8 @@ describe("Student Attendance Routes", () => {
   describe("GET student records", () => {
     describe("as professor", () => {
       it("should return records", async () => {
-        const c = ids.class.prof.valid;
         const e = ids.enrollment.prof.valid;
-        const url = `/enrollments/attendance/records/class/${c}/enrollment/${e}`;
+        const url = `/enrollments/attendance/records/enrollment/${e}`;
         const res = await request(app)
           .get(url)
           .set("Authorization", `Bearer ${tokens.prof}`);
@@ -122,23 +121,9 @@ describe("Student Attendance Routes", () => {
         Schemas.Dto.StudentAttendance.professorView.parse(res.body.result);
       });
 
-      it("should return 403 for non-existent class", async () => {
-        const c = ids.class.prof.notFound;
-        const e = ids.enrollment.prof.valid;
-        const url = `/enrollments/attendance/records/class/${c}/enrollment/${e}`;
-        const res = await request(app)
-          .get(url)
-          .set("Authorization", `Bearer ${tokens.prof}`);
-
-        expect(res.status).toBe(403);
-        expect(res.body).toHaveProperty("success");
-        expect(res.body.success).toBe(false);
-      });
-
       it("should return 403 for non-existent enrollment", async () => {
-        const c = ids.class.prof.valid;
         const e = ids.enrollment.prof.notFound;
-        const url = `/enrollments/attendance/records/class/${c}/enrollment/${e}`;
+        const url = `/enrollments/attendance/records/enrollment/${e}`;
         const res = await request(app)
           .get(url)
           .set("Authorization", `Bearer ${tokens.prof}`);
@@ -151,9 +136,8 @@ describe("Student Attendance Routes", () => {
 
     describe("authorization", () => {
       it("should return 401 for missing token", async () => {
-        const c = ids.class.prof.valid;
         const e = ids.enrollment.prof.valid;
-        const url = `/enrollments/attendance/records/class/${c}/enrollment/${e}`;
+        const url = `/enrollments/attendance/records/enrollment/${e}`;
         const res = await request(app).get(url);
 
         expect(res.status).toBe(401);
@@ -162,9 +146,8 @@ describe("Student Attendance Routes", () => {
       });
 
       it("should return 403 for student", async () => {
-        const c = ids.class.prof.valid;
         const e = ids.enrollment.prof.valid;
-        const url = `/enrollments/attendance/records/class/${c}/enrollment/${e}`;
+        const url = `/enrollments/attendance/records/enrollment/${e}`;
         const res = await request(app)
           .get(url)
           .set("Authorization", `Bearer ${tokens.student}`);

@@ -40,7 +40,6 @@ export namespace Mutation {
       attendance: {
         id: attendance.id,
         status: attendance.status,
-        date: attendance.datePh,
         time: TimeUtil.toPhTime(new Date(attendance.recordedAt)),
         isNew: attendance.recordCount === 1,
       },

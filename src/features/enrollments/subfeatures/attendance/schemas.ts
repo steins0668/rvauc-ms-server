@@ -321,7 +321,6 @@ export namespace Schemas {
           scope: z.literal(Data.AttendanceQuery.scope.student),
           values: z
             .strictObject({
-              classId: z.number(),
               professorId: z.number(),
               enrollmentId: z.number(),
             })
