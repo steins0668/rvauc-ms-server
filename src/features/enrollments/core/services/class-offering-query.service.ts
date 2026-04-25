@@ -11,6 +11,22 @@ export namespace ClassOfferingQuery {
 
     /**
      * @description
+     * Retrieves all scheduled offerings for an enrollment in a week.
+     */
+    async getWeeklyScheduleForClass(
+      args: Parameters<
+        Repositories.ClassOffering["getWeeklyScheduleForClass"]
+      >[0],
+    ) {
+      try {
+        return await this._classOfferingRepo.getWeeklyScheduleForClass(args);
+      } catch (err) {
+        throw Service.normalizeQueryError(err);
+      }
+    }
+
+    /**
+     * @description
      * Retrieves a list of offerings (w/ id, class id, start time, and end time) for a provided week day and term id.
      */
     async getMinimalShapesForWeekday(
