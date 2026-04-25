@@ -1,4 +1,8 @@
-import { createContext, DbOrTx } from "../../../../../db/create-context";
+import {
+  createContext,
+  DbOrTx,
+  TxContext,
+} from "../../../../../db/create-context";
 import { ResultBuilder, TimeUtil } from "../../../../../utils";
 import { Auth } from "../../../../auth";
 import { Core } from "../../../core";
@@ -12,9 +16,13 @@ export namespace ClassSchedule {
   export async function createService() {
     const context = await createContext();
     const classRepo = new CoreRepositories.Class(context);
+    const classOfferingRepo = new CoreRepositories.ClassOffering(context);
     const enrollmentRepo = new CoreRepositories.Enrollment(context);
     return new Service({
       classQuery: new Core.Services.ClassQuery.Service({ classRepo }),
+      classOfferingQuery: new Core.Services.ClassOfferingQuery.Service({
+        classOfferingRepo,
+      }),
       enrollmentQuery: new Core.Services.EnrollmentQuery.Service({
         enrollmentRepo,
       }),
@@ -23,6 +31,7 @@ export namespace ClassSchedule {
 
   export class Service {
     private readonly _classQuery: Core.Services.ClassQuery.Service;
+    private readonly _classOfferingQuery: Core.Services.ClassOfferingQuery.Service;
     private readonly _enrollmentQuery: Core.Services.EnrollmentQuery.Service;
 
     private readonly _classListResolver: {
@@ -46,9 +55,11 @@ export namespace ClassSchedule {
 
     public constructor(args: {
       classQuery: Core.Services.ClassQuery.Service;
+      classOfferingQuery: Core.Services.ClassOfferingQuery.Service;
       enrollmentQuery: Core.Services.EnrollmentQuery.Service;
     }) {
       this._classQuery = args.classQuery;
+      this._classOfferingQuery = args.classOfferingQuery;
       this._enrollmentQuery = args.enrollmentQuery;
 
       this._classListResolver = {
@@ -81,6 +92,40 @@ export namespace ClassSchedule {
           return DtoMappers.Query.ClassList.mapProfessorView(filtered);
         },
       };
+    }
+
+    public async getWeekly(args: {
+      values: { classId: number; userId: number };
+      role: keyof typeof roles;
+      tx?: TxContext | undefined;
+    }) {
+      try {
+        await this._classQuery.ensureClassAccess(args);
+
+        const result =
+          await this._classOfferingQuery.getWeeklyScheduleForClass(args);
+
+        return ResultBuilder.success(
+          DtoMappers.Query.WeeklySchedule.map(result),
+        );
+      } catch (err) {
+        const internalErr = {
+          name: "ENROLLMENT_DATA_INTERNAL_ERROR",
+          message: `Failed getting schedule for ${args.role}`,
+        } as const;
+
+        return ResultBuilder.fail(
+          Core.Errors.EnrollmentData.translateError({
+            fallback: { ...internalErr, err },
+            map: (err, create) => {
+              switch (err.name) {
+                case "ENROLLMENT_DATA_QUERY_ERROR":
+                  return create({ ...internalErr, cause: err });
+              }
+            },
+          }),
+        );
+      }
     }
 
     public async getForTerm(args: {
