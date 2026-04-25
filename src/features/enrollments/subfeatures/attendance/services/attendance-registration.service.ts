@@ -148,6 +148,13 @@ export namespace AttendanceRegistration {
             fallback: { ...internalError, err },
             map: (err, create) => {
               switch (err.name) {
+                case "ENROLLMENT_DATA_CLASS_SESSION_NOT_FOUND_ERROR":
+                  return create({
+                    name: "ENROLLMENT_DATA_FORBIDDEN_ERROR",
+                    message:
+                      "This professor is not allowed to access this resource.",
+                    cause: err,
+                  });
                 case "ENROLLMENT_DATA_QUERY_ERROR":
                 case "ENROLLMENT_DATA_STORE_ERROR":
                   return create({ ...internalError, cause: err });
