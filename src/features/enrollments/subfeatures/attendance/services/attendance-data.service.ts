@@ -269,6 +269,10 @@ export namespace AttendanceData {
         const historyAndSummary =
           await this._attendanceQuery.fetchHistoryAndSummaryForEnrollment({
             values: { enrollmentId: enrollment.id },
+            constraints: {
+              limit: RepositoryUtil.resolveLimit(args.constraints),
+              offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
+            },
             dbOrTx: args.dbOrTx,
           });
 
