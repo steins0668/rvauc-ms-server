@@ -23,8 +23,12 @@ export namespace ClassQuery {
     }) {
       try {
         const accessCheckers = {
-          [roles.student]: this._classRepo.getStudentEnrolledClass,
-          [roles.professor]: this._classRepo.getProfessorOwnedClass,
+          [roles.student]: (
+            args: Parameters<Repositories.Class["getStudentEnrolledClass"]>[0],
+          ) => this._classRepo.getStudentEnrolledClass(args),
+          [roles.professor]: (
+            args: Parameters<Repositories.Class["getProfessorOwnedClass"]>[0],
+          ) => this._classRepo.getProfessorOwnedClass(args),
         };
 
         const checker = accessCheckers[args.role];
