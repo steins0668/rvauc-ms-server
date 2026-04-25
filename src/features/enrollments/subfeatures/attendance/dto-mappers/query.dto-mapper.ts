@@ -31,45 +31,57 @@ export namespace Query {
 
     for (const r of records) attendanceMap.set(r.enrollmentId, r);
 
-    return {
-      attendanceRecords: enrollments.map((e) => {
-        const { student } = e;
+    try {
+      return {
+        attendanceRecords: enrollments.map((e) => {
+          const { student } = e;
 
-        const enrollmentAttendance = attendanceMap.get(e.id);
+          const enrollmentAttendance = attendanceMap.get(e.id);
 
-        const status =
-          enrollmentAttendance?.status ?? Data.attendanceStatus.absent;
-        const date = enrollmentAttendance?.datePh ?? "N/A";
-        const time = enrollmentAttendance?.recordedAt
-          ? TimeUtil.toPhTime(new Date(enrollmentAttendance.recordedAt))
-          : "N/A";
+          const status =
+            enrollmentAttendance?.status ?? Data.attendanceStatus.absent;
+          const date = enrollmentAttendance?.datePh ?? "N/A";
+          const time = enrollmentAttendance?.recordedAt
+            ? TimeUtil.toPhTime(new Date(enrollmentAttendance.recordedAt))
+            : "N/A";
 
-        return {
-          enrollment: { id: e.id, status: e.status },
-          student: {
-            ...student,
-            department: student.department ?? "No department.",
-          },
-          record: {
-            id: enrollmentAttendance?.id ?? 0,
-            status,
-            date,
-            time,
-          },
-        };
-      }),
-      offering: {
-        id: offering.id,
-        weekDay: offering.weekDay,
-        startTime: offering.startTimeText,
-        endTime: offering.endTimeText,
-      },
-      session: { id: session.id, status: session.status, date: session.datePh },
-      summary: {
-        ...summary,
-        missingRecords: totalEnrollments - summary.totalRecords,
-      },
-    };
+          return {
+            enrollment: { id: e.id, status: e.status },
+            student: {
+              ...student,
+              department: student.department ?? "No department.",
+            },
+            record: {
+              id: enrollmentAttendance?.id ?? 0,
+              status,
+              date,
+              time,
+            },
+          };
+        }),
+        offering: {
+          id: offering.id,
+          weekDay: offering.weekDay,
+          startTime: offering.startTimeText,
+          endTime: offering.endTimeText,
+        },
+        session: {
+          id: session.id,
+          status: session.status,
+          date: session.datePh,
+        },
+        summary: {
+          ...summary,
+          missingRecords: totalEnrollments - summary.totalRecords,
+        },
+      };
+    } catch (err) {
+      throw Core.Errors.EnrollmentData.normalizeError({
+        name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+        message: "Failed to map raw attendance to dto.",
+        err,
+      });
+    }
   }
 
   export function classAttendanceStudentView(

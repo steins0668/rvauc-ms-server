@@ -149,6 +149,14 @@ export namespace AttendanceData {
               dbOrTx: args.dbOrTx,
             });
         }
+
+        return ResultBuilder.success(
+          DtoMappers.Query.classAttendanceProfessorView(
+            session,
+            classEnrollments,
+            recordsAndSummary,
+          ),
+        );
       } catch (err) {
         const internalError = Core.Errors.EnrollmentData.internalError(
           "Failed retrieving class attendance records for professor.",
@@ -166,27 +174,10 @@ export namespace AttendanceData {
                       "This professor is not allowed to access this resource.",
                   });
                 case "ENROLLMENT_DATA_QUERY_ERROR":
+                case "ENROLLMENT_DATA_DTO_CONVERSION_ERROR":
                   return create({ ...internalError, cause: err });
               }
             },
-          }),
-        );
-      }
-
-      try {
-        return ResultBuilder.success(
-          DtoMappers.Query.classAttendanceProfessorView(
-            session,
-            classEnrollments,
-            recordsAndSummary,
-          ),
-        );
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw attendance to dto",
-            err,
           }),
         );
       }
