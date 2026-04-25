@@ -118,6 +118,32 @@ export namespace AttendanceQuery {
 
     /**
      * @description
+     * Fetches the attendance history of an enrollment.
+     * Includes class session and class offering details for each attendance record.
+     */
+    async fetchHistoryAndSummaryForEnrollment(args: {
+      values: { enrollmentId: number };
+      constraints?: BaseRepositoryType.QueryConstraints;
+      dbOrTx?: DbOrTx | undefined;
+    }) {
+      try {
+        const records =
+          await this._attendanceRecordRepo.fetchHistoryForEnrollment(args);
+        const summary =
+          await this._attendanceRecordRepo.fetchSummaryForEnrollment(args);
+
+        return { records, summary };
+      } catch (err) {
+        throw Core.Errors.EnrollmentData.normalizeError({
+          name: "ENROLLMENT_DATA_QUERY_ERROR",
+          message: "Failed retreiving attendance records.",
+          err,
+        });
+      }
+    }
+
+    /**
+     * @description
      * Filter builder for querying attendance records and summary
      */
     private whereAttendanceRecordsAndSummary(args: {

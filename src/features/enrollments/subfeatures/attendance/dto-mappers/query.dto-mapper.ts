@@ -75,44 +75,48 @@ export namespace Query {
   export function classAttendanceStudentView(
     recordsAndSummary: Awaited<
       ReturnType<
-        Services.AttendanceQuery.Service["fetchRecordsAndSummaryWithSessionAndOffering"]
+        Services.AttendanceQuery.Service["fetchHistoryAndSummaryForEnrollment"]
       >
     >,
-    sessionCount: number,
   ) {
     const { records, summary } = recordsAndSummary;
 
     const dto: Schemas.Dto.ClassAttendance.StudentView = {
-      attendanceRecords: records.map((ar) => {
-        const { classSession } = ar;
-        const { classOffering } = classSession;
+      attendanceRecords: records.map((r) => {
+        const { offering, session } = r;
+
+        const { id, status, recordedAt } = r.record ?? {};
 
         return {
           offering: {
-            id: classOffering.id,
-            weekDay: classOffering.weekDay,
-            startTime: classOffering.startTimeText,
-            endTime: classOffering.endTimeText,
+            id: offering.id,
+            weekDay: offering.weekDay,
+            startTime: offering.startTimeText,
+            endTime: offering.endTimeText,
           },
           session: {
-            id: classSession.id,
-            status: classSession.status,
-            date: classSession.datePh,
+            id: session.id,
+            status: session.status,
+            date: session.datePh,
           },
           record: {
-            id: ar.id,
-            status: ar.status,
-            time: TimeUtil.toPhTime(new Date(ar.recordedAt)),
+            id: id ?? -1,
+            status: status ?? Data.attendanceStatus.absent,
+            time: recordedAt ? TimeUtil.toPhTime(new Date(recordedAt)) : "N/A",
           },
         };
       }),
-      summary: {
-        ...summary,
-        missingRecords: sessionCount - summary.totalRecords,
-      },
+      summary,
     };
-
-    return Schemas.Dto.ClassAttendance.studentView.parse(dto);
+    try {
+      return Schemas.Dto.ClassAttendance.studentView.parse(dto);
+    } catch (err) {
+      throw Core.Errors.EnrollmentData.normalizeError({
+        name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
+        message: "Failed converting raw attendance to dto",
+        err,
+      });
+    }
   }
 
   export function studentAttendanceProfessorView(

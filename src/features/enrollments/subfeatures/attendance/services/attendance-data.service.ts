@@ -200,42 +200,21 @@ export namespace AttendanceData {
         };
       },
     ) {
-      const { classId } = args.values;
-
-      let enrollment;
-      let sessionCount: number;
-      let recordsAndSummary: Awaited<
-        ReturnType<
-          AttendanceQuery.Service["fetchRecordsAndSummaryWithSessionAndOffering"]
-        >
-      > = this.EMPTY_ATTENDANCE_RESULT;
-
       try {
-        enrollment =
+        const enrollment =
           await this._enrollmentQuery.ensureEnrolledForClassAndStudent(args);
 
-        sessionCount = await this._classSessionQuery.countForClassIdAndDate({
-          values: {
-            classId,
-            startTimeMs: Clock.now(new Date()).getTime(),
-          },
-          dbOrTx: args.dbOrTx,
-        });
-
-        recordsAndSummary =
-          await this._attendanceQuery.fetchRecordsAndSummaryWithSessionAndOffering(
-            {
-              values: {
-                classId,
-                enrollmentIds: [enrollment.id],
-              },
-              constraints: {
-                limit: RepositoryUtil.resolveLimit(args.constraints),
-                offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
-              },
-              dbOrTx: args.dbOrTx,
+        const recordsAndSummary =
+          await this._attendanceQuery.fetchHistoryAndSummaryForEnrollment({
+            values: { enrollmentId: enrollment.id },
+            constraints: {
+              limit: RepositoryUtil.resolveLimit(args.constraints),
+              offset: RepositoryUtil.resolveOffsetFromPage(args.constraints),
             },
-          );
+            dbOrTx: args.dbOrTx,
+          });
+
+        return DtoMappers.Query.classAttendanceStudentView(recordsAndSummary);
       } catch (err) {
         const internalError = Core.Errors.EnrollmentData.internalError(
           "Failed retrieving class attendance records for student.",
@@ -256,25 +235,10 @@ export namespace AttendanceData {
                     cause: err,
                   });
                 case "ENROLLMENT_DATA_QUERY_ERROR":
+                case "ENROLLMENT_DATA_DTO_CONVERSION_ERROR":
                   return create({ ...internalError, cause: err });
               }
             },
-          }),
-        );
-      }
-
-      try {
-        const dto = DtoMappers.Query.classAttendanceStudentView(
-          recordsAndSummary,
-          sessionCount,
-        );
-        return ResultBuilder.success(dto);
-      } catch (err) {
-        return ResultBuilder.fail(
-          Core.Errors.EnrollmentData.normalizeError({
-            name: "ENROLLMENT_DATA_DTO_CONVERSION_ERROR",
-            message: "Failed converting raw attendance to dto",
-            err,
           }),
         );
       }
