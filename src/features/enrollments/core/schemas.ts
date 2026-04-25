@@ -34,15 +34,15 @@ export namespace Schemas {
             weekDay: z.string(),
             startTime: z.string(),
             endTime: z.string(),
+            room: z
+              .strictObject({
+                name: z.string(),
+                building: z.string().nullable(),
+              })
+              .strip()
+              .nullable(),
           })
           .strip(),
-        room: z
-          .strictObject({
-            name: z.string(),
-            building: z.string().nullable(),
-          })
-          .strip()
-          .nullable(),
         session: z
           .strictObject({
             status: z.string(),
