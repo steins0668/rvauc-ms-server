@@ -70,11 +70,12 @@ export namespace DtoMappers {
       ): Core.Schemas.Dto.RuntimeStudentView {
         const {
           class: cls,
-          room: r,
-          session: cs,
           course: c,
-          professor: p,
           offering: co,
+          session: cs,
+          room: r,
+          professor: p,
+          enrollment: e,
         } = runtime;
 
         return {
@@ -95,6 +96,7 @@ export namespace DtoMappers {
             firstName: p.firstName,
             middleName: p.middleName,
           },
+          enrollment: { id: e.id, status: e.status },
         };
       }
 

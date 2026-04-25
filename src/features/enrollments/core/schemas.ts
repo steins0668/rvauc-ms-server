@@ -57,6 +57,12 @@ export namespace Schemas {
     export const runtimeStudentView = z
       .strictObject({
         ...runtimeBase.shape,
+        enrollment: z
+          .strictObject({
+            id: z.number(),
+            status: z.string(),
+          })
+          .strip(),
         professor: z
           .strictObject({
             surname: z.string(),
