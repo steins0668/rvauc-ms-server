@@ -27,7 +27,7 @@ export namespace Query {
         attendanceRecords: records.map((r) => {
           const { enrollment: e, student: s, record } = r;
 
-          const { id, status, recordedAt } = record ?? {};
+          const { id = null, status, recordedAt } = record ?? {};
 
           return {
             enrollment: { id: e.id, status: e.status },
@@ -39,7 +39,7 @@ export namespace Query {
               middleName: s.middleName,
             },
             record: {
-              id: id ?? -1,
+              id,
               status: status ?? Data.attendanceStatus.absent,
               time: recordedAt
                 ? TimeUtil.toPhTime(new Date(recordedAt))
@@ -82,7 +82,7 @@ export namespace Query {
       history: history.map((r) => {
         const { offering, session } = r;
 
-        const { id, status, recordedAt } = r.record ?? {};
+        const { id = null, status, recordedAt } = r.record ?? {};
 
         return {
           offering: {
@@ -97,7 +97,7 @@ export namespace Query {
             date: session.datePh,
           },
           record: {
-            id: id ?? -1,
+            id,
             status: status ?? Data.attendanceStatus.absent,
             time: recordedAt ? TimeUtil.toPhTime(new Date(recordedAt)) : "N/A",
           },
@@ -145,7 +145,7 @@ export namespace Query {
         history: history.map((row) => {
           const { session: cs, offering: co, record: ar } = row;
 
-          const { id, status, recordedAt } = ar ?? {};
+          const { id = null, status, recordedAt } = ar ?? {};
 
           return {
             offering: {
@@ -156,7 +156,7 @@ export namespace Query {
             },
             session: { id: cs.id, status: cs.status, date: cs.datePh },
             record: {
-              id: id ?? -1,
+              id,
               status: status ?? Data.attendanceStatus.absent,
               time: recordedAt
                 ? TimeUtil.toPhTime(new Date(recordedAt))

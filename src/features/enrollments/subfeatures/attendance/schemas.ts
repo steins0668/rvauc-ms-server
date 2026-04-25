@@ -107,7 +107,10 @@ export namespace Schemas {
           history: z.array(
             z
               .strictObject({
-                record: base,
+                record: z.strictObject({
+                  ...base.shape,
+                  id: z.number().nullable(),
+                }),
                 offering: z
                   .strictObject({
                     id: z.number(),
@@ -136,7 +139,10 @@ export namespace Schemas {
           attendanceRecords: z.array(
             z
               .strictObject({
-                record: base,
+                record: z.strictObject({
+                  ...base.shape,
+                  id: z.number().nullable(),
+                }),
                 enrollment: z
                   .strictObject({
                     id: z.number(),
@@ -233,7 +239,10 @@ export namespace Schemas {
       export const history = z.array(
         z
           .strictObject({
-            record: base,
+            record: z.strictObject({
+              ...base.shape,
+              id: z.number().nullable(),
+            }),
             offering: z
               .strictObject({
                 id: z.number(),
