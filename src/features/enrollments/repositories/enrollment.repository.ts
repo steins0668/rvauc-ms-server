@@ -54,6 +54,7 @@ export class Enrollment extends Repository<Types.Tables.Enrollment> {
         course: { name: c.name, code: c.code },
         offering: {
           weekDay: o.weekDay,
+          weekDayNumeric: o.weekDayNumeric,
           startTimeText: o.startTimeText,
           endTimeText: o.endTimeText,
         },

@@ -88,6 +88,7 @@ export class Class extends Repository<Types.Tables.Class> {
         offering: {
           id: o.id,
           weekDay: o.weekDay,
+          weekDayNumeric: o.weekDayNumeric,
           startTimeText: o.startTimeText,
           endTimeText: o.endTimeText,
         },

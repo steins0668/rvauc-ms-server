@@ -18,6 +18,7 @@ export namespace Schemas {
           z
             .strictObject({
               weekDay: z.string(),
+              weekDayNumeric: z.number(),
               startTime: z.string(),
               endTime: z.string(),
               room: z.nullable(
